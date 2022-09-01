@@ -21,10 +21,8 @@ mod structs;
 pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use sp_core::{blake2_256, Public as PublicID};
-    use sp_runtime::traits::MaybeDisplay;
+    use sp_core::blake2_256;
     use sp_std::fmt::Debug;
-    use std::hash::Hash;
 
     use crate::{
         rbac::{RoleError, TRole, Tag},
@@ -46,6 +44,8 @@ pub mod pallet {
             + MaybeSerializeDeserialize
             + Debug
             + Ord
+            + Clone
+            + Copy
             + MaxEncodedLen
             + std::default::Default;
     }
@@ -65,22 +65,66 @@ pub mod pallet {
     // Pallets use events to inform users when important changes are made.
     // https://docs.substrate.io/main-docs/build/events-errors/
     #[pallet::event]
-    pub enum Event<T: Config> {}
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        /// Event emitted when a role has been added. [who, entityID, entityName]
+        RoleAdded(T::AccountId, T::RoleId, Vec<u8>),
+    }
 
     // Errors inform users that something went wrong.
     #[pallet::error]
     pub enum Error<T> {
+        // Name exceeds 64
+        EntityNameExceedMax64,
         // Returned if the Role already exists
         RoleAlreadyExist,
         // Returned if the Role does not exists
         RoleDoesNotExist,
+        // Failed to verify entity ownership
+        EntityAuthorizationFailed,
+    }
+
+    impl<T: Config> Error<T> {
+        fn dispatch_error(err: RoleError) -> DispatchResult {
+            match err {
+                RoleError::RoleAlreadyExist => return Err(Error::<T>::RoleAlreadyExist.into()),
+                RoleError::RoleDoesNotExist => return Err(Error::<T>::RoleDoesNotExist.into()),
+                RoleError::NameExceedMaxChar => {
+                    return Err(Error::<T>::EntityNameExceedMax64.into())
+                }
+                RoleError::RoleAuthorizationFailed => {
+                    return Err(Error::<T>::EntityAuthorizationFailed.into())
+                }
+            }
+        }
     }
 
     // Dispatchable functions allows users to interact with the pallet and invoke state changes.
     // These functions materialize as "extrinsics", which are often compared to transactions.
     // Dispatchable functions must be annotated with a weight and must return a DispatchResult.
     #[pallet::call]
-    impl<T: Config> Pallet<T> {}
+    impl<T: Config> Pallet<T> {
+        /// create role call
+        #[pallet::weight(1_000)]
+        pub fn add_role(origin: OriginFor<T>, entity: T::RoleId, name: Vec<u8>) -> DispatchResult {
+            // Check that an extrinsic was signed and get the signer
+            // This fn returns an error if the extrinsic is not signed
+            // https://docs.substrate.io/v3/runtime/origins
+            let sender = ensure_signed(origin)?;
+
+            // Verify that the name len is 64 max
+            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+
+            match Self::create(&sender, entity, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleAdded(sender, entity, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+    }
 
     // implement the role TRole trait to satify the methods
     impl<T: Config> TRole<T::AccountId, T::RoleId> for Pallet<T> {
@@ -96,8 +140,28 @@ pub mod pallet {
             Ok(())
         }
 
-        fn create() -> Result<(), RoleError> {
-            todo!()
+        fn create(owner: &T::AccountId, entity: T::RoleId, name: &[u8]) -> Result<(), RoleError> {
+            // Generate id for integrity check
+            let key = Self::generate_key(&entity, Tag::Role);
+
+            // Check if attribute already exists
+            if <RoleStore<T>>::contains_key(&key) {
+                return Err(RoleError::RoleAlreadyExist);
+            }
+
+            let new_role = Role {
+                id: entity,
+                name: (&name).to_vec(),
+            };
+
+            <RoleStore<T>>::insert(&key, new_role);
+
+            // Store the owner of the role for further validation
+            // when modification is requested
+            let key = (&owner, &key).using_encoded(blake2_256);
+            <OwnerStore<T>>::insert((&owner, &key), entity.clone());
+
+            Ok(())
         }
 
         fn delete() -> Result<(), RoleError> {

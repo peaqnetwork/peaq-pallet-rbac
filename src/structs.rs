@@ -7,6 +7,6 @@ use sp_std::vec::Vec;
     Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug,
 )]
 pub struct Role<RoleId> {
-    id: RoleId,
-    name: Vec<u8>,
+    pub id: RoleId,
+    pub name: Vec<u8>,
 }
