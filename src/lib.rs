@@ -19,8 +19,6 @@ pub mod structs;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use crate::rbac::*;
-    use crate::structs::*;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use sp_io::hashing::blake2_256;
@@ -74,6 +72,7 @@ pub mod pallet {
         RoleAdded(T::AccountId, T::RoleId, Vec<u8>),
         /// Event emitted when a role has been added. [who, roleId]
         RoleRemoved(T::AccountId, T::RoleId),
+        RoleFetched(Role<T::RoleId>),
     }
 
     // Errors inform users that something went wrong.
@@ -109,6 +108,24 @@ pub mod pallet {
     // Dispatchable functions must be annotated with a weight and must return a DispatchResult.
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        #[pallet::weight(1_000)]
+        pub fn fetch_role(origin: OriginFor<T>, entity: T::RoleId) -> DispatchResult {
+            // Check that an extrinsic was signed and get the signer
+            // This fn returns an error if the extrinsic is not signed
+            // https://docs.substrate.io/v3/runtime/origins
+            ensure_signed(origin)?;
+            let role = Self::fetch(entity);
+
+            match role {
+                Some(role) => {
+                    Self::deposit_event(Event::RoleFetched(role));
+                }
+                None => return Err(Error::<T>::RoleDoesNotExist.into()),
+            };
+
+            Ok(())
+        }
+
         /// create role call
         #[pallet::weight(1_000)]
         pub fn add_role(origin: OriginFor<T>, entity: T::RoleId, name: Vec<u8>) -> DispatchResult {
@@ -163,7 +180,7 @@ pub mod pallet {
         }
 
         fn create(owner: &T::AccountId, entity: T::RoleId, name: &[u8]) -> Result<(), RoleError> {
-            // Generate id for integrity check
+            // Generate key for integrity check
             let key = Self::generate_key(&entity, Tag::Role);
 
             // Check if role already exists
@@ -186,8 +203,18 @@ pub mod pallet {
             Ok(())
         }
 
+        fn fetch(entity: T::RoleId) -> Option<Role<T::RoleId>> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&entity, Tag::Role);
+
+            if <RoleStore<T>>::contains_key(&key) {
+                return Some(Self::role_of(&key));
+            }
+            None
+        }
+
         fn delete(owner: &T::AccountId, entity: T::RoleId) -> Result<(), RoleError> {
-            // Generate id for integrity check
+            // Generate key for integrity check
             let key = Self::generate_key(&entity, Tag::Role);
 
             // check ownership

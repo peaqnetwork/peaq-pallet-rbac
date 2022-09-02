@@ -1,3 +1,5 @@
+use crate::structs::*;
+
 pub enum RoleError {
     // Returned if the Role already exists
     RoleAlreadyExist,
@@ -12,6 +14,7 @@ pub enum RoleError {
 pub trait TRole<AccountId, RoleId> {
     fn is_owner(owner: &AccountId, entity: &RoleId) -> Result<(), RoleError>;
     fn create(owner: &AccountId, entity: RoleId, name: &[u8]) -> Result<(), RoleError>;
+    fn fetch(entity: RoleId) -> Option<Role<RoleId>>;
     fn delete(owner: &AccountId, entity: RoleId) -> Result<(), RoleError>;
     fn generate_key(entity: &RoleId, tag: Tag) -> [u8; 32];
 }
