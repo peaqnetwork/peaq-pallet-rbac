@@ -12,7 +12,7 @@ pub enum RoleError {
 pub trait TRole<AccountId, RoleId> {
     fn is_owner(owner: &AccountId, entity: &RoleId) -> Result<(), RoleError>;
     fn create(owner: &AccountId, entity: RoleId, name: &[u8]) -> Result<(), RoleError>;
-    fn delete() -> Result<(), RoleError>;
+    fn delete(owner: &AccountId, entity: RoleId) -> Result<(), RoleError>;
     fn generate_key(entity: &RoleId, tag: Tag) -> [u8; 32];
 }
 

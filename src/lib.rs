@@ -14,15 +14,18 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-mod rbac;
-mod structs;
+pub mod rbac;
+pub mod structs;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use crate::rbac::*;
+    use crate::structs::*;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use sp_core::blake2_256;
+    use sp_io::hashing::blake2_256;
     use sp_std::fmt::Debug;
+    use sp_std::vec::Vec;
 
     use crate::{
         rbac::{RoleError, TRole, Tag},
@@ -47,7 +50,7 @@ pub mod pallet {
             + Clone
             + Copy
             + MaxEncodedLen
-            + std::default::Default;
+            + Default;
     }
 
     // The pallet's runtime storage items.
@@ -67,8 +70,10 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// Event emitted when a role has been added. [who, entityID, entityName]
+        /// Event emitted when a role has been added. [who, roleId, entityName]
         RoleAdded(T::AccountId, T::RoleId, Vec<u8>),
+        /// Event emitted when a role has been added. [who, roleId]
+        RoleRemoved(T::AccountId, T::RoleId),
     }
 
     // Errors inform users that something went wrong.
@@ -124,6 +129,23 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::weight(1_000)]
+        pub fn remove_role(origin: OriginFor<T>, entity: T::RoleId) -> DispatchResult {
+            // Check that an extrinsic was signed and get the signer
+            // This fn returns an error if the extrinsic is not signed
+            // https://docs.substrate.io/v3/runtime/origins
+            let sender = ensure_signed(origin)?;
+
+            match Self::delete(&sender, entity) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleRemoved(sender, entity));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
     }
 
     // implement the role TRole trait to satify the methods
@@ -132,7 +154,7 @@ pub mod pallet {
             let key = Self::generate_key(entity, Tag::Role);
             let key = (&owner, &key).using_encoded(blake2_256);
 
-            // Check if attribute already exists
+            // Check if role already exists
             if !<OwnerStore<T>>::contains_key((&owner, &key)) {
                 return Err(RoleError::RoleAuthorizationFailed);
             }
@@ -144,7 +166,7 @@ pub mod pallet {
             // Generate id for integrity check
             let key = Self::generate_key(&entity, Tag::Role);
 
-            // Check if attribute already exists
+            // Check if role already exists
             if <RoleStore<T>>::contains_key(&key) {
                 return Err(RoleError::RoleAlreadyExist);
             }
@@ -164,8 +186,30 @@ pub mod pallet {
             Ok(())
         }
 
-        fn delete() -> Result<(), RoleError> {
-            todo!()
+        fn delete(owner: &T::AccountId, entity: T::RoleId) -> Result<(), RoleError> {
+            // Generate id for integrity check
+            let key = Self::generate_key(&entity, Tag::Role);
+
+            // check ownership
+            let is_owner = Self::is_owner(owner, &entity);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            // Check if role exists
+            if !<RoleStore<T>>::contains_key(&key) {
+                return Err(RoleError::RoleDoesNotExist);
+            }
+
+            <RoleStore<T>>::remove(&key);
+
+            // Remove the ownership of the role
+            let key = (&owner, &key).using_encoded(blake2_256);
+            <OwnerStore<T>>::remove((&owner, &key));
+
+            Ok(())
         }
 
         fn generate_key(entity: &T::RoleId, tag: Tag) -> [u8; 32] {
