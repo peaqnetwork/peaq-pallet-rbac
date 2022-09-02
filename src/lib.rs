@@ -70,6 +70,7 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// Event emitted when a role has been added. [who, roleId, entityName]
         RoleAdded(T::AccountId, T::RoleId, Vec<u8>),
+        RoleUpdated(T::AccountId, T::RoleId, Vec<u8>),
         /// Event emitted when a role has been added. [who, roleId]
         RoleRemoved(T::AccountId, T::RoleId),
         RoleFetched(Role<T::RoleId>),
@@ -147,6 +148,31 @@ pub mod pallet {
             Ok(())
         }
 
+        /// update role call
+        #[pallet::weight(1_000)]
+        pub fn update_role(
+            origin: OriginFor<T>,
+            entity: T::RoleId,
+            name: Vec<u8>,
+        ) -> DispatchResult {
+            // Check that an extrinsic was signed and get the signer
+            // This fn returns an error if the extrinsic is not signed
+            // https://docs.substrate.io/v3/runtime/origins
+            let sender = ensure_signed(origin)?;
+
+            // Verify that the name len is 64 max
+            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+
+            match Self::update(&sender, entity, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleUpdated(sender, entity, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
         #[pallet::weight(1_000)]
         pub fn remove_role(origin: OriginFor<T>, entity: T::RoleId) -> DispatchResult {
             // Check that an extrinsic was signed and get the signer
@@ -179,6 +205,16 @@ pub mod pallet {
             Ok(())
         }
 
+        fn fetch(entity: T::RoleId) -> Option<Role<T::RoleId>> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&entity, Tag::Role);
+
+            if <RoleStore<T>>::contains_key(&key) {
+                return Some(Self::role_of(&key));
+            }
+            None
+        }
+
         fn create(owner: &T::AccountId, entity: T::RoleId, name: &[u8]) -> Result<(), RoleError> {
             // Generate key for integrity check
             let key = Self::generate_key(&entity, Tag::Role);
@@ -203,14 +239,35 @@ pub mod pallet {
             Ok(())
         }
 
-        fn fetch(entity: T::RoleId) -> Option<Role<T::RoleId>> {
+        fn update(owner: &T::AccountId, entity: T::RoleId, name: &[u8]) -> Result<(), RoleError> {
             // Generate key for integrity check
             let key = Self::generate_key(&entity, Tag::Role);
 
-            if <RoleStore<T>>::contains_key(&key) {
-                return Some(Self::role_of(&key));
+            // check ownership
+            let is_owner = Self::is_owner(owner, &entity);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
             }
-            None
+
+            // Check if role exists
+            if !<RoleStore<T>>::contains_key(&key) {
+                return Err(RoleError::RoleDoesNotExist);
+            }
+
+            // Get role
+            let role = Self::fetch(entity);
+
+            match role {
+                Some(mut role) => {
+                    role.name = (&name).to_vec();
+
+                    <RoleStore<T>>::mutate(&key, |a| *a = role);
+                    Ok(())
+                }
+                None => Err(RoleError::RoleDoesNotExist),
+            }
         }
 
         fn delete(owner: &T::AccountId, entity: T::RoleId) -> Result<(), RoleError> {
