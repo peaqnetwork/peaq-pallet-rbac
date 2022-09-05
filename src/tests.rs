@@ -99,3 +99,28 @@ fn remove_role_test() {
         );
     });
 }
+
+#[test]
+fn fetch_role_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let role_id = *b"23676474666576474646673646376637";
+        let origin = account_key(acct);
+        let name = b"CAN_EDIT";
+
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::fetch_role(Origin::signed(origin), role_id,));
+
+        // Test for fetching non-existing role
+        let role_id = *b"23676474666576474646673646376638";
+        assert_noop!(
+            PeaqRBAC::fetch_role(Origin::signed(origin), role_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
