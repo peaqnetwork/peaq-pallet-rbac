@@ -17,11 +17,17 @@ pub trait Rbac<AccountId, EntityId> {
         role_id: EntityId,
         user: EntityId,
     ) -> Result<(), EntityError>;
+    fn delete_role_to_user(
+        owner: &AccountId,
+        role_id: EntityId,
+        user: EntityId,
+    ) -> Result<(), EntityError>;
 }
 
 pub trait Entity<AccountId, EntityId> {
     fn generate_key(entity: &EntityId, tag: Tag) -> [u8; 32];
-    fn is_owner(owner: &AccountId, entity: &EntityId) -> Result<(), EntityError>;
+    fn generate_relationship_key(entity: &EntityId, related_to: &EntityId, tag: Tag) -> [u8; 32];
+    fn is_owner(owner: &AccountId, key: &[u8; 32]) -> Result<(), EntityError>;
     fn fetch(entity: EntityId) -> Option<Role<EntityId>>;
     fn create(owner: &AccountId, entity: EntityId, name: &[u8]) -> Result<(), EntityError>;
     fn update(owner: &AccountId, entity: EntityId, name: &[u8]) -> Result<(), EntityError>;

@@ -21,6 +21,7 @@ pub mod structs;
 pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
+    use sp_core::hexdisplay::AsBytesRef;
     use sp_io::hashing::blake2_256;
     use sp_std::fmt::Debug;
     use sp_std::vec::Vec;
@@ -79,8 +80,10 @@ pub mod pallet {
         /// Event emitted when a role has been added. [who, roleId]
         RoleRemoved(T::AccountId, T::EntityId),
         RoleFetched(Role<T::EntityId>),
-        /// Event emitted when a role has been added. [who, roleId, userId]
+        /// Event emitted when a role has been assigned to user. [who, roleId, userId]
         RoleAssigned(T::AccountId, T::EntityId, T::EntityId),
+        /// Event emitted when a role has been removed from user. [who, roleId, userId]
+        RoleRemovedFromUser(T::AccountId, T::EntityId, T::EntityId),
     }
 
     // Errors inform users that something went wrong.
@@ -226,6 +229,28 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// remove role to user relationship call
+        #[pallet::weight(1_000)]
+        pub fn remove_role_to_user(
+            origin: OriginFor<T>,
+            role_id: T::EntityId,
+            user_id: T::EntityId,
+        ) -> DispatchResult {
+            // Check that an extrinsic was signed and get the signer
+            // This fn returns an error if the extrinsic is not signed
+            // https://docs.substrate.io/v3/runtime/origins
+            let sender = ensure_signed(origin)?;
+
+            match Self::delete_role_to_user(&sender, role_id, user_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleRemovedFromUser(sender, role_id, user_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
     }
     // implement the Rbac trait to satify the methods
     impl<T: Config> Rbac<T::AccountId, T::EntityId> for Pallet<T> {
@@ -236,10 +261,11 @@ pub mod pallet {
         ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let role_key = Self::generate_key(&role_id, Tag::Role);
-            let role_2_user_key = Self::generate_key(&user_id, Tag::Role2User);
+            let role_2_user_key =
+                Self::generate_relationship_key(&role_id, &user_id, Tag::Role2User);
 
             // check role ownership
-            let is_owner = Self::is_owner(owner, &role_id);
+            let is_owner = Self::is_owner(owner, &role_key);
 
             match is_owner {
                 Err(e) => return Err(e),
@@ -252,7 +278,7 @@ pub mod pallet {
             }
 
             // Check if role has already been assigned to user
-            if <RbacStore<T>>::contains_key(&role_key) {
+            if <RbacStore<T>>::contains_key(&role_2_user_key) {
                 return Err(EntityError::EntityAlreadyExist);
             }
 
@@ -270,12 +296,42 @@ pub mod pallet {
 
             Ok(())
         }
+
+        fn delete_role_to_user(
+            owner: &T::AccountId,
+            role_id: T::EntityId,
+            user_id: T::EntityId,
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let role_2_user_key =
+                Self::generate_relationship_key(&role_id, &user_id, Tag::Role2User);
+
+            // check ownership
+            let is_owner = Self::is_owner(owner, &role_2_user_key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            // Check if role exists
+            if !<RbacStore<T>>::contains_key(&role_2_user_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            <RoleStore<T>>::remove(&role_2_user_key);
+
+            // Remove the ownership of the role
+            let key = (&owner, &role_2_user_key).using_encoded(blake2_256);
+            <OwnerStore<T>>::remove((&owner, &key));
+
+            Ok(())
+        }
     }
 
     // implement the role Entity trait to satify the methods
     impl<T: Config> Entity<T::AccountId, T::EntityId> for Pallet<T> {
-        fn is_owner(owner: &T::AccountId, entity: &T::EntityId) -> Result<(), EntityError> {
-            let key = Self::generate_key(entity, Tag::Role);
+        fn is_owner(owner: &T::AccountId, key: &[u8; 32]) -> Result<(), EntityError> {
             let key = (&owner, &key).using_encoded(blake2_256);
 
             // Check if role already exists
@@ -333,7 +389,7 @@ pub mod pallet {
             let key = Self::generate_key(&entity, Tag::Role);
 
             // check ownership
-            let is_owner = Self::is_owner(owner, &entity);
+            let is_owner = Self::is_owner(owner, &key);
 
             match is_owner {
                 Err(e) => return Err(e),
@@ -364,7 +420,7 @@ pub mod pallet {
             let key = Self::generate_key(&entity, Tag::Role);
 
             // check ownership
-            let is_owner = Self::is_owner(owner, &entity);
+            let is_owner = Self::is_owner(owner, &key);
 
             match is_owner {
                 Err(e) => return Err(e),
@@ -386,9 +442,22 @@ pub mod pallet {
         }
 
         fn generate_key(entity: &T::EntityId, tag: Tag) -> [u8; 32] {
-            let mut bytes_in_name: Vec<u8> = tag.to_string().as_bytes().to_vec();
+            let mut bytes_in_tag: Vec<u8> = tag.to_string().as_bytes().to_vec();
             let mut bytes_to_hash: Vec<u8> = entity.encode().as_slice().to_vec();
-            bytes_to_hash.append(&mut bytes_in_name);
+            bytes_to_hash.append(&mut bytes_in_tag);
+            blake2_256(&bytes_to_hash[..])
+        }
+
+        fn generate_relationship_key(
+            entity: &T::EntityId,
+            related_to: &T::EntityId,
+            tag: Tag,
+        ) -> [u8; 32] {
+            let mut bytes_in_tag: Vec<u8> = tag.to_string().as_bytes().to_vec();
+            let mut bytes_to_hash: Vec<u8> = entity.encode().as_slice().to_vec();
+            let mut bytes_to_hash_relation: Vec<u8> = related_to.encode().as_slice().to_vec();
+            bytes_to_hash.append(&mut bytes_to_hash_relation);
+            bytes_to_hash.append(&mut bytes_in_tag);
             blake2_256(&bytes_to_hash[..])
         }
     }
