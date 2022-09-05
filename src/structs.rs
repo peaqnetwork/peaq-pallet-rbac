@@ -6,7 +6,15 @@ use sp_std::vec::Vec;
 #[derive(
     Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug,
 )]
-pub struct Role<RoleId> {
-    pub id: RoleId,
+pub struct Role<EntityId> {
+    pub id: EntityId,
     pub name: Vec<u8>,
+}
+
+#[derive(
+    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug,
+)]
+pub struct Role2User<EntityId> {
+    pub role: EntityId,
+    pub user: EntityId,
 }

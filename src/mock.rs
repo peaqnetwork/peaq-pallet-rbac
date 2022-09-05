@@ -69,7 +69,7 @@ impl pallet_timestamp::Config for Test {
 
 impl peaq_rbac::Config for Test {
     type Event = Event;
-    type RoleId = [u8; 32];
+    type EntityId = [u8; 32];
 }
 
 // Build genesis storage according to the mock runtime.

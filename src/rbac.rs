@@ -1,33 +1,43 @@
 use crate::structs::*;
 
-pub enum RoleError {
-    // Returned if the Role already exists
-    RoleAlreadyExist,
-    // Returned if the Role does not exists
-    RoleDoesNotExist,
-    // Returned if the Role does not belong to the caller
-    RoleAuthorizationFailed,
+pub enum EntityError {
+    // Returned if the Entity already exists
+    EntityAlreadyExist,
+    // Returned if the Entity does not exists
+    EntityDoesNotExist,
+    // Returned if the Entity does not belong to the caller
+    EntityAuthorizationFailed,
     // Exceeds max characters
     NameExceedMaxChar,
 }
 
-pub trait TRole<AccountId, RoleId> {
-    fn is_owner(owner: &AccountId, entity: &RoleId) -> Result<(), RoleError>;
-    fn fetch(entity: RoleId) -> Option<Role<RoleId>>;
-    fn create(owner: &AccountId, entity: RoleId, name: &[u8]) -> Result<(), RoleError>;
-    fn update(owner: &AccountId, entity: RoleId, name: &[u8]) -> Result<(), RoleError>;
-    fn delete(owner: &AccountId, entity: RoleId) -> Result<(), RoleError>;
-    fn generate_key(entity: &RoleId, tag: Tag) -> [u8; 32];
+pub trait Rbac<AccountId, EntityId> {
+    fn create_role_to_user(
+        owner: &AccountId,
+        role_id: EntityId,
+        user: EntityId,
+    ) -> Result<(), EntityError>;
+}
+
+pub trait Entity<AccountId, EntityId> {
+    fn generate_key(entity: &EntityId, tag: Tag) -> [u8; 32];
+    fn is_owner(owner: &AccountId, entity: &EntityId) -> Result<(), EntityError>;
+    fn fetch(entity: EntityId) -> Option<Role<EntityId>>;
+    fn create(owner: &AccountId, entity: EntityId, name: &[u8]) -> Result<(), EntityError>;
+    fn update(owner: &AccountId, entity: EntityId, name: &[u8]) -> Result<(), EntityError>;
+    fn delete(owner: &AccountId, entity: EntityId) -> Result<(), EntityError>;
 }
 
 pub enum Tag {
     Role,
+    Role2User,
 }
 
 impl Tag {
     pub fn to_string(&self) -> &str {
         match self {
             Self::Role => "Role",
+            Self::Role2User => "R2U",
         }
     }
 }
