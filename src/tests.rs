@@ -168,3 +168,46 @@ fn assign_role_to_user_test() {
         );
     });
 }
+
+#[test]
+fn remove_role_to_user_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let acct2 = "Iredia2";
+        let role_id = *b"25676474666576474646673646376637";
+        let user_id = *b"12676474666576474646673646376637";
+        let origin = account_key(acct);
+        let origin2 = account_key(acct2);
+        let name = b"CAN_EDIT";
+
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::assign_role_to_user(
+            Origin::signed(origin),
+            role_id,
+            user_id
+        ));
+
+        // Test for removing role not owned by origin
+        assert_noop!(
+            PeaqRBAC::remove_role_to_user(Origin::signed(origin2), role_id, user_id),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        assert_ok!(PeaqRBAC::remove_role_to_user(
+            Origin::signed(origin),
+            role_id,
+            user_id
+        ));
+
+        // Test for removing non-existing role
+        assert_noop!(
+            PeaqRBAC::remove_role_to_user(Origin::signed(origin), role_id, user_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}

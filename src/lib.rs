@@ -340,6 +340,11 @@ pub mod pallet {
             let role_2_user_key =
                 Self::generate_relationship_key(&role_id, &user_id, Tag::Role2User);
 
+            // Check if role exists
+            if !<RbacStore<T>>::contains_key(&role_2_user_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
             // check ownership
             let is_owner = Self::is_owner(owner, &role_2_user_key);
 
@@ -348,12 +353,7 @@ pub mod pallet {
                 _ => (),
             }
 
-            // Check if role exists
-            if !<RbacStore<T>>::contains_key(&role_2_user_key) {
-                return Err(EntityError::EntityDoesNotExist);
-            }
-
-            <RoleStore<T>>::remove(&role_2_user_key);
+            <RbacStore<T>>::remove(&role_2_user_key);
 
             // Remove the ownership of the role
             let key = (&owner, &role_2_user_key).using_encoded(blake2_256);
