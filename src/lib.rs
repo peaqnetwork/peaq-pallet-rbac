@@ -453,17 +453,17 @@ pub mod pallet {
             // Generate key for integrity check
             let key = Self::generate_key(&entity, Tag::Role);
 
+            // Check if role exists
+            if !<RoleStore<T>>::contains_key(&key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
             // check ownership
             let is_owner = Self::is_owner(owner, &key);
 
             match is_owner {
                 Err(e) => return Err(e),
                 _ => (),
-            }
-
-            // Check if role exists
-            if !<RoleStore<T>>::contains_key(&key) {
-                return Err(EntityError::EntityDoesNotExist);
             }
 
             <RoleStore<T>>::remove(&key);
