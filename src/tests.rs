@@ -31,6 +31,44 @@ fn add_role_test() {
 }
 
 #[test]
+fn update_role_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let acct2 = "Iredia2";
+        let role_id = *b"23676474666576474646673646376637";
+        let origin = account_key(acct);
+        let origin2 = account_key(acct2);
+        let name = b"CAN_EDIT";
+
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id,
+            name.to_vec(),
+        ));
+
+        // Test for updating role not owned by origin
+        let name = b"CAN_UPDATE";
+        assert_noop!(
+            PeaqRBAC::update_role(Origin::signed(origin2), role_id, name.to_vec()),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        assert_ok!(PeaqRBAC::update_role(
+            Origin::signed(origin),
+            role_id,
+            name.to_vec()
+        ));
+
+        // Test for removal of non-existing role
+        let role_id = *b"23676474666576474646673646376638";
+        assert_noop!(
+            PeaqRBAC::update_role(Origin::signed(origin), role_id, name.to_vec()),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
+
+#[test]
 fn remove_role_test() {
     new_test_ext().execute_with(|| {
         let acct = "Iredia";
