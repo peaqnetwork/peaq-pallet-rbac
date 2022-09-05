@@ -211,3 +211,35 @@ fn remove_role_to_user_test() {
         );
     });
 }
+
+#[test]
+fn has_role_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let role_id = *b"26676474666576474646673646376637";
+        let user_id = *b"14676474666576474646673646376637";
+        let origin = account_key(acct);
+        let name = b"CAN_EDIT";
+
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::assign_role_to_user(
+            Origin::signed(origin),
+            role_id,
+            user_id
+        ));
+
+        assert_ok!(PeaqRBAC::has_role(Origin::signed(origin), role_id, user_id));
+
+        // Test for non-existing role to user relationship
+        let role_id = *b"26676474666576474646673646376638";
+        assert_noop!(
+            PeaqRBAC::has_role(Origin::signed(origin), role_id, user_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
