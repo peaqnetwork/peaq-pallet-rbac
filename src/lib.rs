@@ -21,7 +21,6 @@ pub mod structs;
 pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use sp_core::hexdisplay::AsBytesRef;
     use sp_io::hashing::blake2_256;
     use sp_std::fmt::Debug;
     use sp_std::vec::Vec;
@@ -84,6 +83,7 @@ pub mod pallet {
         RoleAssigned(T::AccountId, T::EntityId, T::EntityId),
         /// Event emitted when a role has been removed from user. [who, roleId, userId]
         RoleRemovedFromUser(T::AccountId, T::EntityId, T::EntityId),
+        HasRole(Role2User<T::EntityId>),
     }
 
     // Errors inform users that something went wrong.
@@ -208,6 +208,28 @@ pub mod pallet {
             Ok(())
         }
 
+        #[pallet::weight(1_000)]
+        pub fn has_role(
+            origin: OriginFor<T>,
+            role_id: T::EntityId,
+            entity_id: T::EntityId,
+        ) -> DispatchResult {
+            // Check that an extrinsic was signed and get the signer
+            // This fn returns an error if the extrinsic is not signed
+            // https://docs.substrate.io/v3/runtime/origins
+            ensure_signed(origin)?;
+            let role_to_user = Self::check_has_role(role_id, entity_id);
+
+            match role_to_user {
+                Some(r2u) => {
+                    Self::deposit_event(Event::HasRole(r2u));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
+        }
+
         /// assign a role to user call
         #[pallet::weight(1_000)]
         pub fn assign_role_to_user(
@@ -254,6 +276,18 @@ pub mod pallet {
     }
     // implement the Rbac trait to satify the methods
     impl<T: Config> Rbac<T::AccountId, T::EntityId> for Pallet<T> {
+        fn check_has_role(
+            role_id: T::EntityId,
+            entity_id: T::EntityId,
+        ) -> Option<Role2User<T::EntityId>> {
+            // Generate key for integrity check
+            let key = Self::generate_relationship_key(&role_id, &entity_id, Tag::Role2User);
+
+            if <RbacStore<T>>::contains_key(&key) {
+                return Some(Self::rbac_of(&key));
+            }
+            None
+        }
         fn create_role_to_user(
             owner: &T::AccountId,
             role_id: T::EntityId,

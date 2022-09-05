@@ -12,6 +12,7 @@ pub enum EntityError {
 }
 
 pub trait Rbac<AccountId, EntityId> {
+    fn check_has_role(role_id: EntityId, entity_id: EntityId) -> Option<Role2User<EntityId>>;
     fn create_role_to_user(
         owner: &AccountId,
         role_id: EntityId,
