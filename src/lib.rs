@@ -298,17 +298,17 @@ pub mod pallet {
             let role_2_user_key =
                 Self::generate_relationship_key(&role_id, &user_id, Tag::Role2User);
 
+            // Check if role exists
+            if !<RoleStore<T>>::contains_key(&role_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
             // check role ownership
             let is_owner = Self::is_owner(owner, &role_key);
 
             match is_owner {
                 Err(e) => return Err(e),
                 _ => (),
-            }
-
-            // Check if role exists
-            if !<RoleStore<T>>::contains_key(&role_key) {
-                return Err(EntityError::EntityDoesNotExist);
             }
 
             // Check if role has already been assigned to user
