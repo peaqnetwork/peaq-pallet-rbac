@@ -19,16 +19,17 @@ pub mod structs;
 
 #[frame_support::pallet]
 pub mod pallet {
+
     use codec::{Encode, MaxEncodedLen};
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use sp_io::hashing::blake2_256;
     use sp_std::fmt::Debug;
-    use sp_std::vec::Vec;
+    use sp_std::{vec, vec::Vec};
 
     use crate::{
         rbac::{EntityError, Permission, Rbac, Role, Tag},
-        structs::{Entity, Role2User},
+        structs::{Entity, Permission2Role, Role2User},
     };
 
     #[pallet::pallet]
@@ -65,14 +66,19 @@ pub mod pallet {
         StorageMap<_, Blake2_128Concat, (T::AccountId, [u8; 32]), T::EntityId>;
 
     #[pallet::storage]
-    #[pallet::getter(fn rbac_of)]
-    pub type RbacStore<T: Config> =
+    #[pallet::getter(fn role_to_user_of)]
+    pub type Role2UserStore<T: Config> =
         StorageMap<_, Blake2_128Concat, [u8; 32], Role2User<T::EntityId>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn permission_of)]
     pub type PermissionStore<T: Config> =
         StorageMap<_, Blake2_128Concat, [u8; 32], Entity<T::EntityId>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn permission_to_role_of)]
+    pub type Permission2RoleStore<T: Config> =
+        StorageMap<_, Blake2_128Concat, [u8; 32], Vec<Permission2Role<T::EntityId>>, ValueQuery>;
 
     // Pallets use events to inform users when important changes are made.
     // https://docs.substrate.io/main-docs/build/events-errors/
@@ -98,6 +104,8 @@ pub mod pallet {
         PermissionUpdated(T::AccountId, T::EntityId, Vec<u8>),
         /// Event emitted when a permission has been removed. [who, permissionId]
         PermissionRemoved(T::AccountId, T::EntityId),
+        /// Event emitted when a permission has been assigned to role. [who, permissionId, roleId]
+        PermissionAssigned(T::AccountId, T::EntityId, T::EntityId),
     }
 
     // Errors inform users that something went wrong.
@@ -329,6 +337,25 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// assign a permission to role call
+        #[pallet::weight(1_000)]
+        pub fn assign_permission_to_role(
+            origin: OriginFor<T>,
+            permission_id: T::EntityId,
+            role_id: T::EntityId,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            match Self::create_permission_to_role(&sender, permission_id, role_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::PermissionAssigned(sender, permission_id, role_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
     }
     // implement the Rbac trait to satify the methods
     impl<T: Config> Rbac<T::AccountId, T::EntityId> for Pallet<T> {
@@ -339,8 +366,8 @@ pub mod pallet {
             // Generate key for integrity check
             let key = Self::generate_relationship_key(&role_id, &entity_id, Tag::Role2User);
 
-            if <RbacStore<T>>::contains_key(&key) {
-                return Some(Self::rbac_of(&key));
+            if <Role2UserStore<T>>::contains_key(&key) {
+                return Some(Self::role_to_user_of(&key));
             }
             None
         }
@@ -368,7 +395,7 @@ pub mod pallet {
             }
 
             // Check if role has already been assigned to user
-            if <RbacStore<T>>::contains_key(&role_2_user_key) {
+            if <Role2UserStore<T>>::contains_key(&role_2_user_key) {
                 return Err(EntityError::EntityAlreadyExist);
             }
 
@@ -377,7 +404,7 @@ pub mod pallet {
                 user: user_id,
             };
 
-            <RbacStore<T>>::insert(&role_2_user_key, new_assign);
+            <Role2UserStore<T>>::insert(&role_2_user_key, new_assign);
 
             // Store the owner of the role assignment for further validation
             // when modification is requested
@@ -397,7 +424,7 @@ pub mod pallet {
                 Self::generate_relationship_key(&role_id, &user_id, Tag::Role2User);
 
             // Check if role exists
-            if !<RbacStore<T>>::contains_key(&role_2_user_key) {
+            if !<Role2UserStore<T>>::contains_key(&role_2_user_key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -409,7 +436,7 @@ pub mod pallet {
                 _ => (),
             }
 
-            <RbacStore<T>>::remove(&role_2_user_key);
+            <Role2UserStore<T>>::remove(&role_2_user_key);
 
             // Remove the ownership of the role
             let key = (&owner, &role_2_user_key).using_encoded(blake2_256);
@@ -417,6 +444,71 @@ pub mod pallet {
 
             Ok(())
         }
+
+        fn create_permission_to_role(
+            owner: &T::AccountId,
+            permission_id: T::EntityId,
+            role_id: T::EntityId,
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let role_key = Self::generate_key(&role_id, Tag::Role);
+            let permission_key = Self::generate_key(&permission_id, Tag::Permission);
+            let permission_2_role_key = Self::generate_key(&role_id, Tag::Permission2Role);
+
+            // Check if role exists
+            if !<RoleStore<T>>::contains_key(&role_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // Check if permission exists
+            if !<PermissionStore<T>>::contains_key(&permission_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check role ownership
+            let is_owner = Self::is_owner(owner, &role_key);
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            // check permission ownership
+            let is_owner = Self::is_owner(owner, &permission_key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            let mut permissions: Vec<Permission2Role<T::EntityId>> = vec![];
+
+            let new_assign = Permission2Role {
+                permission: permission_id,
+                role: role_id,
+            };
+
+            // Check if permission has already been assigned to role
+            if <Permission2RoleStore<T>>::contains_key(&permission_2_role_key) {
+                let mut val = <Permission2RoleStore<T>>::get(&permission_2_role_key);
+
+                if val.contains(&new_assign) {
+                    return Err(EntityError::EntityAlreadyExist);
+                }
+
+                permissions.append(&mut val);
+                permissions.push(new_assign);
+            }
+
+            <Permission2RoleStore<T>>::insert(&permission_2_role_key, permissions);
+
+            // Store the owner of the role assignment for further validation
+            // when modification is requested
+            let key = (&owner, &permission_2_role_key).using_encoded(blake2_256);
+            <OwnerStore<T>>::insert((&owner, &key), role_id.clone());
+
+            Ok(())
+        }
+
         fn is_owner(owner: &T::AccountId, key: &[u8; 32]) -> Result<(), EntityError> {
             let key = (&owner, &key).using_encoded(blake2_256);
 

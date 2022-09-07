@@ -19,4 +19,12 @@ pub struct Role2User<EntityId> {
     pub user: EntityId,
 }
 
+#[derive(
+    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug,
+)]
+pub struct Permission2Role<EntityId: Encode> {
+    pub permission: EntityId,
+    pub role: EntityId,
+}
+
 pub struct Stores {}
