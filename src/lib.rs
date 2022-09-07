@@ -81,6 +81,7 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// Event emitted when a role has been added. [who, roleId, roleName]
         RoleAdded(T::AccountId, T::EntityId, Vec<u8>),
+        /// Event emitted when a role has been updated. [who, roleId, roleName]
         RoleUpdated(T::AccountId, T::EntityId, Vec<u8>),
         /// Event emitted when a role has been added. [who, roleId]
         RoleRemoved(T::AccountId, T::EntityId),
@@ -91,8 +92,10 @@ pub mod pallet {
         RoleRemovedFromUser(T::AccountId, T::EntityId, T::EntityId),
         HasRole(Role2User<T::EntityId>),
 
-        /// Event emitted when a role has been added. [who, permissionId, permissionName]
+        /// Event emitted when a permission has been added. [who, permissionId, permissionName]
         PermissionAdded(T::AccountId, T::EntityId, Vec<u8>),
+        /// Event emitted when a permission has been updated. [who, permissionId, permissionName]
+        PermissionUpdated(T::AccountId, T::EntityId, Vec<u8>),
     }
 
     // Errors inform users that something went wrong.
@@ -157,9 +160,6 @@ pub mod pallet {
             role_id: T::EntityId,
             name: Vec<u8>,
         ) -> DispatchResult {
-            // Check that an extrinsic was signed and get the signer
-            // This fn returns an error if the extrinsic is not signed
-            // https://docs.substrate.io/v3/runtime/origins
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
@@ -182,9 +182,6 @@ pub mod pallet {
             role_id: T::EntityId,
             name: Vec<u8>,
         ) -> DispatchResult {
-            // Check that an extrinsic was signed and get the signer
-            // This fn returns an error if the extrinsic is not signed
-            // https://docs.substrate.io/v3/runtime/origins
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
@@ -202,9 +199,6 @@ pub mod pallet {
 
         #[pallet::weight(1_000)]
         pub fn remove_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
-            // Check that an extrinsic was signed and get the signer
-            // This fn returns an error if the extrinsic is not signed
-            // https://docs.substrate.io/v3/runtime/origins
             let sender = ensure_signed(origin)?;
 
             match Self::delete_role(&sender, role_id) {
@@ -223,9 +217,6 @@ pub mod pallet {
             role_id: T::EntityId,
             user_id: T::EntityId,
         ) -> DispatchResult {
-            // Check that an extrinsic was signed and get the signer
-            // This fn returns an error if the extrinsic is not signed
-            // https://docs.substrate.io/v3/runtime/origins
             ensure_signed(origin)?;
             let role_to_user = Self::check_has_role(role_id, user_id);
 
@@ -246,9 +237,6 @@ pub mod pallet {
             role_id: T::EntityId,
             user_id: T::EntityId,
         ) -> DispatchResult {
-            // Check that an extrinsic was signed and get the signer
-            // This fn returns an error if the extrinsic is not signed
-            // https://docs.substrate.io/v3/runtime/origins
             let sender = ensure_signed(origin)?;
 
             match Self::create_role_to_user(&sender, role_id, user_id) {
@@ -268,9 +256,6 @@ pub mod pallet {
             role_id: T::EntityId,
             user_id: T::EntityId,
         ) -> DispatchResult {
-            // Check that an extrinsic was signed and get the signer
-            // This fn returns an error if the extrinsic is not signed
-            // https://docs.substrate.io/v3/runtime/origins
             let sender = ensure_signed(origin)?;
 
             match Self::delete_role_to_user(&sender, role_id, user_id) {
@@ -290,9 +275,6 @@ pub mod pallet {
             permission_id: T::EntityId,
             name: Vec<u8>,
         ) -> DispatchResult {
-            // Check that an extrinsic was signed and get the signer
-            // This fn returns an error if the extrinsic is not signed
-            // https://docs.substrate.io/v3/runtime/origins
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
@@ -301,6 +283,28 @@ pub mod pallet {
             match Self::create_permission(&sender, permission_id, &name) {
                 Ok(()) => {
                     Self::deposit_event(Event::PermissionAdded(sender, permission_id, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
+        /// update permission call
+        #[pallet::weight(1_000)]
+        pub fn update_permission(
+            origin: OriginFor<T>,
+            permission_id: T::EntityId,
+            name: Vec<u8>,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            // Verify that the name len is 64 max
+            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+
+            match Self::update_existing_permission(&sender, permission_id, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::PermissionUpdated(sender, permission_id, name));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
@@ -530,6 +534,16 @@ pub mod pallet {
     }
 
     impl<T: Config> Permission<T::AccountId, T::EntityId> for Pallet<T> {
+        fn get_permission(permission_id: T::EntityId) -> Option<Entity<T::EntityId>> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&permission_id, Tag::Permission);
+
+            if <PermissionStore<T>>::contains_key(&key) {
+                return Some(Self::role_of(&key));
+            }
+            None
+        }
+
         fn create_permission(
             owner: &T::AccountId,
             permission_id: T::EntityId,
@@ -556,6 +570,39 @@ pub mod pallet {
             <OwnerStore<T>>::insert((&owner, &key), permission_id.clone());
 
             Ok(())
+        }
+        fn update_existing_permission(
+            owner: &T::AccountId,
+            permission_id: T::EntityId,
+            name: &[u8],
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&permission_id, Tag::Permission);
+
+            // Check if permission exists
+            if !<PermissionStore<T>>::contains_key(&key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check ownership
+            let is_owner = Self::is_owner(owner, &key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            let perm = Self::get_permission(permission_id);
+
+            match perm {
+                Some(mut p) => {
+                    p.name = (&name).to_vec();
+
+                    <PermissionStore<T>>::mutate(&key, |a| *a = p);
+                    Ok(())
+                }
+                None => Err(EntityError::EntityDoesNotExist),
+            }
         }
     }
 }

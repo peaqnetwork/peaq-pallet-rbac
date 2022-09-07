@@ -29,7 +29,7 @@ pub trait Rbac<AccountId, EntityId> {
 }
 
 pub trait Role<AccountId, EntityId> {
-    fn get_role(entity: EntityId) -> Option<Entity<EntityId>>;
+    fn get_role(role_id: EntityId) -> Option<Entity<EntityId>>;
     fn create_role(owner: &AccountId, role_id: EntityId, name: &[u8]) -> Result<(), EntityError>;
     fn update_existing_role(
         owner: &AccountId,
@@ -40,9 +40,15 @@ pub trait Role<AccountId, EntityId> {
 }
 
 pub trait Permission<AccountId, EntityId> {
+    fn get_permission(permission_id: EntityId) -> Option<Entity<EntityId>>;
     fn create_permission(
         owner: &AccountId,
-        role_id: EntityId,
+        permission_id: EntityId,
+        name: &[u8],
+    ) -> Result<(), EntityError>;
+    fn update_existing_permission(
+        owner: &AccountId,
+        permission_id: EntityId,
         name: &[u8],
     ) -> Result<(), EntityError>;
 }
