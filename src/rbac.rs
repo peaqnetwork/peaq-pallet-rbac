@@ -1,4 +1,5 @@
 use crate::structs::*;
+use sp_std::vec::Vec;
 
 pub enum EntityError {
     // Returned if the Entity already exists
@@ -13,9 +14,8 @@ pub enum EntityError {
 
 pub trait Rbac<AccountId, EntityId> {
     fn generate_key(entity: &EntityId, tag: Tag) -> [u8; 32];
-    fn generate_relationship_key(entity: &EntityId, related_to: &EntityId, tag: Tag) -> [u8; 32];
     fn is_owner(owner: &AccountId, key: &[u8; 32]) -> Result<(), EntityError>;
-    fn check_has_role(role_id: EntityId, user_id: EntityId) -> Option<Role2User<EntityId>>;
+    fn get_user_roles(user_id: EntityId) -> Option<Vec<Role2User<EntityId>>>;
     fn create_role_to_user(
         owner: &AccountId,
         role_id: EntityId,

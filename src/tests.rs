@@ -233,12 +233,12 @@ fn has_role_test() {
             user_id
         ));
 
-        assert_ok!(PeaqRBAC::has_role(Origin::signed(origin), role_id, user_id));
+        assert_ok!(PeaqRBAC::fetch_user_roles(Origin::signed(origin), user_id));
 
         // Test for non-existing role to user relationship
-        let role_id = *b"26676474666576474646673646376638";
+        let user_id = *b"15676474666576474646673646376637";
         assert_noop!(
-            PeaqRBAC::has_role(Origin::signed(origin), role_id, user_id),
+            PeaqRBAC::fetch_user_roles(Origin::signed(origin), user_id),
             Error::<Test>::EntityDoesNotExist
         );
     });

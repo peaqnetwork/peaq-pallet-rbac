@@ -68,7 +68,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn role_to_user_of)]
     pub type Role2UserStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, [u8; 32], Role2User<T::EntityId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, [u8; 32], Vec<Role2User<T::EntityId>>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn permission_of)]
@@ -96,7 +96,7 @@ pub mod pallet {
         RoleAssigned(T::AccountId, T::EntityId, T::EntityId),
         /// Event emitted when a role has been removed from user. [who, roleId, userId]
         RoleRemovedFromUser(T::AccountId, T::EntityId, T::EntityId),
-        HasRole(Role2User<T::EntityId>),
+        FetchedUserRoles(Vec<Role2User<T::EntityId>>),
 
         /// Event emitted when a permission has been added. [who, permissionId, permissionName]
         PermissionAdded(T::AccountId, T::EntityId, Vec<u8>),
@@ -222,17 +222,13 @@ pub mod pallet {
         }
 
         #[pallet::weight(1_000)]
-        pub fn has_role(
-            origin: OriginFor<T>,
-            role_id: T::EntityId,
-            user_id: T::EntityId,
-        ) -> DispatchResult {
+        pub fn fetch_user_roles(origin: OriginFor<T>, user_id: T::EntityId) -> DispatchResult {
             ensure_signed(origin)?;
-            let role_to_user = Self::check_has_role(role_id, user_id);
+            let role_to_user = Self::get_user_roles(user_id);
 
             match role_to_user {
                 Some(r2u) => {
-                    Self::deposit_event(Event::HasRole(r2u));
+                    Self::deposit_event(Event::FetchedUserRoles(r2u));
                 }
                 None => return Err(Error::<T>::EntityDoesNotExist.into()),
             };
@@ -359,12 +355,9 @@ pub mod pallet {
     }
     // implement the Rbac trait to satify the methods
     impl<T: Config> Rbac<T::AccountId, T::EntityId> for Pallet<T> {
-        fn check_has_role(
-            role_id: T::EntityId,
-            entity_id: T::EntityId,
-        ) -> Option<Role2User<T::EntityId>> {
+        fn get_user_roles(user_id: T::EntityId) -> Option<Vec<Role2User<T::EntityId>>> {
             // Generate key for integrity check
-            let key = Self::generate_relationship_key(&role_id, &entity_id, Tag::Role2User);
+            let key = Self::generate_key(&user_id, Tag::Role2User);
 
             if <Role2UserStore<T>>::contains_key(&key) {
                 return Some(Self::role_to_user_of(&key));
@@ -378,8 +371,7 @@ pub mod pallet {
         ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let role_key = Self::generate_key(&role_id, Tag::Role);
-            let role_2_user_key =
-                Self::generate_relationship_key(&role_id, &user_id, Tag::Role2User);
+            let role_2_user_key = Self::generate_key(&user_id, Tag::Role2User);
 
             // Check if role exists
             if !<RoleStore<T>>::contains_key(&role_key) {
@@ -394,17 +386,26 @@ pub mod pallet {
                 _ => (),
             }
 
-            // Check if role has already been assigned to user
-            if <Role2UserStore<T>>::contains_key(&role_2_user_key) {
-                return Err(EntityError::EntityAlreadyExist);
-            }
+            let mut roles: Vec<Role2User<T::EntityId>> = vec![];
 
             let new_assign = Role2User {
                 role: role_id,
                 user: user_id,
             };
 
-            <Role2UserStore<T>>::insert(&role_2_user_key, new_assign);
+            // Check if role has already been assigned to user
+            if <Role2UserStore<T>>::contains_key(&role_2_user_key) {
+                let mut val = <Role2UserStore<T>>::get(&role_2_user_key);
+
+                if val.contains(&new_assign) {
+                    return Err(EntityError::EntityAlreadyExist);
+                }
+
+                roles.append(&mut val);
+                roles.push(new_assign);
+            }
+
+            <Role2UserStore<T>>::insert(&role_2_user_key, roles);
 
             // Store the owner of the role assignment for further validation
             // when modification is requested
@@ -420,11 +421,21 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> Result<(), EntityError> {
             // Generate key for integrity check
-            let role_2_user_key =
-                Self::generate_relationship_key(&role_id, &user_id, Tag::Role2User);
+            let role_2_user_key = Self::generate_key(&user_id, Tag::Role2User);
 
             // Check if role exists
             if !<Role2UserStore<T>>::contains_key(&role_2_user_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            let new_assign = Role2User {
+                role: role_id,
+                user: user_id,
+            };
+
+            let mut val = <Role2UserStore<T>>::get(&role_2_user_key);
+
+            if !val.contains(&new_assign) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -436,11 +447,22 @@ pub mod pallet {
                 _ => (),
             }
 
-            <Role2UserStore<T>>::remove(&role_2_user_key);
+            match val.binary_search(&new_assign) {
+                Ok(i) => val.remove(i),
+                Err(_) => return Err(EntityError::EntityDoesNotExist),
+            };
 
-            // Remove the ownership of the role
-            let key = (&owner, &role_2_user_key).using_encoded(blake2_256);
-            <OwnerStore<T>>::remove((&owner, &key));
+            if val.len() < 1 {
+                <Role2UserStore<T>>::remove(&role_2_user_key);
+
+                // Remove the ownership of the role
+                let key = (&owner, &role_2_user_key).using_encoded(blake2_256);
+                <OwnerStore<T>>::remove((&owner, &key));
+            }
+
+            if !val.is_empty() {
+                <Role2UserStore<T>>::mutate(&role_2_user_key, |a| *a = val);
+            }
 
             Ok(())
         }
@@ -523,19 +545,6 @@ pub mod pallet {
         fn generate_key(entity: &T::EntityId, tag: Tag) -> [u8; 32] {
             let mut bytes_in_tag: Vec<u8> = tag.to_string().as_bytes().to_vec();
             let mut bytes_to_hash: Vec<u8> = entity.encode().as_slice().to_vec();
-            bytes_to_hash.append(&mut bytes_in_tag);
-            blake2_256(&bytes_to_hash[..])
-        }
-
-        fn generate_relationship_key(
-            entity: &T::EntityId,
-            related_to: &T::EntityId,
-            tag: Tag,
-        ) -> [u8; 32] {
-            let mut bytes_in_tag: Vec<u8> = tag.to_string().as_bytes().to_vec();
-            let mut bytes_to_hash: Vec<u8> = entity.encode().as_slice().to_vec();
-            let mut bytes_to_hash_relation: Vec<u8> = related_to.encode().as_slice().to_vec();
-            bytes_to_hash.append(&mut bytes_to_hash_relation);
             bytes_to_hash.append(&mut bytes_in_tag);
             blake2_256(&bytes_to_hash[..])
         }
