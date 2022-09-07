@@ -19,6 +19,7 @@ pub mod structs;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use codec::{Encode, MaxEncodedLen};
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use sp_io::hashing::blake2_256;
@@ -26,8 +27,8 @@ pub mod pallet {
     use sp_std::vec::Vec;
 
     use crate::{
-        rbac::{Entity, EntityError, Rbac, Tag},
-        structs::{Role, Role2User},
+        rbac::{EntityError, Permission, Rbac, Role, Tag},
+        structs::{Entity, Role2User},
     };
 
     #[pallet::pallet]
@@ -56,7 +57,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn role_of)]
     pub type RoleStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, [u8; 32], Role<T::EntityId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, [u8; 32], Entity<T::EntityId>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn owner_of)]
@@ -68,22 +69,30 @@ pub mod pallet {
     pub type RbacStore<T: Config> =
         StorageMap<_, Blake2_128Concat, [u8; 32], Role2User<T::EntityId>, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn permission_of)]
+    pub type PermissionStore<T: Config> =
+        StorageMap<_, Blake2_128Concat, [u8; 32], Entity<T::EntityId>, ValueQuery>;
+
     // Pallets use events to inform users when important changes are made.
     // https://docs.substrate.io/main-docs/build/events-errors/
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// Event emitted when a role has been added. [who, roleId, entityName]
+        /// Event emitted when a role has been added. [who, roleId, roleName]
         RoleAdded(T::AccountId, T::EntityId, Vec<u8>),
         RoleUpdated(T::AccountId, T::EntityId, Vec<u8>),
         /// Event emitted when a role has been added. [who, roleId]
         RoleRemoved(T::AccountId, T::EntityId),
-        RoleFetched(Role<T::EntityId>),
+        RoleFetched(Entity<T::EntityId>),
         /// Event emitted when a role has been assigned to user. [who, roleId, userId]
         RoleAssigned(T::AccountId, T::EntityId, T::EntityId),
         /// Event emitted when a role has been removed from user. [who, roleId, userId]
         RoleRemovedFromUser(T::AccountId, T::EntityId, T::EntityId),
         HasRole(Role2User<T::EntityId>),
+
+        /// Event emitted when a role has been added. [who, permissionId, permissionName]
+        PermissionAdded(T::AccountId, T::EntityId, Vec<u8>),
     }
 
     // Errors inform users that something went wrong.
@@ -129,7 +138,7 @@ pub mod pallet {
             // This fn returns an error if the extrinsic is not signed
             // https://docs.substrate.io/v3/runtime/origins
             ensure_signed(origin)?;
-            let role = Self::fetch(entity);
+            let role = Self::get_role(entity);
 
             match role {
                 Some(role) => {
@@ -145,7 +154,7 @@ pub mod pallet {
         #[pallet::weight(1_000)]
         pub fn add_role(
             origin: OriginFor<T>,
-            entity: T::EntityId,
+            role_id: T::EntityId,
             name: Vec<u8>,
         ) -> DispatchResult {
             // Check that an extrinsic was signed and get the signer
@@ -156,9 +165,9 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            match Self::create(&sender, entity, &name) {
+            match Self::create_role(&sender, role_id, &name) {
                 Ok(()) => {
-                    Self::deposit_event(Event::RoleAdded(sender, entity, name));
+                    Self::deposit_event(Event::RoleAdded(sender, role_id, name));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
@@ -170,7 +179,7 @@ pub mod pallet {
         #[pallet::weight(1_000)]
         pub fn update_role(
             origin: OriginFor<T>,
-            entity: T::EntityId,
+            role_id: T::EntityId,
             name: Vec<u8>,
         ) -> DispatchResult {
             // Check that an extrinsic was signed and get the signer
@@ -181,9 +190,9 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            match Self::update(&sender, entity, &name) {
+            match Self::update_existing_role(&sender, role_id, &name) {
                 Ok(()) => {
-                    Self::deposit_event(Event::RoleUpdated(sender, entity, name));
+                    Self::deposit_event(Event::RoleUpdated(sender, role_id, name));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
@@ -192,15 +201,15 @@ pub mod pallet {
         }
 
         #[pallet::weight(1_000)]
-        pub fn remove_role(origin: OriginFor<T>, entity: T::EntityId) -> DispatchResult {
+        pub fn remove_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
             // Check that an extrinsic was signed and get the signer
             // This fn returns an error if the extrinsic is not signed
             // https://docs.substrate.io/v3/runtime/origins
             let sender = ensure_signed(origin)?;
 
-            match Self::delete(&sender, entity) {
+            match Self::delete_role(&sender, role_id) {
                 Ok(()) => {
-                    Self::deposit_event(Event::RoleRemoved(sender, entity));
+                    Self::deposit_event(Event::RoleRemoved(sender, role_id));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
@@ -212,13 +221,13 @@ pub mod pallet {
         pub fn has_role(
             origin: OriginFor<T>,
             role_id: T::EntityId,
-            entity_id: T::EntityId,
+            user_id: T::EntityId,
         ) -> DispatchResult {
             // Check that an extrinsic was signed and get the signer
             // This fn returns an error if the extrinsic is not signed
             // https://docs.substrate.io/v3/runtime/origins
             ensure_signed(origin)?;
-            let role_to_user = Self::check_has_role(role_id, entity_id);
+            let role_to_user = Self::check_has_role(role_id, user_id);
 
             match role_to_user {
                 Some(r2u) => {
@@ -267,6 +276,31 @@ pub mod pallet {
             match Self::delete_role_to_user(&sender, role_id, user_id) {
                 Ok(()) => {
                     Self::deposit_event(Event::RoleRemovedFromUser(sender, role_id, user_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
+        /// create permission call
+        #[pallet::weight(1_000)]
+        pub fn add_permission(
+            origin: OriginFor<T>,
+            permission_id: T::EntityId,
+            name: Vec<u8>,
+        ) -> DispatchResult {
+            // Check that an extrinsic was signed and get the signer
+            // This fn returns an error if the extrinsic is not signed
+            // https://docs.substrate.io/v3/runtime/origins
+            let sender = ensure_signed(origin)?;
+
+            // Verify that the name len is 64 max
+            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+
+            match Self::create_permission(&sender, permission_id, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::PermissionAdded(sender, permission_id, name));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
@@ -361,22 +395,41 @@ pub mod pallet {
 
             Ok(())
         }
-    }
-
-    // implement the role Entity trait to satify the methods
-    impl<T: Config> Entity<T::AccountId, T::EntityId> for Pallet<T> {
         fn is_owner(owner: &T::AccountId, key: &[u8; 32]) -> Result<(), EntityError> {
             let key = (&owner, &key).using_encoded(blake2_256);
 
             // Check if role already exists
-            if !<OwnerStore<T>>::contains_key((&owner, &key)) {
+            if !<OwnerStore<T>>::contains_key((owner, key)) {
                 return Err(EntityError::EntityAuthorizationFailed);
             }
 
             Ok(())
         }
 
-        fn fetch(entity: T::EntityId) -> Option<Role<T::EntityId>> {
+        fn generate_key(entity: &T::EntityId, tag: Tag) -> [u8; 32] {
+            let mut bytes_in_tag: Vec<u8> = tag.to_string().as_bytes().to_vec();
+            let mut bytes_to_hash: Vec<u8> = entity.encode().as_slice().to_vec();
+            bytes_to_hash.append(&mut bytes_in_tag);
+            blake2_256(&bytes_to_hash[..])
+        }
+
+        fn generate_relationship_key(
+            entity: &T::EntityId,
+            related_to: &T::EntityId,
+            tag: Tag,
+        ) -> [u8; 32] {
+            let mut bytes_in_tag: Vec<u8> = tag.to_string().as_bytes().to_vec();
+            let mut bytes_to_hash: Vec<u8> = entity.encode().as_slice().to_vec();
+            let mut bytes_to_hash_relation: Vec<u8> = related_to.encode().as_slice().to_vec();
+            bytes_to_hash.append(&mut bytes_to_hash_relation);
+            bytes_to_hash.append(&mut bytes_in_tag);
+            blake2_256(&bytes_to_hash[..])
+        }
+    }
+
+    // implement the role Entity trait to satify the methods
+    impl<T: Config> Role<T::AccountId, T::EntityId> for Pallet<T> {
+        fn get_role(entity: T::EntityId) -> Option<Entity<T::EntityId>> {
             // Generate key for integrity check
             let key = Self::generate_key(&entity, Tag::Role);
 
@@ -386,7 +439,7 @@ pub mod pallet {
             None
         }
 
-        fn create(
+        fn create_role(
             owner: &T::AccountId,
             entity: T::EntityId,
             name: &[u8],
@@ -399,7 +452,7 @@ pub mod pallet {
                 return Err(EntityError::EntityAlreadyExist);
             }
 
-            let new_role = Role {
+            let new_role = Entity {
                 id: entity,
                 name: (&name).to_vec(),
             };
@@ -414,7 +467,7 @@ pub mod pallet {
             Ok(())
         }
 
-        fn update(
+        fn update_existing_role(
             owner: &T::AccountId,
             entity: T::EntityId,
             name: &[u8],
@@ -436,7 +489,7 @@ pub mod pallet {
             }
 
             // Get role
-            let role = Self::fetch(entity);
+            let role = Self::get_role(entity);
 
             match role {
                 Some(mut role) => {
@@ -449,7 +502,7 @@ pub mod pallet {
             }
         }
 
-        fn delete(owner: &T::AccountId, entity: T::EntityId) -> Result<(), EntityError> {
+        fn delete_role(owner: &T::AccountId, entity: T::EntityId) -> Result<(), EntityError> {
             // Generate key for integrity check
             let key = Self::generate_key(&entity, Tag::Role);
 
@@ -474,25 +527,35 @@ pub mod pallet {
 
             Ok(())
         }
+    }
 
-        fn generate_key(entity: &T::EntityId, tag: Tag) -> [u8; 32] {
-            let mut bytes_in_tag: Vec<u8> = tag.to_string().as_bytes().to_vec();
-            let mut bytes_to_hash: Vec<u8> = entity.encode().as_slice().to_vec();
-            bytes_to_hash.append(&mut bytes_in_tag);
-            blake2_256(&bytes_to_hash[..])
-        }
+    impl<T: Config> Permission<T::AccountId, T::EntityId> for Pallet<T> {
+        fn create_permission(
+            owner: &T::AccountId,
+            permission_id: T::EntityId,
+            name: &[u8],
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&permission_id, Tag::Permission);
 
-        fn generate_relationship_key(
-            entity: &T::EntityId,
-            related_to: &T::EntityId,
-            tag: Tag,
-        ) -> [u8; 32] {
-            let mut bytes_in_tag: Vec<u8> = tag.to_string().as_bytes().to_vec();
-            let mut bytes_to_hash: Vec<u8> = entity.encode().as_slice().to_vec();
-            let mut bytes_to_hash_relation: Vec<u8> = related_to.encode().as_slice().to_vec();
-            bytes_to_hash.append(&mut bytes_to_hash_relation);
-            bytes_to_hash.append(&mut bytes_in_tag);
-            blake2_256(&bytes_to_hash[..])
+            // Check if permission already exists
+            if <PermissionStore<T>>::contains_key(&key) {
+                return Err(EntityError::EntityAlreadyExist);
+            }
+
+            let new_permission = Entity {
+                id: permission_id,
+                name: (&name).to_vec(),
+            };
+
+            <PermissionStore<T>>::insert(&key, new_permission);
+
+            // Store the owner of the role for further validation
+            // when modification is requested
+            let key = (&owner, &key).using_encoded(blake2_256);
+            <OwnerStore<T>>::insert((&owner, &key), permission_id.clone());
+
+            Ok(())
         }
     }
 }

@@ -12,32 +12,45 @@ pub enum EntityError {
 }
 
 pub trait Rbac<AccountId, EntityId> {
-    fn check_has_role(role_id: EntityId, entity_id: EntityId) -> Option<Role2User<EntityId>>;
+    fn generate_key(entity: &EntityId, tag: Tag) -> [u8; 32];
+    fn generate_relationship_key(entity: &EntityId, related_to: &EntityId, tag: Tag) -> [u8; 32];
+    fn is_owner(owner: &AccountId, key: &[u8; 32]) -> Result<(), EntityError>;
+    fn check_has_role(role_id: EntityId, user_id: EntityId) -> Option<Role2User<EntityId>>;
     fn create_role_to_user(
         owner: &AccountId,
         role_id: EntityId,
-        user: EntityId,
+        user_id: EntityId,
     ) -> Result<(), EntityError>;
     fn delete_role_to_user(
         owner: &AccountId,
         role_id: EntityId,
-        user: EntityId,
+        user_id: EntityId,
     ) -> Result<(), EntityError>;
 }
 
-pub trait Entity<AccountId, EntityId> {
-    fn generate_key(entity: &EntityId, tag: Tag) -> [u8; 32];
-    fn generate_relationship_key(entity: &EntityId, related_to: &EntityId, tag: Tag) -> [u8; 32];
-    fn is_owner(owner: &AccountId, key: &[u8; 32]) -> Result<(), EntityError>;
-    fn fetch(entity: EntityId) -> Option<Role<EntityId>>;
-    fn create(owner: &AccountId, entity: EntityId, name: &[u8]) -> Result<(), EntityError>;
-    fn update(owner: &AccountId, entity: EntityId, name: &[u8]) -> Result<(), EntityError>;
-    fn delete(owner: &AccountId, entity: EntityId) -> Result<(), EntityError>;
+pub trait Role<AccountId, EntityId> {
+    fn get_role(entity: EntityId) -> Option<Entity<EntityId>>;
+    fn create_role(owner: &AccountId, role_id: EntityId, name: &[u8]) -> Result<(), EntityError>;
+    fn update_existing_role(
+        owner: &AccountId,
+        role_id: EntityId,
+        name: &[u8],
+    ) -> Result<(), EntityError>;
+    fn delete_role(owner: &AccountId, role_id: EntityId) -> Result<(), EntityError>;
+}
+
+pub trait Permission<AccountId, EntityId> {
+    fn create_permission(
+        owner: &AccountId,
+        role_id: EntityId,
+        name: &[u8],
+    ) -> Result<(), EntityError>;
 }
 
 pub enum Tag {
     Role,
     Role2User,
+    Permission,
 }
 
 impl Tag {
@@ -45,6 +58,7 @@ impl Tag {
         match self {
             Self::Role => "Role",
             Self::Role2User => "R2U",
+            Self::Permission => "Permission",
         }
     }
 }

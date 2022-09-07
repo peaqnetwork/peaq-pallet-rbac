@@ -6,7 +6,7 @@ use sp_std::vec::Vec;
 #[derive(
     Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug,
 )]
-pub struct Role<EntityId> {
+pub struct Entity<EntityId> {
     pub id: EntityId,
     pub name: Vec<u8>,
 }
@@ -18,3 +18,5 @@ pub struct Role2User<EntityId> {
     pub role: EntityId,
     pub user: EntityId,
 }
+
+pub struct Stores {}
