@@ -96,6 +96,8 @@ pub mod pallet {
         PermissionAdded(T::AccountId, T::EntityId, Vec<u8>),
         /// Event emitted when a permission has been updated. [who, permissionId, permissionName]
         PermissionUpdated(T::AccountId, T::EntityId, Vec<u8>),
+        /// Event emitted when a permission has been removed. [who, permissionId]
+        PermissionRemoved(T::AccountId, T::EntityId),
     }
 
     // Errors inform users that something went wrong.
@@ -305,6 +307,22 @@ pub mod pallet {
             match Self::update_existing_permission(&sender, permission_id, &name) {
                 Ok(()) => {
                     Self::deposit_event(Event::PermissionUpdated(sender, permission_id, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+        #[pallet::weight(1_000)]
+        pub fn remove_permission(
+            origin: OriginFor<T>,
+            permission_id: T::EntityId,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            match Self::delete_permission(&sender, permission_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::PermissionRemoved(sender, permission_id));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
@@ -603,6 +621,35 @@ pub mod pallet {
                 }
                 None => Err(EntityError::EntityDoesNotExist),
             }
+        }
+
+        fn delete_permission(
+            owner: &T::AccountId,
+            permission_id: T::EntityId,
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&permission_id, Tag::Permission);
+
+            // Check if permission exists
+            if !<PermissionStore<T>>::contains_key(&key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check ownership
+            let is_owner = Self::is_owner(owner, &key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            <PermissionStore<T>>::remove(&key);
+
+            // Remove the ownership of the permission
+            let key = (&owner, &key).using_encoded(blake2_256);
+            <OwnerStore<T>>::remove((&owner, &key));
+
+            Ok(())
         }
     }
 }

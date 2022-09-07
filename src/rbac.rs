@@ -51,6 +51,7 @@ pub trait Permission<AccountId, EntityId> {
         permission_id: EntityId,
         name: &[u8],
     ) -> Result<(), EntityError>;
+    fn delete_permission(owner: &AccountId, permission_id: EntityId) -> Result<(), EntityError>;
 }
 
 pub enum Tag {
