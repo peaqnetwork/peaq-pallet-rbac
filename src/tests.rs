@@ -310,3 +310,38 @@ fn update_permission_test() {
         );
     });
 }
+
+#[test]
+fn remove_permission_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let acct2 = "Iredia2";
+        let permission_id = *b"43464667364637663721676474666576";
+        let origin = account_key(acct);
+        let origin2 = account_key(acct2);
+        let name = b"CAN_DELETE";
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+
+        // Test for removal of permission not owned by origin
+        assert_noop!(
+            PeaqRBAC::remove_permission(Origin::signed(origin2), permission_id),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        assert_ok!(PeaqRBAC::remove_permission(
+            Origin::signed(origin),
+            permission_id,
+        ));
+
+        // Test for removal of non-existing permission
+        assert_noop!(
+            PeaqRBAC::remove_permission(Origin::signed(origin), permission_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
