@@ -345,3 +345,31 @@ fn remove_permission_test() {
         );
     });
 }
+
+#[test]
+fn fetch_permission_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let permission_id = *b"44464667364637663721676474666576";
+        let origin = account_key(acct);
+        let name = b"CAN_DELETE";
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::fetch_permission(
+            Origin::signed(origin),
+            permission_id,
+        ));
+
+        // Test for fetching non-existing permission
+        let permission_id = *b"44464667364637663721676474666577";
+        assert_noop!(
+            PeaqRBAC::fetch_permission(Origin::signed(origin), permission_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
