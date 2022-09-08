@@ -109,6 +109,7 @@ pub mod pallet {
         /// Event emitted when a permission has been removed from role. [who, permissionId, roleId]
         PermissionRemovedFromRole(T::AccountId, T::EntityId, T::EntityId),
         FetchedRolePermissions(Vec<Permission2Role<T::EntityId>>),
+        PermissionFetched(Entity<T::EntityId>),
     }
 
     // Errors inform users that something went wrong.
@@ -272,6 +273,24 @@ pub mod pallet {
                     Self::deposit_event(Event::RoleRemovedFromUser(sender, role_id, user_id));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_permission(
+            origin: OriginFor<T>,
+            permission_id: T::EntityId,
+        ) -> DispatchResult {
+            ensure_signed(origin)?;
+            let permission = Self::get_permission(permission_id);
+
+            match permission {
+                Some(p) => {
+                    Self::deposit_event(Event::PermissionFetched(p));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
             };
 
             Ok(())
