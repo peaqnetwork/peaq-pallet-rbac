@@ -7,7 +7,7 @@ fn add_role_test() {
         let acct = "Iredia";
         let role_id = *b"21676474666576474646673646376637";
         let origin = account_key(acct);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -22,7 +22,7 @@ fn add_role_test() {
         );
 
         // Test name more than 64 chars
-        let name = b"CAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDIT";
+        let name = b"ADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMIN";
         assert_noop!(
             PeaqRBAC::add_role(Origin::signed(origin), role_id, name.to_vec(),),
             Error::<Test>::EntityNameExceedMax64
@@ -38,7 +38,7 @@ fn update_role_test() {
         let role_id = *b"22676474666576474646673646376637";
         let origin = account_key(acct);
         let origin2 = account_key(acct2);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -76,7 +76,7 @@ fn remove_role_test() {
         let role_id = *b"23676474666576474646673646376637";
         let origin = account_key(acct);
         let origin2 = account_key(acct2);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -106,7 +106,7 @@ fn fetch_role_test() {
         let acct = "Iredia";
         let role_id = *b"23676474666576474646673646376637";
         let origin = account_key(acct);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -134,7 +134,7 @@ fn assign_role_to_user_test() {
         let user_id = *b"11676474666576474646673646376637";
         let origin = account_key(acct);
         let origin2 = account_key(acct2);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -178,7 +178,7 @@ fn remove_role_to_user_test() {
         let user_id = *b"12676474666576474646673646376637";
         let origin = account_key(acct);
         let origin2 = account_key(acct2);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -213,13 +213,13 @@ fn remove_role_to_user_test() {
 }
 
 #[test]
-fn has_role_test() {
+fn fetch_user_roles_test() {
     new_test_ext().execute_with(|| {
         let acct = "Iredia";
         let role_id = *b"26676474666576474646673646376637";
         let user_id = *b"14676474666576474646673646376637";
         let origin = account_key(acct);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -240,6 +240,35 @@ fn has_role_test() {
         assert_noop!(
             PeaqRBAC::fetch_user_roles(Origin::signed(origin), user_id),
             Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
+
+#[test]
+fn add_permission_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let permission_id = *b"41464667364637663721676474666576";
+        let origin = account_key(acct);
+        let name = b"CAN_DELETE";
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+
+        // Test for duplicate entry
+        assert_noop!(
+            PeaqRBAC::add_permission(Origin::signed(origin), permission_id, name.to_vec(),),
+            Error::<Test>::EntityAlreadyExist
+        );
+
+        // Test name more than 64 chars
+        let name = b"CAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETE";
+        assert_noop!(
+            PeaqRBAC::add_permission(Origin::signed(origin), permission_id, name.to_vec(),),
+            Error::<Test>::EntityNameExceedMax64
         );
     });
 }
