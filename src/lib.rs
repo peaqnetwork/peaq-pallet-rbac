@@ -108,6 +108,7 @@ pub mod pallet {
         PermissionAssigned(T::AccountId, T::EntityId, T::EntityId),
         /// Event emitted when a permission has been removed from role. [who, permissionId, roleId]
         PermissionRemovedFromRole(T::AccountId, T::EntityId, T::EntityId),
+        FetchedRolePermissions(Vec<Permission2Role<T::EntityId>>),
     }
 
     // Errors inform users that something went wrong.
@@ -319,6 +320,7 @@ pub mod pallet {
 
             Ok(())
         }
+
         #[pallet::weight(1_000)]
         pub fn remove_permission(
             origin: OriginFor<T>,
@@ -331,6 +333,24 @@ pub mod pallet {
                     Self::deposit_event(Event::PermissionRemoved(sender, permission_id));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_role_permissions(
+            origin: OriginFor<T>,
+            role_id: T::EntityId,
+        ) -> DispatchResult {
+            ensure_signed(origin)?;
+            let permission_to_role = Self::get_role_permissions(role_id);
+
+            match permission_to_role {
+                Some(p2r) => {
+                    Self::deposit_event(Event::FetchedRolePermissions(p2r));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
             };
 
             Ok(())
@@ -386,6 +406,15 @@ pub mod pallet {
 
             if <Role2UserStore<T>>::contains_key(&key) {
                 return Some(Self::role_to_user_of(&key));
+            }
+            None
+        }
+        fn get_role_permissions(role_id: T::EntityId) -> Option<Vec<Permission2Role<T::EntityId>>> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&role_id, Tag::Permission2Role);
+
+            if <Permission2RoleStore<T>>::contains_key(&key) {
+                return Some(Self::permission_to_role_of(&key));
             }
             None
         }

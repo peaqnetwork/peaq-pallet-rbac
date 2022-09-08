@@ -16,6 +16,7 @@ pub trait Rbac<AccountId, EntityId> {
     fn generate_key(entity: &EntityId, tag: Tag) -> [u8; 32];
     fn is_owner(owner: &AccountId, key: &[u8; 32]) -> Result<(), EntityError>;
     fn get_user_roles(user_id: EntityId) -> Option<Vec<Role2User<EntityId>>>;
+    fn get_role_permissions(role_id: EntityId) -> Option<Vec<Permission2Role<EntityId>>>;
     fn create_role_to_user(
         owner: &AccountId,
         role_id: EntityId,
