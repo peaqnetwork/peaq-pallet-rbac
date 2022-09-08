@@ -424,3 +424,53 @@ fn assign_permission_to_role_test() {
         );
     });
 }
+
+#[test]
+fn remove_permission_to_role_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let acct2 = "Iredia2";
+        let permission_id = *b"43464667364637663721676474666576";
+        let role_id = *b"13464667364637663721676474666576";
+        let origin = account_key(acct);
+        let origin2 = account_key(acct2);
+        let name = b"CAN_DELETE";
+        let role_name = b"ADMIN";
+
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id,
+            role_name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::assign_permission_to_role(
+            Origin::signed(origin),
+            permission_id,
+            role_id
+        ));
+
+        // Test for removing permission not owned by origin
+        assert_noop!(
+            PeaqRBAC::remove_permission_to_role(Origin::signed(origin2), permission_id, role_id),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        assert_ok!(PeaqRBAC::remove_permission_to_role(
+            Origin::signed(origin),
+            permission_id,
+            role_id,
+        ));
+
+        // Test for removing non-existing permission
+        assert_noop!(
+            PeaqRBAC::remove_permission_to_role(Origin::signed(origin), permission_id, role_id,),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
