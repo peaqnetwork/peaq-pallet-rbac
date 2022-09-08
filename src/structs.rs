@@ -26,5 +26,3 @@ pub struct Permission2Role<EntityId> {
     pub permission: EntityId,
     pub role: EntityId,
 }
-
-pub struct Stores {}
