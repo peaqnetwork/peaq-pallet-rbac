@@ -106,6 +106,8 @@ pub mod pallet {
         PermissionRemoved(T::AccountId, T::EntityId),
         /// Event emitted when a permission has been assigned to role. [who, permissionId, roleId]
         PermissionAssigned(T::AccountId, T::EntityId, T::EntityId),
+        /// Event emitted when a permission has been removed from role. [who, permissionId, roleId]
+        PermissionRemovedFromRole(T::AccountId, T::EntityId, T::EntityId),
     }
 
     // Errors inform users that something went wrong.
@@ -352,6 +354,29 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// remove permission to role relationship call
+        #[pallet::weight(1_000)]
+        pub fn remove_permission_to_role(
+            origin: OriginFor<T>,
+            permission_id: T::EntityId,
+            role_id: T::EntityId,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            match Self::delete_permission_to_role(&sender, permission_id, role_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::PermissionRemovedFromRole(
+                        sender,
+                        permission_id,
+                        role_id,
+                    ));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
     }
     // implement the Rbac trait to satify the methods
     impl<T: Config> Rbac<T::AccountId, T::EntityId> for Pallet<T> {
@@ -402,8 +427,8 @@ pub mod pallet {
                 }
 
                 roles.append(&mut val);
-                roles.push(new_assign);
             }
+            roles.push(new_assign);
 
             <Role2UserStore<T>>::insert(&role_2_user_key, roles);
 
@@ -518,8 +543,8 @@ pub mod pallet {
                 }
 
                 permissions.append(&mut val);
-                permissions.push(new_assign);
             }
+            permissions.push(new_assign);
 
             <Permission2RoleStore<T>>::insert(&permission_2_role_key, permissions);
 
@@ -527,6 +552,58 @@ pub mod pallet {
             // when modification is requested
             let key = (&owner, &permission_2_role_key).using_encoded(blake2_256);
             <OwnerStore<T>>::insert((&owner, &key), role_id.clone());
+
+            Ok(())
+        }
+
+        fn delete_permission_to_role(
+            owner: &T::AccountId,
+            permission_id: T::EntityId,
+            role_id: T::EntityId,
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let permission_2_role_key = Self::generate_key(&role_id, Tag::Permission2Role);
+
+            // Check if permission exists
+            if !<Permission2RoleStore<T>>::contains_key(&permission_2_role_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            let new_assign = Permission2Role {
+                permission: permission_id,
+                role: role_id,
+            };
+
+            let mut val = <Permission2RoleStore<T>>::get(&permission_2_role_key);
+
+            if !val.contains(&new_assign) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check ownership
+            let is_owner = Self::is_owner(owner, &permission_2_role_key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            match val.binary_search(&new_assign) {
+                Ok(i) => val.remove(i),
+                Err(_) => return Err(EntityError::EntityDoesNotExist),
+            };
+
+            if val.len() < 1 {
+                <Permission2RoleStore<T>>::remove(&permission_2_role_key);
+
+                // Remove the ownership of the permission
+                let key = (&owner, &permission_2_role_key).using_encoded(blake2_256);
+                <OwnerStore<T>>::remove((&owner, &key));
+            }
+
+            if !val.is_empty() {
+                <Permission2RoleStore<T>>::mutate(&permission_2_role_key, |a| *a = val);
+            }
 
             Ok(())
         }

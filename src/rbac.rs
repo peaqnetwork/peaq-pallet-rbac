@@ -31,6 +31,11 @@ pub trait Rbac<AccountId, EntityId> {
         permission_id: EntityId,
         role_id: EntityId,
     ) -> Result<(), EntityError>;
+    fn delete_permission_to_role(
+        owner: &AccountId,
+        permission_id: EntityId,
+        role_id: EntityId,
+    ) -> Result<(), EntityError>;
 }
 
 pub trait Role<AccountId, EntityId> {
