@@ -7,7 +7,7 @@ fn add_role_test() {
         let acct = "Iredia";
         let role_id = *b"21676474666576474646673646376637";
         let origin = account_key(acct);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -22,7 +22,7 @@ fn add_role_test() {
         );
 
         // Test name more than 64 chars
-        let name = b"CAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDITCAN_EDIT";
+        let name = b"ADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMIN";
         assert_noop!(
             PeaqRBAC::add_role(Origin::signed(origin), role_id, name.to_vec(),),
             Error::<Test>::EntityNameExceedMax64
@@ -38,7 +38,7 @@ fn update_role_test() {
         let role_id = *b"22676474666576474646673646376637";
         let origin = account_key(acct);
         let origin2 = account_key(acct2);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -76,7 +76,7 @@ fn remove_role_test() {
         let role_id = *b"23676474666576474646673646376637";
         let origin = account_key(acct);
         let origin2 = account_key(acct2);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -106,7 +106,7 @@ fn fetch_role_test() {
         let acct = "Iredia";
         let role_id = *b"23676474666576474646673646376637";
         let origin = account_key(acct);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -134,7 +134,7 @@ fn assign_role_to_user_test() {
         let user_id = *b"11676474666576474646673646376637";
         let origin = account_key(acct);
         let origin2 = account_key(acct2);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -178,7 +178,7 @@ fn remove_role_to_user_test() {
         let user_id = *b"12676474666576474646673646376637";
         let origin = account_key(acct);
         let origin2 = account_key(acct2);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -213,13 +213,13 @@ fn remove_role_to_user_test() {
 }
 
 #[test]
-fn has_role_test() {
+fn fetch_user_roles_test() {
     new_test_ext().execute_with(|| {
         let acct = "Iredia";
         let role_id = *b"26676474666576474646673646376637";
         let user_id = *b"14676474666576474646673646376637";
         let origin = account_key(acct);
-        let name = b"CAN_EDIT";
+        let name = b"ADMIN";
 
         assert_ok!(PeaqRBAC::add_role(
             Origin::signed(origin),
@@ -233,12 +233,285 @@ fn has_role_test() {
             user_id
         ));
 
-        assert_ok!(PeaqRBAC::has_role(Origin::signed(origin), role_id, user_id));
+        assert_ok!(PeaqRBAC::fetch_user_roles(Origin::signed(origin), user_id));
 
         // Test for non-existing role to user relationship
-        let role_id = *b"26676474666576474646673646376638";
+        let user_id = *b"15676474666576474646673646376637";
         assert_noop!(
-            PeaqRBAC::has_role(Origin::signed(origin), role_id, user_id),
+            PeaqRBAC::fetch_user_roles(Origin::signed(origin), user_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
+
+#[test]
+fn add_permission_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let permission_id = *b"41464667364637663721676474666576";
+        let origin = account_key(acct);
+        let name = b"CAN_DELETE";
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+
+        // Test for duplicate entry
+        assert_noop!(
+            PeaqRBAC::add_permission(Origin::signed(origin), permission_id, name.to_vec(),),
+            Error::<Test>::EntityAlreadyExist
+        );
+
+        // Test name more than 64 chars
+        let name = b"CAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETE";
+        assert_noop!(
+            PeaqRBAC::add_permission(Origin::signed(origin), permission_id, name.to_vec(),),
+            Error::<Test>::EntityNameExceedMax64
+        );
+    });
+}
+
+#[test]
+fn update_permission_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let acct2 = "Iredia2";
+        let permission_id = *b"42464667364637663721676474666576";
+        let origin = account_key(acct);
+        let origin2 = account_key(acct2);
+        let name = b"CAN_DELETE";
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+
+        // Test for updating permission not owned by origin
+        let name = b"CAN_UPDATE";
+        assert_noop!(
+            PeaqRBAC::update_permission(Origin::signed(origin2), permission_id, name.to_vec()),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        assert_ok!(PeaqRBAC::update_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec()
+        ));
+
+        // Test for removal of non-existing permission
+        let permission_id = *b"42464667364637663721676474666577";
+        assert_noop!(
+            PeaqRBAC::update_permission(Origin::signed(origin), permission_id, name.to_vec()),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
+
+#[test]
+fn remove_permission_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let acct2 = "Iredia2";
+        let permission_id = *b"43464667364637663721676474666576";
+        let origin = account_key(acct);
+        let origin2 = account_key(acct2);
+        let name = b"CAN_DELETE";
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+
+        // Test for removal of permission not owned by origin
+        assert_noop!(
+            PeaqRBAC::remove_permission(Origin::signed(origin2), permission_id),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        assert_ok!(PeaqRBAC::remove_permission(
+            Origin::signed(origin),
+            permission_id,
+        ));
+
+        // Test for removal of non-existing permission
+        assert_noop!(
+            PeaqRBAC::remove_permission(Origin::signed(origin), permission_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
+
+#[test]
+fn fetch_permission_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let permission_id = *b"44464667364637663721676474666576";
+        let origin = account_key(acct);
+        let name = b"CAN_DELETE";
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::fetch_permission(
+            Origin::signed(origin),
+            permission_id,
+        ));
+
+        // Test for fetching non-existing permission
+        let permission_id = *b"44464667364637663721676474666577";
+        assert_noop!(
+            PeaqRBAC::fetch_permission(Origin::signed(origin), permission_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
+
+#[test]
+fn assign_permission_to_role_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let acct2 = "Iredia2";
+        let permission_id = *b"43464667364637663721676474666576";
+        let role_id = *b"13464667364637663721676474666576";
+        let origin = account_key(acct);
+        let origin2 = account_key(acct2);
+        let name = b"CAN_DELETE";
+        let role_name = b"ADMIN";
+
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id,
+            role_name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+
+        // Test for assigning permission not owned by origin
+        assert_noop!(
+            PeaqRBAC::assign_permission_to_role(Origin::signed(origin2), permission_id, role_id),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        assert_ok!(PeaqRBAC::assign_permission_to_role(
+            Origin::signed(origin),
+            permission_id,
+            role_id
+        ));
+
+        // Test for duplicate entry
+        assert_noop!(
+            PeaqRBAC::assign_permission_to_role(Origin::signed(origin), permission_id, role_id),
+            Error::<Test>::EntityAlreadyExist
+        );
+
+        // Test for assigning non-existing permission
+        let permission_id = *b"45464667364637663721676474666576";
+        assert_noop!(
+            PeaqRBAC::assign_permission_to_role(Origin::signed(origin), permission_id, role_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
+
+#[test]
+fn remove_permission_to_role_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let acct2 = "Iredia2";
+        let permission_id = *b"44464667364637663721676474666576";
+        let role_id = *b"14464667364637663721676474666576";
+        let origin = account_key(acct);
+        let origin2 = account_key(acct2);
+        let name = b"CAN_DELETE";
+        let role_name = b"ADMIN";
+
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id,
+            role_name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::assign_permission_to_role(
+            Origin::signed(origin),
+            permission_id,
+            role_id
+        ));
+
+        // Test for removing permission not owned by origin
+        assert_noop!(
+            PeaqRBAC::remove_permission_to_role(Origin::signed(origin2), permission_id, role_id),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        assert_ok!(PeaqRBAC::remove_permission_to_role(
+            Origin::signed(origin),
+            permission_id,
+            role_id,
+        ));
+
+        // Test for removing non-existing permission
+        assert_noop!(
+            PeaqRBAC::remove_permission_to_role(Origin::signed(origin), permission_id, role_id,),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
+
+#[test]
+fn fetch_role_permissions_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let permission_id = *b"45464667364637663721676474666576";
+        let role_id = *b"15464667364637663721676474666576";
+        let origin = account_key(acct);
+        let name = b"CAN_DELETE";
+        let role_name = b"ADMIN";
+
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id,
+            role_name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::assign_permission_to_role(
+            Origin::signed(origin),
+            permission_id,
+            role_id
+        ));
+
+        assert_ok!(PeaqRBAC::fetch_role_permissions(
+            Origin::signed(origin),
+            role_id
+        ));
+
+        // Test for non-existing permission to role relationship
+        let role_id = *b"15464667364637663721676474666577";
+        assert_noop!(
+            PeaqRBAC::fetch_role_permissions(Origin::signed(origin), role_id),
             Error::<Test>::EntityDoesNotExist
         );
     });
