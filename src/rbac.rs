@@ -27,6 +27,11 @@ pub trait Rbac<AccountId, EntityId> {
         role_id: EntityId,
         user_id: EntityId,
     ) -> Result<(), EntityError>;
+    fn create_role_to_group(
+        owner: &AccountId,
+        role_id: EntityId,
+        group_id: EntityId,
+    ) -> Result<(), EntityError>;
     fn create_permission_to_role(
         owner: &AccountId,
         permission_id: EntityId,
@@ -79,6 +84,7 @@ pub enum Tag {
     Role,
     Group,
     Role2User,
+    Role2Group,
     Permission,
     Permission2Role,
 }
@@ -89,6 +95,7 @@ impl Tag {
             Self::Role => "Role",
             Self::Group => "Group",
             Self::Role2User => "R2U",
+            Self::Role2Group => "R2G",
             Self::Permission => "Permission",
             Self::Permission2Role => "P2R",
         }

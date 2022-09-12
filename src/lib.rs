@@ -28,6 +28,7 @@ pub mod pallet {
     use sp_std::{vec, vec::Vec};
 
     use crate::rbac::Group;
+    use crate::structs::Role2Group;
     use crate::{
         rbac::{EntityError, Permission, Rbac, Role, Tag},
         structs::{Entity, Permission2Role, Role2User},
@@ -85,6 +86,11 @@ pub mod pallet {
     #[pallet::getter(fn group_of)]
     pub type GroupStore<T: Config> =
         StorageMap<_, Blake2_128Concat, [u8; 32], Entity<T::EntityId>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn role_to_group_of)]
+    pub type Role2GroupStore<T: Config> =
+        StorageMap<_, Blake2_128Concat, [u8; 32], Vec<Role2Group<T::EntityId>>, ValueQuery>;
 
     // Pallets use events to inform users when important changes are made.
     // https://docs.substrate.io/main-docs/build/events-errors/
@@ -471,6 +477,25 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// assign a role to group call
+        #[pallet::weight(1_000)]
+        pub fn assign_role_to_group(
+            origin: OriginFor<T>,
+            role_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            match Self::create_role_to_group(&sender, role_id, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleAssigned(sender, role_id, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
     }
     // implement the Rbac trait to satify the methods
     impl<T: Config> Rbac<T::AccountId, T::EntityId> for Pallet<T> {
@@ -591,6 +616,57 @@ pub mod pallet {
             if !val.is_empty() {
                 <Role2UserStore<T>>::mutate(&role_2_user_key, |a| *a = val);
             }
+
+            Ok(())
+        }
+
+        fn create_role_to_group(
+            owner: &T::AccountId,
+            role_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let role_key = Self::generate_key(&role_id, Tag::Role);
+            let role_2_group_key = Self::generate_key(&group_id, Tag::Role2Group);
+
+            // Check if role exists
+            if !<RoleStore<T>>::contains_key(&role_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check role ownership
+            let is_owner = Self::is_owner(owner, &role_key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            let mut roles: Vec<Role2Group<T::EntityId>> = vec![];
+
+            let new_assign = Role2Group {
+                role: role_id,
+                group: group_id,
+            };
+
+            // Check if role has already been assigned to group
+            if <Role2GroupStore<T>>::contains_key(&role_2_group_key) {
+                let mut val = <Role2GroupStore<T>>::get(&role_2_group_key);
+
+                if val.contains(&new_assign) {
+                    return Err(EntityError::EntityAlreadyExist);
+                }
+
+                roles.append(&mut val);
+            }
+            roles.push(new_assign);
+
+            <Role2GroupStore<T>>::insert(&role_2_group_key, roles);
+
+            // Store the owner of the role assignment for further validation
+            // when modification is requested
+            let key = (&owner, &role_2_group_key).using_encoded(blake2_256);
+            <OwnerStore<T>>::insert((&owner, &key), group_id.clone());
 
             Ok(())
         }

@@ -22,6 +22,14 @@ pub struct Role2User<EntityId> {
 #[derive(
     Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug,
 )]
+pub struct Role2Group<EntityId> {
+    pub role: EntityId,
+    pub group: EntityId,
+}
+
+#[derive(
+    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug,
+)]
 pub struct Permission2Role<EntityId> {
     pub permission: EntityId,
     pub role: EntityId,
