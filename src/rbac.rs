@@ -66,7 +66,13 @@ pub trait Permission<AccountId, EntityId> {
 }
 
 pub trait Group<AccountId, EntityId> {
+    fn get_group(group_id: EntityId) -> Option<Entity<EntityId>>;
     fn create_group(owner: &AccountId, group_id: EntityId, name: &[u8]) -> Result<(), EntityError>;
+    fn update_existing_group(
+        owner: &AccountId,
+        group_id: EntityId,
+        name: &[u8],
+    ) -> Result<(), EntityError>;
 }
 
 pub enum Tag {

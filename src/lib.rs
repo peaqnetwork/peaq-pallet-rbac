@@ -116,6 +116,11 @@ pub mod pallet {
         PermissionRemovedFromRole(T::AccountId, T::EntityId, T::EntityId),
         FetchedRolePermissions(Vec<Permission2Role<T::EntityId>>),
         PermissionFetched(Entity<T::EntityId>),
+
+        /// Event emitted when a group has been added. [who, groupId, roleName]
+        GroupAdded(T::AccountId, T::EntityId, Vec<u8>),
+        /// Event emitted when a group has been updated. [who, groupId, roleName]
+        GroupUpdated(T::AccountId, T::EntityId, Vec<u8>),
     }
 
     // Errors inform users that something went wrong.
@@ -437,7 +442,29 @@ pub mod pallet {
 
             match Self::create_group(&sender, group_id, &name) {
                 Ok(()) => {
-                    Self::deposit_event(Event::PermissionAdded(sender, group_id, name));
+                    Self::deposit_event(Event::GroupAdded(sender, group_id, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
+        /// update group call
+        #[pallet::weight(1_000)]
+        pub fn update_group(
+            origin: OriginFor<T>,
+            group_id: T::EntityId,
+            name: Vec<u8>,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            // Verify that the name len is 64 max
+            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+
+            match Self::update_existing_group(&sender, group_id, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::GroupUpdated(sender, group_id, name));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
@@ -811,7 +838,7 @@ pub mod pallet {
             let key = Self::generate_key(&permission_id, Tag::Permission);
 
             if <PermissionStore<T>>::contains_key(&key) {
-                return Some(Self::role_of(&key));
+                return Some(Self::permission_of(&key));
             }
             None
         }
@@ -908,6 +935,15 @@ pub mod pallet {
     }
 
     impl<T: Config> Group<T::AccountId, T::EntityId> for Pallet<T> {
+        fn get_group(group_id: T::EntityId) -> Option<Entity<T::EntityId>> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&group_id, Tag::Group);
+
+            if <GroupStore<T>>::contains_key(&key) {
+                return Some(Self::group_of(&key));
+            }
+            None
+        }
         fn create_group(
             owner: &T::AccountId,
             group_id: T::EntityId,
@@ -934,6 +970,41 @@ pub mod pallet {
             <OwnerStore<T>>::insert((&owner, &key), group_id.clone());
 
             Ok(())
+        }
+
+        fn update_existing_group(
+            owner: &T::AccountId,
+            group_id: T::EntityId,
+            name: &[u8],
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&group_id, Tag::Group);
+
+            // Check if group exists
+            if !<GroupStore<T>>::contains_key(&key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check ownership
+            let is_owner = Self::is_owner(owner, &key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            // Get group
+            let group = Self::get_group(group_id);
+
+            match group {
+                Some(mut g) => {
+                    g.name = (&name).to_vec();
+
+                    <GroupStore<T>>::mutate(&key, |a| *a = g);
+                    Ok(())
+                }
+                None => Err(EntityError::EntityDoesNotExist),
+            }
         }
     }
 }
