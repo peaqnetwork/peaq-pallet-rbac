@@ -65,8 +65,13 @@ pub trait Permission<AccountId, EntityId> {
     fn delete_permission(owner: &AccountId, permission_id: EntityId) -> Result<(), EntityError>;
 }
 
+pub trait Group<AccountId, EntityId> {
+    fn create_group(owner: &AccountId, group_id: EntityId, name: &[u8]) -> Result<(), EntityError>;
+}
+
 pub enum Tag {
     Role,
+    Group,
     Role2User,
     Permission,
     Permission2Role,
@@ -76,6 +81,7 @@ impl Tag {
     pub fn to_string(&self) -> &str {
         match self {
             Self::Role => "Role",
+            Self::Group => "Group",
             Self::Role2User => "R2U",
             Self::Permission => "Permission",
             Self::Permission2Role => "P2R",

@@ -27,6 +27,7 @@ pub mod pallet {
     use sp_std::fmt::Debug;
     use sp_std::{vec, vec::Vec};
 
+    use crate::rbac::Group;
     use crate::{
         rbac::{EntityError, Permission, Rbac, Role, Tag},
         structs::{Entity, Permission2Role, Role2User},
@@ -79,6 +80,11 @@ pub mod pallet {
     #[pallet::getter(fn permission_to_role_of)]
     pub type Permission2RoleStore<T: Config> =
         StorageMap<_, Blake2_128Concat, [u8; 32], Vec<Permission2Role<T::EntityId>>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn group_of)]
+    pub type GroupStore<T: Config> =
+        StorageMap<_, Blake2_128Concat, [u8; 32], Entity<T::EntityId>, ValueQuery>;
 
     // Pallets use events to inform users when important changes are made.
     // https://docs.substrate.io/main-docs/build/events-errors/
@@ -410,6 +416,28 @@ pub mod pallet {
                         permission_id,
                         role_id,
                     ));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
+        /// create group call
+        #[pallet::weight(1_000)]
+        pub fn add_group(
+            origin: OriginFor<T>,
+            group_id: T::EntityId,
+            name: Vec<u8>,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            // Verify that the name len is 64 max
+            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+
+            match Self::create_group(&sender, group_id, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::PermissionAdded(sender, group_id, name));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
@@ -808,7 +836,7 @@ pub mod pallet {
 
             <PermissionStore<T>>::insert(&key, new_permission);
 
-            // Store the owner of the role for further validation
+            // Store the owner of the permission for further validation
             // when modification is requested
             let key = (&owner, &key).using_encoded(blake2_256);
             <OwnerStore<T>>::insert((&owner, &key), permission_id.clone());
@@ -874,6 +902,36 @@ pub mod pallet {
             // Remove the ownership of the permission
             let key = (&owner, &key).using_encoded(blake2_256);
             <OwnerStore<T>>::remove((&owner, &key));
+
+            Ok(())
+        }
+    }
+
+    impl<T: Config> Group<T::AccountId, T::EntityId> for Pallet<T> {
+        fn create_group(
+            owner: &T::AccountId,
+            group_id: T::EntityId,
+            name: &[u8],
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&group_id, Tag::Group);
+
+            // Check if group already exists
+            if <GroupStore<T>>::contains_key(&key) {
+                return Err(EntityError::EntityAlreadyExist);
+            }
+
+            let new_group = Entity {
+                id: group_id,
+                name: (&name).to_vec(),
+            };
+
+            <GroupStore<T>>::insert(&key, new_group);
+
+            // Store the owner of the group for further validation
+            // when modification is requested
+            let key = (&owner, &key).using_encoded(blake2_256);
+            <OwnerStore<T>>::insert((&owner, &key), group_id.clone());
 
             Ok(())
         }
