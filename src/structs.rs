@@ -9,6 +9,7 @@ use sp_std::vec::Vec;
 pub struct Entity<EntityId> {
     pub id: EntityId,
     pub name: Vec<u8>,
+    pub enabled: bool,
 }
 
 #[derive(

@@ -85,6 +85,7 @@ pub trait Group<AccountId, EntityId> {
         group_id: EntityId,
         name: &[u8],
     ) -> Result<(), EntityError>;
+    fn disable_existing_group(owner: &AccountId, group_id: EntityId) -> Result<(), EntityError>;
 }
 
 pub enum Tag {
