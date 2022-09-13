@@ -23,7 +23,7 @@ pub trait Rbac<AccountId, EntityId> {
         role_id: EntityId,
         user_id: EntityId,
     ) -> Result<(), EntityError>;
-    fn delete_role_to_user(
+    fn revoke_role_to_user(
         owner: &AccountId,
         role_id: EntityId,
         user_id: EntityId,
@@ -33,7 +33,7 @@ pub trait Rbac<AccountId, EntityId> {
         role_id: EntityId,
         group_id: EntityId,
     ) -> Result<(), EntityError>;
-    fn remove_role_to_group(
+    fn revoke_role_to_group(
         owner: &AccountId,
         role_id: EntityId,
         group_id: EntityId,
@@ -43,7 +43,7 @@ pub trait Rbac<AccountId, EntityId> {
         permission_id: EntityId,
         role_id: EntityId,
     ) -> Result<(), EntityError>;
-    fn delete_permission_to_role(
+    fn revoke_permission_to_role(
         owner: &AccountId,
         permission_id: EntityId,
         role_id: EntityId,

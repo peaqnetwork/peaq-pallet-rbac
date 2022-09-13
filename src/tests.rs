@@ -194,11 +194,11 @@ fn unassign_role_to_user_test() {
 
         // Test for removing role not owned by origin
         assert_noop!(
-            PeaqRBAC::remove_role_to_user(Origin::signed(origin2), role_id, user_id),
+            PeaqRBAC::unassign_role_to_user(Origin::signed(origin2), role_id, user_id),
             Error::<Test>::EntityAuthorizationFailed
         );
 
-        assert_ok!(PeaqRBAC::remove_role_to_user(
+        assert_ok!(PeaqRBAC::unassign_role_to_user(
             Origin::signed(origin),
             role_id,
             user_id
@@ -206,7 +206,7 @@ fn unassign_role_to_user_test() {
 
         // Test for removing non-existing role
         assert_noop!(
-            PeaqRBAC::remove_role_to_user(Origin::signed(origin), role_id, user_id),
+            PeaqRBAC::unassign_role_to_user(Origin::signed(origin), role_id, user_id),
             Error::<Test>::EntityDoesNotExist
         );
     });
@@ -426,7 +426,7 @@ fn assign_permission_to_role_test() {
 }
 
 #[test]
-fn remove_permission_to_role_test() {
+fn unassign_permission_to_role_test() {
     new_test_ext().execute_with(|| {
         let acct = "Iredia";
         let acct2 = "Iredia2";
@@ -457,11 +457,11 @@ fn remove_permission_to_role_test() {
 
         // Test for removing permission not owned by origin
         assert_noop!(
-            PeaqRBAC::remove_permission_to_role(Origin::signed(origin2), permission_id, role_id),
+            PeaqRBAC::unassign_permission_to_role(Origin::signed(origin2), permission_id, role_id),
             Error::<Test>::EntityAuthorizationFailed
         );
 
-        assert_ok!(PeaqRBAC::remove_permission_to_role(
+        assert_ok!(PeaqRBAC::unassign_permission_to_role(
             Origin::signed(origin),
             permission_id,
             role_id,
@@ -469,7 +469,7 @@ fn remove_permission_to_role_test() {
 
         // Test for removing non-existing permission
         assert_noop!(
-            PeaqRBAC::remove_permission_to_role(Origin::signed(origin), permission_id, role_id,),
+            PeaqRBAC::unassign_permission_to_role(Origin::signed(origin), permission_id, role_id,),
             Error::<Test>::EntityDoesNotExist
         );
     });

@@ -108,7 +108,7 @@ pub mod pallet {
         RoleAssignedToUser(T::AccountId, T::EntityId, T::EntityId),
         /// Event emitted when a role has been unassigned to user. [who, roleId, userId]
         RoleUnassignedToUser(T::AccountId, T::EntityId, T::EntityId),
-        /// Event emitted when a role has been removed from group. [who, roleId, groupId]
+        /// Event emitted when a role has been assigned to group. [who, roleId, groupId]
         RoleAssignedToGroup(T::AccountId, T::EntityId, T::EntityId),
         /// Event emitted when a role has been unassigned from group. [who, roleId, groupId]
         RoleUnassignedToGroup(T::AccountId, T::EntityId, T::EntityId),
@@ -119,12 +119,12 @@ pub mod pallet {
         PermissionAdded(T::AccountId, T::EntityId, Vec<u8>),
         /// Event emitted when a permission has been updated. [who, permissionId, permissionName]
         PermissionUpdated(T::AccountId, T::EntityId, Vec<u8>),
-        /// Event emitted when a permission has been removed. [who, permissionId]
-        PermissionRemoved(T::AccountId, T::EntityId),
+        /// Event emitted when a permission has been disabled. [who, permissionId]
+        PermissionDisabled(T::AccountId, T::EntityId),
         /// Event emitted when a permission has been assigned to role. [who, permissionId, roleId]
         PermissionAssigned(T::AccountId, T::EntityId, T::EntityId),
-        /// Event emitted when a permission has been removed from role. [who, permissionId, roleId]
-        PermissionRemovedFromRole(T::AccountId, T::EntityId, T::EntityId),
+        /// Event emitted when a permission has been unassigned to role. [who, permissionId, roleId]
+        PermissionUnassignedToRole(T::AccountId, T::EntityId, T::EntityId),
         FetchedRolePermissions(Vec<Permission2Role<T::EntityId>>),
         PermissionFetched(Entity<T::EntityId>),
 
@@ -285,16 +285,16 @@ pub mod pallet {
             Ok(())
         }
 
-        /// remove role to user relationship call
+        /// unassign role to user relationship call
         #[pallet::weight(1_000)]
-        pub fn remove_role_to_user(
+        pub fn unassign_role_to_user(
             origin: OriginFor<T>,
             role_id: T::EntityId,
             user_id: T::EntityId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            match Self::delete_role_to_user(&sender, role_id, user_id) {
+            match Self::revoke_role_to_user(&sender, role_id, user_id) {
                 Ok(()) => {
                     Self::deposit_event(Event::RoleUnassignedToUser(sender, role_id, user_id));
                 }
@@ -375,7 +375,7 @@ pub mod pallet {
 
             match Self::disable_existing_permission(&sender, permission_id) {
                 Ok(()) => {
-                    Self::deposit_event(Event::PermissionRemoved(sender, permission_id));
+                    Self::deposit_event(Event::PermissionDisabled(sender, permission_id));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
@@ -420,18 +420,18 @@ pub mod pallet {
             Ok(())
         }
 
-        /// remove permission to role relationship call
+        /// unassign permission to role relationship call
         #[pallet::weight(1_000)]
-        pub fn remove_permission_to_role(
+        pub fn unassign_permission_to_role(
             origin: OriginFor<T>,
             permission_id: T::EntityId,
             role_id: T::EntityId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            match Self::delete_permission_to_role(&sender, permission_id, role_id) {
+            match Self::revoke_permission_to_role(&sender, permission_id, role_id) {
                 Ok(()) => {
-                    Self::deposit_event(Event::PermissionRemovedFromRole(
+                    Self::deposit_event(Event::PermissionUnassignedToRole(
                         sender,
                         permission_id,
                         role_id,
@@ -554,7 +554,7 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            match Self::remove_role_to_group(&sender, role_id, group_id) {
+            match Self::revoke_role_to_group(&sender, role_id, group_id) {
                 Ok(()) => {
                     Self::deposit_event(Event::RoleUnassignedToGroup(sender, role_id, group_id));
                 }
@@ -660,7 +660,7 @@ pub mod pallet {
             Ok(())
         }
 
-        fn delete_role_to_user(
+        fn revoke_role_to_user(
             owner: &T::AccountId,
             role_id: T::EntityId,
             user_id: T::EntityId,
@@ -763,7 +763,7 @@ pub mod pallet {
             Ok(())
         }
 
-        fn remove_role_to_group(
+        fn revoke_role_to_group(
             owner: &T::AccountId,
             role_id: T::EntityId,
             group_id: T::EntityId,
@@ -879,7 +879,7 @@ pub mod pallet {
             Ok(())
         }
 
-        fn delete_permission_to_role(
+        fn revoke_permission_to_role(
             owner: &T::AccountId,
             permission_id: T::EntityId,
             role_id: T::EntityId,
