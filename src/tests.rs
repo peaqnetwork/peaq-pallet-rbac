@@ -399,6 +399,30 @@ fn fetch_permission_test() {
 }
 
 #[test]
+fn fetch_permissions_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let permission_id = *b"44464667364637663721676474666576";
+        let permission_id2 = *b"44464667364637663721676474666570";
+        let origin = account_key(acct);
+        let name = b"CAN_DELETE";
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id2,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::fetch_permissions(Origin::signed(origin),));
+    });
+}
+
+#[test]
 fn assign_permission_to_role_test() {
     new_test_ext().execute_with(|| {
         let acct = "Iredia";
