@@ -521,7 +521,7 @@ fn fetch_role_permissions_test() {
 fn add_group_test() {
     new_test_ext().execute_with(|| {
         let acct = "Iredia";
-        let group_id = *b"17663776474646673646665421676476";
+        let group_id = *b"11663776474646673646665421676476";
         let origin = account_key(acct);
         let name = b"Users";
 
@@ -542,6 +542,44 @@ fn add_group_test() {
         assert_noop!(
             PeaqRBAC::add_group(Origin::signed(origin), group_id, name.to_vec(),),
             Error::<Test>::EntityNameExceedMax64
+        );
+    });
+}
+
+#[test]
+fn update_group_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let acct2 = "Iredia2";
+        let group_id = *b"12663776474646673646665421676476";
+        let origin = account_key(acct);
+        let origin2 = account_key(acct2);
+        let name = b"Users";
+
+        assert_ok!(PeaqRBAC::add_group(
+            Origin::signed(origin),
+            group_id,
+            name.to_vec(),
+        ));
+
+        // Test for updating group not owned by origin
+        let name = b"Admins";
+        assert_noop!(
+            PeaqRBAC::update_group(Origin::signed(origin2), group_id, name.to_vec()),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        assert_ok!(PeaqRBAC::update_group(
+            Origin::signed(origin),
+            group_id,
+            name.to_vec()
+        ));
+
+        // Test for removal of non-existing group
+        let group_id = *b"12663776474646673646665421676477";
+        assert_noop!(
+            PeaqRBAC::update_group(Origin::signed(origin), group_id, name.to_vec()),
+            Error::<Test>::EntityDoesNotExist
         );
     });
 }
