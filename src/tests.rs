@@ -86,15 +86,15 @@ fn remove_role_test() {
 
         // Test for removal of role not owned by origin
         assert_noop!(
-            PeaqRBAC::remove_role(Origin::signed(origin2), role_id),
+            PeaqRBAC::disable_role(Origin::signed(origin2), role_id),
             Error::<Test>::EntityAuthorizationFailed
         );
 
-        assert_ok!(PeaqRBAC::remove_role(Origin::signed(origin), role_id,));
+        assert_ok!(PeaqRBAC::disable_role(Origin::signed(origin), role_id,));
 
         // Test for removal of non-existing role
         assert_noop!(
-            PeaqRBAC::remove_role(Origin::signed(origin), role_id),
+            PeaqRBAC::disable_role(Origin::signed(origin), role_id),
             Error::<Test>::EntityDoesNotExist
         );
     });
@@ -170,7 +170,7 @@ fn assign_role_to_user_test() {
 }
 
 #[test]
-fn remove_role_to_user_test() {
+fn unassign_role_to_user_test() {
     new_test_ext().execute_with(|| {
         let acct = "Iredia";
         let acct2 = "Iredia2";

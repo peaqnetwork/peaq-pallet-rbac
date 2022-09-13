@@ -238,10 +238,10 @@ pub mod pallet {
         }
 
         #[pallet::weight(1_000)]
-        pub fn remove_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
+        pub fn disable_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            match Self::delete_role(&sender, role_id) {
+            match Self::disable_existing_role(&sender, role_id) {
                 Ok(()) => {
                     Self::deposit_event(Event::RoleRemoved(sender, role_id));
                 }
@@ -1026,9 +1026,12 @@ pub mod pallet {
             }
         }
 
-        fn delete_role(owner: &T::AccountId, entity: T::EntityId) -> Result<(), EntityError> {
+        fn disable_existing_role(
+            owner: &T::AccountId,
+            role_id: T::EntityId,
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
-            let key = Self::generate_key(&entity, Tag::Role);
+            let key = Self::generate_key(&role_id, Tag::Role);
 
             // Check if role exists
             if !<RoleStore<T>>::contains_key(&key) {
@@ -1043,13 +1046,23 @@ pub mod pallet {
                 _ => (),
             }
 
-            <RoleStore<T>>::remove(&key);
+            // Get role
+            let role = Self::get_role(role_id);
 
-            // Remove the ownership of the role
-            let key = (&owner, &key).using_encoded(blake2_256);
-            <OwnerStore<T>>::remove((&owner, &key));
+            match role {
+                Some(mut role) => {
+                    // Check if role is enabled
+                    if !role.enabled {
+                        return Err(EntityError::EntityDoesNotExist);
+                    }
 
-            Ok(())
+                    role.enabled = false;
+
+                    <RoleStore<T>>::mutate(&key, |a| *a = role);
+                    Ok(())
+                }
+                None => Err(EntityError::EntityDoesNotExist),
+            }
         }
     }
 
@@ -1268,6 +1281,10 @@ pub mod pallet {
 
             match group {
                 Some(mut g) => {
+                    // Check if group is enabled
+                    if !g.enabled {
+                        return Err(EntityError::EntityDoesNotExist);
+                    }
                     g.enabled = false;
 
                     <GroupStore<T>>::mutate(&key, |a| *a = g);

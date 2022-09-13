@@ -58,7 +58,7 @@ pub trait Role<AccountId, EntityId> {
         role_id: EntityId,
         name: &[u8],
     ) -> Result<(), EntityError>;
-    fn delete_role(owner: &AccountId, role_id: EntityId) -> Result<(), EntityError>;
+    fn disable_existing_role(owner: &AccountId, role_id: EntityId) -> Result<(), EntityError>;
 }
 
 pub trait Permission<AccountId, EntityId> {
