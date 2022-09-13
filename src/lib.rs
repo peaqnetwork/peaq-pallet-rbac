@@ -27,6 +27,8 @@ pub mod pallet {
     use sp_std::fmt::Debug;
     use sp_std::{vec, vec::Vec};
 
+    use crate::rbac::Group;
+    use crate::structs::Role2Group;
     use crate::{
         rbac::{EntityError, Permission, Rbac, Role, Tag},
         structs::{Entity, Permission2Role, Role2User},
@@ -80,6 +82,16 @@ pub mod pallet {
     pub type Permission2RoleStore<T: Config> =
         StorageMap<_, Blake2_128Concat, [u8; 32], Vec<Permission2Role<T::EntityId>>, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn group_of)]
+    pub type GroupStore<T: Config> =
+        StorageMap<_, Blake2_128Concat, [u8; 32], Entity<T::EntityId>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn role_to_group_of)]
+    pub type Role2GroupStore<T: Config> =
+        StorageMap<_, Blake2_128Concat, [u8; 32], Vec<Role2Group<T::EntityId>>, ValueQuery>;
+
     // Pallets use events to inform users when important changes are made.
     // https://docs.substrate.io/main-docs/build/events-errors/
     #[pallet::event]
@@ -92,24 +104,40 @@ pub mod pallet {
         /// Event emitted when a role has been added. [who, roleId]
         RoleRemoved(T::AccountId, T::EntityId),
         RoleFetched(Entity<T::EntityId>),
+        AllRolesFetched(Vec<Entity<T::EntityId>>),
         /// Event emitted when a role has been assigned to user. [who, roleId, userId]
-        RoleAssigned(T::AccountId, T::EntityId, T::EntityId),
-        /// Event emitted when a role has been removed from user. [who, roleId, userId]
-        RoleRemovedFromUser(T::AccountId, T::EntityId, T::EntityId),
+        RoleAssignedToUser(T::AccountId, T::EntityId, T::EntityId),
+        /// Event emitted when a role has been unassigned to user. [who, roleId, userId]
+        RoleUnassignedToUser(T::AccountId, T::EntityId, T::EntityId),
+        /// Event emitted when a role has been assigned to group. [who, roleId, groupId]
+        RoleAssignedToGroup(T::AccountId, T::EntityId, T::EntityId),
+        /// Event emitted when a role has been unassigned from group. [who, roleId, groupId]
+        RoleUnassignedToGroup(T::AccountId, T::EntityId, T::EntityId),
+        FetchedGroupRoles(Vec<Role2Group<T::EntityId>>),
         FetchedUserRoles(Vec<Role2User<T::EntityId>>),
 
         /// Event emitted when a permission has been added. [who, permissionId, permissionName]
         PermissionAdded(T::AccountId, T::EntityId, Vec<u8>),
         /// Event emitted when a permission has been updated. [who, permissionId, permissionName]
         PermissionUpdated(T::AccountId, T::EntityId, Vec<u8>),
-        /// Event emitted when a permission has been removed. [who, permissionId]
-        PermissionRemoved(T::AccountId, T::EntityId),
+        /// Event emitted when a permission has been disabled. [who, permissionId]
+        PermissionDisabled(T::AccountId, T::EntityId),
         /// Event emitted when a permission has been assigned to role. [who, permissionId, roleId]
         PermissionAssigned(T::AccountId, T::EntityId, T::EntityId),
-        /// Event emitted when a permission has been removed from role. [who, permissionId, roleId]
-        PermissionRemovedFromRole(T::AccountId, T::EntityId, T::EntityId),
+        /// Event emitted when a permission has been unassigned to role. [who, permissionId, roleId]
+        PermissionUnassignedToRole(T::AccountId, T::EntityId, T::EntityId),
         FetchedRolePermissions(Vec<Permission2Role<T::EntityId>>),
         PermissionFetched(Entity<T::EntityId>),
+        AllPermissionsFetched(Vec<Entity<T::EntityId>>),
+
+        GroupFetched(Entity<T::EntityId>),
+        AllGroupsFetched(Vec<Entity<T::EntityId>>),
+        /// Event emitted when a group has been added. [who, groupId, roleName]
+        GroupAdded(T::AccountId, T::EntityId, Vec<u8>),
+        /// Event emitted when a group has been updated. [who, groupId, roleName]
+        GroupUpdated(T::AccountId, T::EntityId, Vec<u8>),
+        /// Event emitted when a group has been disabled. [who, groupId]
+        GroupDisabled(T::AccountId, T::EntityId),
     }
 
     // Errors inform users that something went wrong.
@@ -167,6 +195,16 @@ pub mod pallet {
             Ok(())
         }
 
+        #[pallet::weight(1_000)]
+        pub fn fetch_roles(origin: OriginFor<T>) -> DispatchResult {
+            ensure_signed(origin)?;
+            let roles = Self::get_roles();
+
+            Self::deposit_event(Event::AllRolesFetched(roles));
+
+            Ok(())
+        }
+
         /// create role call
         #[pallet::weight(1_000)]
         pub fn add_role(
@@ -212,10 +250,10 @@ pub mod pallet {
         }
 
         #[pallet::weight(1_000)]
-        pub fn remove_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
+        pub fn disable_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            match Self::delete_role(&sender, role_id) {
+            match Self::disable_existing_role(&sender, role_id) {
                 Ok(()) => {
                     Self::deposit_event(Event::RoleRemoved(sender, role_id));
                 }
@@ -251,7 +289,7 @@ pub mod pallet {
 
             match Self::create_role_to_user(&sender, role_id, user_id) {
                 Ok(()) => {
-                    Self::deposit_event(Event::RoleAssigned(sender, role_id, user_id));
+                    Self::deposit_event(Event::RoleAssignedToUser(sender, role_id, user_id));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
@@ -259,18 +297,18 @@ pub mod pallet {
             Ok(())
         }
 
-        /// remove role to user relationship call
+        /// unassign role to user relationship call
         #[pallet::weight(1_000)]
-        pub fn remove_role_to_user(
+        pub fn unassign_role_to_user(
             origin: OriginFor<T>,
             role_id: T::EntityId,
             user_id: T::EntityId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            match Self::delete_role_to_user(&sender, role_id, user_id) {
+            match Self::revoke_role_to_user(&sender, role_id, user_id) {
                 Ok(()) => {
-                    Self::deposit_event(Event::RoleRemovedFromUser(sender, role_id, user_id));
+                    Self::deposit_event(Event::RoleUnassignedToUser(sender, role_id, user_id));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
@@ -292,6 +330,16 @@ pub mod pallet {
                 }
                 None => return Err(Error::<T>::EntityDoesNotExist.into()),
             };
+
+            Ok(())
+        }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_permissions(origin: OriginFor<T>) -> DispatchResult {
+            ensure_signed(origin)?;
+            let permissions = Self::get_permissions();
+
+            Self::deposit_event(Event::AllPermissionsFetched(permissions));
 
             Ok(())
         }
@@ -341,15 +389,15 @@ pub mod pallet {
         }
 
         #[pallet::weight(1_000)]
-        pub fn remove_permission(
+        pub fn disable_permission(
             origin: OriginFor<T>,
             permission_id: T::EntityId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            match Self::delete_permission(&sender, permission_id) {
+            match Self::disable_existing_permission(&sender, permission_id) {
                 Ok(()) => {
-                    Self::deposit_event(Event::PermissionRemoved(sender, permission_id));
+                    Self::deposit_event(Event::PermissionDisabled(sender, permission_id));
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
@@ -394,18 +442,18 @@ pub mod pallet {
             Ok(())
         }
 
-        /// remove permission to role relationship call
+        /// unassign permission to role relationship call
         #[pallet::weight(1_000)]
-        pub fn remove_permission_to_role(
+        pub fn unassign_permission_to_role(
             origin: OriginFor<T>,
             permission_id: T::EntityId,
             role_id: T::EntityId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            match Self::delete_permission_to_role(&sender, permission_id, role_id) {
+            match Self::revoke_permission_to_role(&sender, permission_id, role_id) {
                 Ok(()) => {
-                    Self::deposit_event(Event::PermissionRemovedFromRole(
+                    Self::deposit_event(Event::PermissionUnassignedToRole(
                         sender,
                         permission_id,
                         role_id,
@@ -416,7 +464,144 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_group(origin: OriginFor<T>, group_id: T::EntityId) -> DispatchResult {
+            ensure_signed(origin)?;
+            let group = Self::get_group(group_id);
+
+            match group {
+                Some(g) => {
+                    Self::deposit_event(Event::GroupFetched(g));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
+        }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_groups(origin: OriginFor<T>) -> DispatchResult {
+            ensure_signed(origin)?;
+            let groups = Self::get_groups();
+
+            Self::deposit_event(Event::AllGroupsFetched(groups));
+
+            Ok(())
+        }
+
+        /// create group call
+        #[pallet::weight(1_000)]
+        pub fn add_group(
+            origin: OriginFor<T>,
+            group_id: T::EntityId,
+            name: Vec<u8>,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            // Verify that the name len is 64 max
+            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+
+            match Self::create_group(&sender, group_id, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::GroupAdded(sender, group_id, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
+        /// update group call
+        #[pallet::weight(1_000)]
+        pub fn update_group(
+            origin: OriginFor<T>,
+            group_id: T::EntityId,
+            name: Vec<u8>,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            // Verify that the name len is 64 max
+            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+
+            match Self::update_existing_group(&sender, group_id, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::GroupUpdated(sender, group_id, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
+        /// disable group call
+        #[pallet::weight(1_000)]
+        pub fn disable_group(origin: OriginFor<T>, group_id: T::EntityId) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            match Self::disable_existing_group(&sender, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::GroupDisabled(sender, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
+        /// assign a role to group call
+        #[pallet::weight(1_000)]
+        pub fn assign_role_to_group(
+            origin: OriginFor<T>,
+            role_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            match Self::create_role_to_group(&sender, role_id, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleAssignedToGroup(sender, role_id, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+        /// unassign role to group relationship call
+        #[pallet::weight(1_000)]
+        pub fn unassign_role_to_group(
+            origin: OriginFor<T>,
+            role_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            match Self::revoke_role_to_group(&sender, role_id, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleUnassignedToGroup(sender, role_id, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_group_roles(origin: OriginFor<T>, group_id: T::EntityId) -> DispatchResult {
+            ensure_signed(origin)?;
+            let role_to_group = Self::get_group_roles(group_id);
+
+            match role_to_group {
+                Some(r2g) => {
+                    Self::deposit_event(Event::FetchedGroupRoles(r2g));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
+        }
     }
+
     // implement the Rbac trait to satify the methods
     impl<T: Config> Rbac<T::AccountId, T::EntityId> for Pallet<T> {
         fn get_user_roles(user_id: T::EntityId) -> Option<Vec<Role2User<T::EntityId>>> {
@@ -425,6 +610,15 @@ pub mod pallet {
 
             if <Role2UserStore<T>>::contains_key(&key) {
                 return Some(Self::role_to_user_of(&key));
+            }
+            None
+        }
+        fn get_group_roles(group_id: T::EntityId) -> Option<Vec<Role2Group<T::EntityId>>> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&group_id, Tag::Role2Group);
+
+            if <Role2GroupStore<T>>::contains_key(&key) {
+                return Some(Self::role_to_group_of(&key));
             }
             None
         }
@@ -488,7 +682,7 @@ pub mod pallet {
             Ok(())
         }
 
-        fn delete_role_to_user(
+        fn revoke_role_to_user(
             owner: &T::AccountId,
             role_id: T::EntityId,
             user_id: T::EntityId,
@@ -535,6 +729,109 @@ pub mod pallet {
 
             if !val.is_empty() {
                 <Role2UserStore<T>>::mutate(&role_2_user_key, |a| *a = val);
+            }
+
+            Ok(())
+        }
+
+        fn create_role_to_group(
+            owner: &T::AccountId,
+            role_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let role_key = Self::generate_key(&role_id, Tag::Role);
+            let role_2_group_key = Self::generate_key(&group_id, Tag::Role2Group);
+
+            // Check if role exists
+            if !<RoleStore<T>>::contains_key(&role_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check role ownership
+            let is_owner = Self::is_owner(owner, &role_key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            let mut roles: Vec<Role2Group<T::EntityId>> = vec![];
+
+            let new_assign = Role2Group {
+                role: role_id,
+                group: group_id,
+            };
+
+            // Check if role has already been assigned to group
+            if <Role2GroupStore<T>>::contains_key(&role_2_group_key) {
+                let mut val = <Role2GroupStore<T>>::get(&role_2_group_key);
+
+                if val.contains(&new_assign) {
+                    return Err(EntityError::EntityAlreadyExist);
+                }
+
+                roles.append(&mut val);
+            }
+            roles.push(new_assign);
+
+            <Role2GroupStore<T>>::insert(&role_2_group_key, roles);
+
+            // Store the owner of the role assignment for further validation
+            // when modification is requested
+            let key = (&owner, &role_2_group_key).using_encoded(blake2_256);
+            <OwnerStore<T>>::insert((&owner, &key), group_id.clone());
+
+            Ok(())
+        }
+
+        fn revoke_role_to_group(
+            owner: &T::AccountId,
+            role_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let role_2_group_key = Self::generate_key(&group_id, Tag::Role2Group);
+
+            // Check if role exists
+            if !<Role2GroupStore<T>>::contains_key(&role_2_group_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            let new_assign = Role2Group {
+                role: role_id,
+                group: group_id,
+            };
+
+            let mut val = <Role2GroupStore<T>>::get(&role_2_group_key);
+
+            if !val.contains(&new_assign) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check ownership
+            let is_owner = Self::is_owner(owner, &role_2_group_key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            match val.binary_search(&new_assign) {
+                Ok(i) => val.remove(i),
+                Err(_) => return Err(EntityError::EntityDoesNotExist),
+            };
+
+            if val.len() < 1 {
+                <Role2GroupStore<T>>::remove(&role_2_group_key);
+
+                // Remove the ownership of the role
+                let key = (&owner, &role_2_group_key).using_encoded(blake2_256);
+                <OwnerStore<T>>::remove((&owner, &key));
+            }
+
+            if !val.is_empty() {
+                <Role2GroupStore<T>>::mutate(&role_2_group_key, |a| *a = val);
             }
 
             Ok(())
@@ -604,7 +901,7 @@ pub mod pallet {
             Ok(())
         }
 
-        fn delete_permission_to_role(
+        fn revoke_permission_to_role(
             owner: &T::AccountId,
             permission_id: T::EntityId,
             role_id: T::EntityId,
@@ -687,6 +984,20 @@ pub mod pallet {
             None
         }
 
+        fn get_roles() -> Vec<Entity<T::EntityId>> {
+            let mut roles: Vec<Entity<T::EntityId>> = vec![];
+
+            let iter = <RoleStore<T>>::iter_values();
+
+            for value in iter {
+                if value.enabled {
+                    roles.push(value);
+                }
+            }
+
+            roles
+        }
+
         fn create_role(
             owner: &T::AccountId,
             entity: T::EntityId,
@@ -703,6 +1014,7 @@ pub mod pallet {
             let new_role = Entity {
                 id: entity,
                 name: (&name).to_vec(),
+                enabled: true,
             };
 
             <RoleStore<T>>::insert(&key, new_role);
@@ -750,9 +1062,12 @@ pub mod pallet {
             }
         }
 
-        fn delete_role(owner: &T::AccountId, entity: T::EntityId) -> Result<(), EntityError> {
+        fn disable_existing_role(
+            owner: &T::AccountId,
+            role_id: T::EntityId,
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
-            let key = Self::generate_key(&entity, Tag::Role);
+            let key = Self::generate_key(&role_id, Tag::Role);
 
             // Check if role exists
             if !<RoleStore<T>>::contains_key(&key) {
@@ -767,13 +1082,23 @@ pub mod pallet {
                 _ => (),
             }
 
-            <RoleStore<T>>::remove(&key);
+            // Get role
+            let role = Self::get_role(role_id);
 
-            // Remove the ownership of the role
-            let key = (&owner, &key).using_encoded(blake2_256);
-            <OwnerStore<T>>::remove((&owner, &key));
+            match role {
+                Some(mut role) => {
+                    // Check if role is enabled
+                    if !role.enabled {
+                        return Err(EntityError::EntityDoesNotExist);
+                    }
 
-            Ok(())
+                    role.enabled = false;
+
+                    <RoleStore<T>>::mutate(&key, |a| *a = role);
+                    Ok(())
+                }
+                None => Err(EntityError::EntityDoesNotExist),
+            }
         }
     }
 
@@ -783,9 +1108,23 @@ pub mod pallet {
             let key = Self::generate_key(&permission_id, Tag::Permission);
 
             if <PermissionStore<T>>::contains_key(&key) {
-                return Some(Self::role_of(&key));
+                return Some(Self::permission_of(&key));
             }
             None
+        }
+
+        fn get_permissions() -> Vec<Entity<T::EntityId>> {
+            let mut permissions: Vec<Entity<T::EntityId>> = vec![];
+
+            let iter = <PermissionStore<T>>::iter_values();
+
+            for value in iter {
+                if value.enabled {
+                    permissions.push(value);
+                }
+            }
+
+            permissions
         }
 
         fn create_permission(
@@ -804,11 +1143,12 @@ pub mod pallet {
             let new_permission = Entity {
                 id: permission_id,
                 name: (&name).to_vec(),
+                enabled: true,
             };
 
             <PermissionStore<T>>::insert(&key, new_permission);
 
-            // Store the owner of the role for further validation
+            // Store the owner of the permission for further validation
             // when modification is requested
             let key = (&owner, &key).using_encoded(blake2_256);
             <OwnerStore<T>>::insert((&owner, &key), permission_id.clone());
@@ -849,7 +1189,7 @@ pub mod pallet {
             }
         }
 
-        fn delete_permission(
+        fn disable_existing_permission(
             owner: &T::AccountId,
             permission_id: T::EntityId,
         ) -> Result<(), EntityError> {
@@ -869,13 +1209,147 @@ pub mod pallet {
                 _ => (),
             }
 
-            <PermissionStore<T>>::remove(&key);
+            let perm = Self::get_permission(permission_id);
 
-            // Remove the ownership of the permission
+            match perm {
+                Some(mut p) => {
+                    if !p.enabled {
+                        return Err(EntityError::EntityDoesNotExist);
+                    }
+
+                    p.enabled = false;
+
+                    <PermissionStore<T>>::mutate(&key, |a| *a = p);
+                    Ok(())
+                }
+                None => Err(EntityError::EntityDoesNotExist),
+            }
+        }
+    }
+
+    impl<T: Config> Group<T::AccountId, T::EntityId> for Pallet<T> {
+        fn get_group(group_id: T::EntityId) -> Option<Entity<T::EntityId>> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&group_id, Tag::Group);
+
+            if <GroupStore<T>>::contains_key(&key) {
+                return Some(Self::group_of(&key));
+            }
+            None
+        }
+        fn get_groups() -> Vec<Entity<T::EntityId>> {
+            let mut groups: Vec<Entity<T::EntityId>> = vec![];
+
+            let iter = <GroupStore<T>>::iter_values();
+
+            for value in iter {
+                if value.enabled {
+                    groups.push(value);
+                }
+            }
+
+            groups
+        }
+        fn create_group(
+            owner: &T::AccountId,
+            group_id: T::EntityId,
+            name: &[u8],
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&group_id, Tag::Group);
+
+            // Check if group already exists
+            if <GroupStore<T>>::contains_key(&key) {
+                return Err(EntityError::EntityAlreadyExist);
+            }
+
+            let new_group = Entity {
+                id: group_id,
+                name: (&name).to_vec(),
+                enabled: true,
+            };
+
+            <GroupStore<T>>::insert(&key, new_group);
+
+            // Store the owner of the group for further validation
+            // when modification is requested
             let key = (&owner, &key).using_encoded(blake2_256);
-            <OwnerStore<T>>::remove((&owner, &key));
+            <OwnerStore<T>>::insert((&owner, &key), group_id.clone());
 
             Ok(())
+        }
+
+        fn update_existing_group(
+            owner: &T::AccountId,
+            group_id: T::EntityId,
+            name: &[u8],
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&group_id, Tag::Group);
+
+            // Check if group exists
+            if !<GroupStore<T>>::contains_key(&key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check ownership
+            let is_owner = Self::is_owner(owner, &key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            // Get group
+            let group = Self::get_group(group_id);
+
+            match group {
+                Some(mut g) => {
+                    g.name = (&name).to_vec();
+
+                    <GroupStore<T>>::mutate(&key, |a| *a = g);
+                    Ok(())
+                }
+                None => Err(EntityError::EntityDoesNotExist),
+            }
+        }
+
+        fn disable_existing_group(
+            owner: &T::AccountId,
+            group_id: T::EntityId,
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&group_id, Tag::Group);
+
+            // Check if group exists
+            if !<GroupStore<T>>::contains_key(&key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check ownership
+            let is_owner = Self::is_owner(owner, &key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            // Get group
+            let group = Self::get_group(group_id);
+
+            match group {
+                Some(mut g) => {
+                    // Check if group is enabled
+                    if !g.enabled {
+                        return Err(EntityError::EntityDoesNotExist);
+                    }
+                    g.enabled = false;
+
+                    <GroupStore<T>>::mutate(&key, |a| *a = g);
+                    Ok(())
+                }
+                None => Err(EntityError::EntityDoesNotExist),
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ use sp_std::vec::Vec;
 pub struct Entity<EntityId> {
     pub id: EntityId,
     pub name: Vec<u8>,
+    pub enabled: bool,
 }
 
 #[derive(
@@ -17,6 +18,14 @@ pub struct Entity<EntityId> {
 pub struct Role2User<EntityId> {
     pub role: EntityId,
     pub user: EntityId,
+}
+
+#[derive(
+    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug,
+)]
+pub struct Role2Group<EntityId> {
+    pub role: EntityId,
+    pub group: EntityId,
 }
 
 #[derive(
