@@ -640,3 +640,28 @@ fn fetch_group_test() {
         );
     });
 }
+
+#[test]
+fn fetch_groups_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let group_id = *b"15663776474646673646665421676476";
+        let group_id2 = *b"16663776474646673646665421676476";
+        let origin = account_key(acct);
+        let name = b"Users";
+
+        assert_ok!(PeaqRBAC::add_group(
+            Origin::signed(origin),
+            group_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::add_group(
+            Origin::signed(origin),
+            group_id2,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::fetch_groups(Origin::signed(origin),));
+    });
+}
