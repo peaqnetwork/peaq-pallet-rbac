@@ -128,9 +128,10 @@ pub mod pallet {
         PermissionUnassignedToRole(T::AccountId, T::EntityId, T::EntityId),
         FetchedRolePermissions(Vec<Permission2Role<T::EntityId>>),
         PermissionFetched(Entity<T::EntityId>),
+        AllPermissionsFetched(Vec<Entity<T::EntityId>>),
 
         GroupFetched(Entity<T::EntityId>),
-        GroupsFetched(Vec<Entity<T::EntityId>>),
+        AllGroupsFetched(Vec<Entity<T::EntityId>>),
         /// Event emitted when a group has been added. [who, groupId, roleName]
         GroupAdded(T::AccountId, T::EntityId, Vec<u8>),
         /// Event emitted when a group has been updated. [who, groupId, roleName]
@@ -333,6 +334,16 @@ pub mod pallet {
             Ok(())
         }
 
+        #[pallet::weight(1_000)]
+        pub fn fetch_permissions(origin: OriginFor<T>) -> DispatchResult {
+            ensure_signed(origin)?;
+            let permissions = Self::get_permissions();
+
+            Self::deposit_event(Event::AllPermissionsFetched(permissions));
+
+            Ok(())
+        }
+
         /// create permission call
         #[pallet::weight(1_000)]
         pub fn add_permission(
@@ -474,7 +485,7 @@ pub mod pallet {
             ensure_signed(origin)?;
             let groups = Self::get_groups();
 
-            Self::deposit_event(Event::GroupsFetched(groups));
+            Self::deposit_event(Event::AllGroupsFetched(groups));
 
             Ok(())
         }
@@ -1100,6 +1111,20 @@ pub mod pallet {
                 return Some(Self::permission_of(&key));
             }
             None
+        }
+
+        fn get_permissions() -> Vec<Entity<T::EntityId>> {
+            let mut permissions: Vec<Entity<T::EntityId>> = vec![];
+
+            let iter = <PermissionStore<T>>::iter_values();
+
+            for value in iter {
+                if value.enabled {
+                    permissions.push(value);
+                }
+            }
+
+            permissions
         }
 
         fn create_permission(

@@ -64,6 +64,7 @@ pub trait Role<AccountId, EntityId> {
 
 pub trait Permission<AccountId, EntityId> {
     fn get_permission(permission_id: EntityId) -> Option<Entity<EntityId>>;
+    fn get_permissions() -> Vec<Entity<EntityId>>;
     fn create_permission(
         owner: &AccountId,
         permission_id: EntityId,
