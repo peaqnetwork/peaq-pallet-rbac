@@ -127,6 +127,8 @@ pub mod pallet {
         GroupAdded(T::AccountId, T::EntityId, Vec<u8>),
         /// Event emitted when a group has been updated. [who, groupId, roleName]
         GroupUpdated(T::AccountId, T::EntityId, Vec<u8>),
+        /// Event emitted when a role has been removed from group. [who, roleId, groupId]
+        RoleRemovedFromGroup(T::AccountId, T::EntityId, T::EntityId),
     }
 
     // Errors inform users that something went wrong.
@@ -496,6 +498,24 @@ pub mod pallet {
 
             Ok(())
         }
+        /// unassign role to group relationship call
+        #[pallet::weight(1_000)]
+        pub fn unassign_role_to_group(
+            origin: OriginFor<T>,
+            role_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            match Self::remove_role_to_group(&sender, role_id, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleRemovedFromGroup(sender, role_id, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
     }
     // implement the Rbac trait to satify the methods
     impl<T: Config> Rbac<T::AccountId, T::EntityId> for Pallet<T> {
@@ -667,6 +687,58 @@ pub mod pallet {
             // when modification is requested
             let key = (&owner, &role_2_group_key).using_encoded(blake2_256);
             <OwnerStore<T>>::insert((&owner, &key), group_id.clone());
+
+            Ok(())
+        }
+
+        fn remove_role_to_group(
+            owner: &T::AccountId,
+            role_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let role_2_group_key = Self::generate_key(&group_id, Tag::Role2Group);
+
+            // Check if role exists
+            if !<Role2GroupStore<T>>::contains_key(&role_2_group_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            let new_assign = Role2Group {
+                role: role_id,
+                group: group_id,
+            };
+
+            let mut val = <Role2GroupStore<T>>::get(&role_2_group_key);
+
+            if !val.contains(&new_assign) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check ownership
+            let is_owner = Self::is_owner(owner, &role_2_group_key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            match val.binary_search(&new_assign) {
+                Ok(i) => val.remove(i),
+                Err(_) => return Err(EntityError::EntityDoesNotExist),
+            };
+
+            if val.len() < 1 {
+                <Role2GroupStore<T>>::remove(&role_2_group_key);
+
+                // Remove the ownership of the role
+                let key = (&owner, &role_2_group_key).using_encoded(blake2_256);
+                <OwnerStore<T>>::remove((&owner, &key));
+            }
+
+            if !val.is_empty() {
+                <Role2GroupStore<T>>::mutate(&role_2_group_key, |a| *a = val);
+            }
 
             Ok(())
         }

@@ -32,6 +32,11 @@ pub trait Rbac<AccountId, EntityId> {
         role_id: EntityId,
         group_id: EntityId,
     ) -> Result<(), EntityError>;
+    fn remove_role_to_group(
+        owner: &AccountId,
+        role_id: EntityId,
+        group_id: EntityId,
+    ) -> Result<(), EntityError>;
     fn create_permission_to_role(
         owner: &AccountId,
         permission_id: EntityId,
