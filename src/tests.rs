@@ -126,6 +126,30 @@ fn fetch_role_test() {
 }
 
 #[test]
+fn fetch_roles_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let role_id = *b"23676474666576474646673646376637";
+        let role_id2 = *b"23676474666576474646466746376631";
+        let origin = account_key(acct);
+        let name = b"ADMIN";
+
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id,
+            name.to_vec(),
+        ));
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id2,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::fetch_roles(Origin::signed(origin),));
+    });
+}
+
+#[test]
 fn assign_role_to_user_test() {
     new_test_ext().execute_with(|| {
         let acct = "Iredia";
