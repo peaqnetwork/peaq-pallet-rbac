@@ -129,6 +129,7 @@ pub mod pallet {
         GroupUpdated(T::AccountId, T::EntityId, Vec<u8>),
         /// Event emitted when a role has been removed from group. [who, roleId, groupId]
         RoleRemovedFromGroup(T::AccountId, T::EntityId, T::EntityId),
+        FetchedGroupRoles(Vec<Role2Group<T::EntityId>>),
     }
 
     // Errors inform users that something went wrong.
@@ -516,6 +517,21 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_group_roles(origin: OriginFor<T>, group_id: T::EntityId) -> DispatchResult {
+            ensure_signed(origin)?;
+            let role_to_group = Self::get_group_roles(group_id);
+
+            match role_to_group {
+                Some(r2g) => {
+                    Self::deposit_event(Event::FetchedGroupRoles(r2g));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
+        }
     }
     // implement the Rbac trait to satify the methods
     impl<T: Config> Rbac<T::AccountId, T::EntityId> for Pallet<T> {
@@ -525,6 +541,15 @@ pub mod pallet {
 
             if <Role2UserStore<T>>::contains_key(&key) {
                 return Some(Self::role_to_user_of(&key));
+            }
+            None
+        }
+        fn get_group_roles(group_id: T::EntityId) -> Option<Vec<Role2Group<T::EntityId>>> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&group_id, Tag::Role2Group);
+
+            if <Role2GroupStore<T>>::contains_key(&key) {
+                return Some(Self::role_to_group_of(&key));
             }
             None
         }
