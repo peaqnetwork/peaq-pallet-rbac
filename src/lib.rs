@@ -104,6 +104,7 @@ pub mod pallet {
         /// Event emitted when a role has been added. [who, roleId]
         RoleRemoved(T::AccountId, T::EntityId),
         RoleFetched(Entity<T::EntityId>),
+        AllRolesFetched(Vec<Entity<T::EntityId>>),
         /// Event emitted when a role has been assigned to user. [who, roleId, userId]
         RoleAssignedToUser(T::AccountId, T::EntityId, T::EntityId),
         /// Event emitted when a role has been unassigned to user. [who, roleId, userId]
@@ -189,6 +190,16 @@ pub mod pallet {
                 }
                 None => return Err(Error::<T>::EntityDoesNotExist.into()),
             };
+
+            Ok(())
+        }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_roles(origin: OriginFor<T>) -> DispatchResult {
+            ensure_signed(origin)?;
+            let roles = Self::get_roles();
+
+            Self::deposit_event(Event::AllRolesFetched(roles));
 
             Ok(())
         }
@@ -960,6 +971,20 @@ pub mod pallet {
                 return Some(Self::role_of(&key));
             }
             None
+        }
+
+        fn get_roles() -> Vec<Entity<T::EntityId>> {
+            let mut roles: Vec<Entity<T::EntityId>> = vec![];
+
+            let iter = <RoleStore<T>>::iter_values();
+
+            for value in iter {
+                if value.enabled {
+                    roles.push(value);
+                }
+            }
+
+            roles
         }
 
         fn create_role(

@@ -52,6 +52,7 @@ pub trait Rbac<AccountId, EntityId> {
 
 pub trait Role<AccountId, EntityId> {
     fn get_role(role_id: EntityId) -> Option<Entity<EntityId>>;
+    fn get_roles() -> Vec<Entity<EntityId>>;
     fn create_role(owner: &AccountId, role_id: EntityId, name: &[u8]) -> Result<(), EntityError>;
     fn update_existing_role(
         owner: &AccountId,
