@@ -367,13 +367,13 @@ pub mod pallet {
         }
 
         #[pallet::weight(1_000)]
-        pub fn remove_permission(
+        pub fn disable_permission(
             origin: OriginFor<T>,
             permission_id: T::EntityId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            match Self::delete_permission(&sender, permission_id) {
+            match Self::disable_existing_permission(&sender, permission_id) {
                 Ok(()) => {
                     Self::deposit_event(Event::PermissionRemoved(sender, permission_id));
                 }
@@ -1139,7 +1139,7 @@ pub mod pallet {
             }
         }
 
-        fn delete_permission(
+        fn disable_existing_permission(
             owner: &T::AccountId,
             permission_id: T::EntityId,
         ) -> Result<(), EntityError> {
@@ -1159,13 +1159,21 @@ pub mod pallet {
                 _ => (),
             }
 
-            <PermissionStore<T>>::remove(&key);
+            let perm = Self::get_permission(permission_id);
 
-            // Remove the ownership of the permission
-            let key = (&owner, &key).using_encoded(blake2_256);
-            <OwnerStore<T>>::remove((&owner, &key));
+            match perm {
+                Some(mut p) => {
+                    if !p.enabled {
+                        return Err(EntityError::EntityDoesNotExist);
+                    }
 
-            Ok(())
+                    p.enabled = false;
+
+                    <PermissionStore<T>>::mutate(&key, |a| *a = p);
+                    Ok(())
+                }
+                None => Err(EntityError::EntityDoesNotExist),
+            }
         }
     }
 

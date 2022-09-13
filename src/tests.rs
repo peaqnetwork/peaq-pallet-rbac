@@ -69,7 +69,7 @@ fn update_role_test() {
 }
 
 #[test]
-fn remove_role_test() {
+fn disable_role_test() {
     new_test_ext().execute_with(|| {
         let acct = "Iredia";
         let acct2 = "Iredia2";
@@ -312,7 +312,7 @@ fn update_permission_test() {
 }
 
 #[test]
-fn remove_permission_test() {
+fn disable_permission_test() {
     new_test_ext().execute_with(|| {
         let acct = "Iredia";
         let acct2 = "Iredia2";
@@ -329,18 +329,18 @@ fn remove_permission_test() {
 
         // Test for removal of permission not owned by origin
         assert_noop!(
-            PeaqRBAC::remove_permission(Origin::signed(origin2), permission_id),
+            PeaqRBAC::disable_permission(Origin::signed(origin2), permission_id),
             Error::<Test>::EntityAuthorizationFailed
         );
 
-        assert_ok!(PeaqRBAC::remove_permission(
+        assert_ok!(PeaqRBAC::disable_permission(
             Origin::signed(origin),
             permission_id,
         ));
 
         // Test for removal of non-existing permission
         assert_noop!(
-            PeaqRBAC::remove_permission(Origin::signed(origin), permission_id),
+            PeaqRBAC::disable_permission(Origin::signed(origin), permission_id),
             Error::<Test>::EntityDoesNotExist
         );
     });
