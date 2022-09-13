@@ -123,6 +123,8 @@ pub mod pallet {
         FetchedRolePermissions(Vec<Permission2Role<T::EntityId>>),
         PermissionFetched(Entity<T::EntityId>),
 
+        GroupFetched(Entity<T::EntityId>),
+        GroupsFetched(Vec<Entity<T::EntityId>>),
         /// Event emitted when a group has been added. [who, groupId, roleName]
         GroupAdded(T::AccountId, T::EntityId, Vec<u8>),
         /// Event emitted when a group has been updated. [who, groupId, roleName]
@@ -433,6 +435,31 @@ pub mod pallet {
                 }
                 Err(e) => return Error::<T>::dispatch_error(e),
             };
+
+            Ok(())
+        }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_group(origin: OriginFor<T>, group_id: T::EntityId) -> DispatchResult {
+            ensure_signed(origin)?;
+            let group = Self::get_group(group_id);
+
+            match group {
+                Some(g) => {
+                    Self::deposit_event(Event::GroupFetched(g));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
+        }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_groups(origin: OriginFor<T>) -> DispatchResult {
+            ensure_signed(origin)?;
+            let groups = Self::get_groups();
+
+            Self::deposit_event(Event::GroupsFetched(groups));
 
             Ok(())
         }
@@ -1116,6 +1143,17 @@ pub mod pallet {
                 return Some(Self::group_of(&key));
             }
             None
+        }
+        fn get_groups() -> Vec<Entity<T::EntityId>> {
+            let mut groups: Vec<Entity<T::EntityId>> = vec![];
+
+            let iter = <GroupStore<T>>::iter_values();
+
+            for value in iter {
+                groups.push(value);
+            }
+
+            groups
         }
         fn create_group(
             owner: &T::AccountId,
