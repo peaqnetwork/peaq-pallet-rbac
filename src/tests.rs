@@ -516,3 +516,32 @@ fn fetch_role_permissions_test() {
         );
     });
 }
+
+#[test]
+fn add_group_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let group_id = *b"17663776474646673646665421676476";
+        let origin = account_key(acct);
+        let name = b"Users";
+
+        assert_ok!(PeaqRBAC::add_group(
+            Origin::signed(origin),
+            group_id,
+            name.to_vec(),
+        ));
+
+        // Test for duplicate entry
+        assert_noop!(
+            PeaqRBAC::add_group(Origin::signed(origin), group_id, name.to_vec(),),
+            Error::<Test>::EntityAlreadyExist
+        );
+
+        // Test name more than 64 chars
+        let name = b"UsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsers";
+        assert_noop!(
+            PeaqRBAC::add_group(Origin::signed(origin), group_id, name.to_vec(),),
+            Error::<Test>::EntityNameExceedMax64
+        );
+    });
+}
