@@ -615,3 +615,28 @@ fn disable_group_test() {
         );
     });
 }
+
+#[test]
+fn fetch_group_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let group_id = *b"14663776474646673646665421676476";
+        let origin = account_key(acct);
+        let name = b"Users";
+
+        assert_ok!(PeaqRBAC::add_group(
+            Origin::signed(origin),
+            group_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::fetch_group(Origin::signed(origin), group_id,));
+
+        // Test for fetching non-existing group
+        let group_id = *b"14663776474646673646665421676477";
+        assert_noop!(
+            PeaqRBAC::fetch_group(Origin::signed(origin), group_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
