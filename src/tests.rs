@@ -583,3 +583,35 @@ fn update_group_test() {
         );
     });
 }
+
+#[test]
+fn disable_group_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let acct2 = "Iredia2";
+        let group_id = *b"13663776474646673646665421676476";
+        let origin = account_key(acct);
+        let origin2 = account_key(acct2);
+        let name = b"Users";
+
+        assert_ok!(PeaqRBAC::add_group(
+            Origin::signed(origin),
+            group_id,
+            name.to_vec(),
+        ));
+
+        // Test for removal of group not owned by origin
+        assert_noop!(
+            PeaqRBAC::disable_group(Origin::signed(origin2), group_id),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        assert_ok!(PeaqRBAC::disable_group(Origin::signed(origin), group_id,));
+
+        // Test for removal of non-existing group
+        assert_noop!(
+            PeaqRBAC::disable_group(Origin::signed(origin), group_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
