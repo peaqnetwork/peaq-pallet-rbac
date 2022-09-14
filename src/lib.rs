@@ -125,6 +125,7 @@ pub mod pallet {
         RoleUnassignedToGroup(T::AccountId, T::EntityId, T::EntityId),
         FetchedGroupRoles(Vec<Role2Group<T::EntityId>>),
         FetchedUserRoles(Vec<Role2User<T::EntityId>>),
+        FetchedUserGroups(Vec<User2Group<T::EntityId>>),
 
         /// Event emitted when a permission has been added. [who, permissionId, permissionName]
         PermissionAdded(T::AccountId, T::EntityId, Vec<u8>),
@@ -652,6 +653,21 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_user_groups(origin: OriginFor<T>, user_id: T::EntityId) -> DispatchResult {
+            ensure_signed(origin)?;
+            let user_to_group = Self::get_user_groups(user_id);
+
+            match user_to_group {
+                Some(u2g) => {
+                    Self::deposit_event(Event::FetchedUserGroups(u2g));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
+        }
     }
 
     // implement the Rbac trait to satify the methods
@@ -662,6 +678,15 @@ pub mod pallet {
 
             if <Role2UserStore<T>>::contains_key(&key) {
                 return Some(Self::role_to_user_of(&key));
+            }
+            None
+        }
+        fn get_user_groups(user_id: T::EntityId) -> Option<Vec<User2Group<T::EntityId>>> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&user_id, Tag::User2Group);
+
+            if <User2GroupStore<T>>::contains_key(&key) {
+                return Some(Self::user_to_group_of(&key));
             }
             None
         }
