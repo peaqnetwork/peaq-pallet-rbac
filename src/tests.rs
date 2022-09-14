@@ -237,6 +237,55 @@ fn unassign_role_to_user_test() {
 }
 
 #[test]
+fn unassign_role_to_group_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let acct2 = "Iredia2";
+        let role_id = *b"56764746665764746462673646376637";
+        let group_id = *b"74646647466673646376637126765764";
+        let origin = account_key(acct);
+        let origin2 = account_key(acct2);
+        let name = b"ADMIN";
+
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::add_group(
+            Origin::signed(origin),
+            group_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::assign_role_to_group(
+            Origin::signed(origin),
+            role_id,
+            group_id
+        ));
+
+        // Test for removing role not owned by origin
+        assert_noop!(
+            PeaqRBAC::unassign_role_to_group(Origin::signed(origin2), role_id, group_id),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        assert_ok!(PeaqRBAC::unassign_role_to_group(
+            Origin::signed(origin),
+            role_id,
+            group_id
+        ));
+
+        // Test for removing non-existing role
+        assert_noop!(
+            PeaqRBAC::unassign_role_to_group(Origin::signed(origin), role_id, group_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
+
+#[test]
 fn fetch_user_roles_test() {
     new_test_ext().execute_with(|| {
         let acct = "Iredia";
