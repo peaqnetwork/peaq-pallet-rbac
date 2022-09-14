@@ -20,6 +20,7 @@ pub trait Rbac<AccountId, EntityId> {
     fn get_group_roles(group_id: EntityId) -> Option<Vec<Role2Group<EntityId>>>;
     fn get_role_permissions(role_id: EntityId) -> Option<Vec<Permission2Role<EntityId>>>;
     fn get_user_permissions(user_id: EntityId) -> Option<Vec<Entity<EntityId>>>;
+    fn get_group_permissions(group_id: EntityId) -> Option<Vec<Entity<EntityId>>>;
     fn create_role_to_user(
         owner: &AccountId,
         role_id: EntityId,

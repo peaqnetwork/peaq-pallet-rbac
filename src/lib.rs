@@ -127,6 +127,7 @@ pub mod pallet {
         FetchedUserRoles(Vec<Role2User<T::EntityId>>),
         FetchedUserGroups(Vec<User2Group<T::EntityId>>),
         FetchedUserPermissions(Vec<Entity<T::EntityId>>),
+        FetchedGroupPermissions(Vec<Entity<T::EntityId>>),
 
         /// Event emitted when a permission has been added. [who, permissionId, permissionName]
         PermissionAdded(T::AccountId, T::EntityId, Vec<u8>),
@@ -687,6 +688,24 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_group_permissions(
+            origin: OriginFor<T>,
+            group_id: T::EntityId,
+        ) -> DispatchResult {
+            ensure_signed(origin)?;
+            let permissions = Self::get_group_permissions(group_id);
+
+            match permissions {
+                Some(p) => {
+                    Self::deposit_event(Event::FetchedGroupPermissions(p));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
+        }
     }
 
     // implement the Rbac trait to satify the methods
@@ -804,6 +823,43 @@ pub mod pallet {
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            Some(permissions)
+        }
+
+        fn get_group_permissions(group_id: T::EntityId) -> Option<Vec<Entity<T::EntityId>>> {
+            // Generate key for integrity check
+
+            let mut permissions: Vec<Entity<T::EntityId>> = vec![];
+
+            let key = Self::generate_key(&group_id, Tag::Role2Group);
+
+            if <Role2GroupStore<T>>::contains_key(&key) {
+                let val = <Role2GroupStore<T>>::get(&key);
+
+                let r2g_itr = val.iter();
+
+                for r2g in r2g_itr {
+                    let p2r_option = Self::get_role_permissions(*&r2g.role);
+
+                    match p2r_option {
+                        Some(p2r_val) => {
+                            let p2r_itr = p2r_val.iter();
+                            for p2r in p2r_itr {
+                                let perm_option = Self::get_permission(*&p2r.permission);
+
+                                match perm_option {
+                                    Some(perm) => {
+                                        permissions.push(perm);
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                        _ => {}
                     }
                 }
             }
