@@ -919,3 +919,35 @@ fn unassign_user_to_group_test() {
         );
     });
 }
+
+#[test]
+fn fetch_user_groups_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let group_id = *b"18663776474646673646665421676476";
+        let user_id = *b"13676474666576474646673646376637";
+        let origin = account_key(acct);
+        let name = b"Admin";
+
+        assert_ok!(PeaqRBAC::add_group(
+            Origin::signed(origin),
+            group_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::assign_user_to_group(
+            Origin::signed(origin),
+            user_id,
+            group_id
+        ));
+
+        assert_ok!(PeaqRBAC::fetch_user_groups(Origin::signed(origin), user_id));
+
+        // Test for non-existing user to group relationship
+        let user_id = *b"15676474666576474646673646376637";
+        assert_noop!(
+            PeaqRBAC::fetch_user_groups(Origin::signed(origin), user_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
