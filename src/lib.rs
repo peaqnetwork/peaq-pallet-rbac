@@ -817,6 +817,7 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> Result<(), EntityError> {
             // Generate key for integrity check
+            let group_key = Self::generate_key(&group_id, Tag::Group);
             let role_key = Self::generate_key(&role_id, Tag::Role);
             let role_2_group_key = Self::generate_key(&group_id, Tag::Role2Group);
 
@@ -825,8 +826,21 @@ pub mod pallet {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
+            // Check if group exists
+            if !<GroupStore<T>>::contains_key(&group_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
             // check role ownership
             let is_owner = Self::is_owner(owner, &role_key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            // check group ownership
+            let is_owner = Self::is_owner(owner, &group_key);
 
             match is_owner {
                 Err(e) => return Err(e),

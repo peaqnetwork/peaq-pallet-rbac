@@ -237,6 +237,76 @@ fn unassign_role_to_user_test() {
 }
 
 #[test]
+fn assign_role_to_group_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let acct2 = "Iredia2";
+        let role_id = *b"57764746665764746462673646376637";
+        let group_id = *b"73646647466673646376637126765764";
+        let group_id2 = *b"76736466474666736463637126765764";
+        let origin = account_key(acct);
+        let origin2 = account_key(acct2);
+        let name = b"ADMIN";
+
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::add_group(
+            Origin::signed(origin),
+            group_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::add_group(
+            Origin::signed(origin2),
+            group_id2,
+            name.to_vec(),
+        ));
+
+        // Test for assigning role not owned by origin
+        assert_noop!(
+            PeaqRBAC::assign_role_to_group(Origin::signed(origin2), role_id, group_id),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        // Test for assigning group not owned by origin
+        assert_noop!(
+            PeaqRBAC::assign_role_to_group(Origin::signed(origin), role_id, group_id2),
+            Error::<Test>::EntityAuthorizationFailed
+        );
+
+        assert_ok!(PeaqRBAC::assign_role_to_group(
+            Origin::signed(origin),
+            role_id,
+            group_id
+        ));
+
+        // Test for duplicate entry
+        assert_noop!(
+            PeaqRBAC::assign_role_to_group(Origin::signed(origin), role_id, group_id),
+            Error::<Test>::EntityAlreadyExist
+        );
+
+        // Test for assigning non-existing group
+        let group_id = *b"73646647466673646376637126765765";
+        assert_noop!(
+            PeaqRBAC::assign_role_to_group(Origin::signed(origin), role_id, group_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        // Test for assigning non-existing role
+        let role_id = *b"57764746665764746462673646376638";
+        assert_noop!(
+            PeaqRBAC::assign_role_to_group(Origin::signed(origin), role_id, group_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+    });
+}
+
+#[test]
 fn unassign_role_to_group_test() {
     new_test_ext().execute_with(|| {
         let acct = "Iredia";
