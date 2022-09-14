@@ -126,6 +126,8 @@ pub mod pallet {
         FetchedGroupRoles(Vec<Role2Group<T::EntityId>>),
         FetchedUserRoles(Vec<Role2User<T::EntityId>>),
         FetchedUserGroups(Vec<User2Group<T::EntityId>>),
+        FetchedUserPermissions(Vec<Entity<T::EntityId>>),
+        FetchedGroupPermissions(Vec<Entity<T::EntityId>>),
 
         /// Event emitted when a permission has been added. [who, permissionId, permissionName]
         PermissionAdded(T::AccountId, T::EntityId, Vec<u8>),
@@ -668,6 +670,42 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_user_permissions(
+            origin: OriginFor<T>,
+            user_id: T::EntityId,
+        ) -> DispatchResult {
+            ensure_signed(origin)?;
+            let permissions = Self::get_user_permissions(user_id);
+
+            match permissions {
+                Some(p) => {
+                    Self::deposit_event(Event::FetchedUserPermissions(p));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
+        }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_group_permissions(
+            origin: OriginFor<T>,
+            group_id: T::EntityId,
+        ) -> DispatchResult {
+            ensure_signed(origin)?;
+            let permissions = Self::get_group_permissions(group_id);
+
+            match permissions {
+                Some(p) => {
+                    Self::deposit_event(Event::FetchedGroupPermissions(p));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
+        }
     }
 
     // implement the Rbac trait to satify the methods
@@ -708,6 +746,127 @@ pub mod pallet {
             }
             None
         }
+
+        fn get_user_permissions(user_id: T::EntityId) -> Option<Vec<Entity<T::EntityId>>> {
+            // Generate key for integrity check
+            let role_2_user_key = Self::generate_key(&user_id, Tag::Role2User);
+            let user_2_group_key = Self::generate_key(&user_id, Tag::User2Group);
+
+            let mut permissions: Vec<Entity<T::EntityId>> = vec![];
+            // use to avoid duplicate transverval
+            let mut processed_roles: Vec<T::EntityId> = vec![];
+
+            if <Role2UserStore<T>>::contains_key(&role_2_user_key) {
+                let val = <Role2UserStore<T>>::get(&role_2_user_key);
+
+                let itr = val.iter();
+
+                for r2u in itr {
+                    // use to avoid duplicate transversal
+                    processed_roles.push(*&r2u.role);
+
+                    let p2r_option = Self::get_role_permissions(*&r2u.role);
+
+                    match p2r_option {
+                        Some(p2r_val) => {
+                            let p2r_itr = p2r_val.iter();
+                            for p2r in p2r_itr {
+                                let perm_option = Self::get_permission(*&p2r.permission);
+
+                                match perm_option {
+                                    Some(perm) => {
+                                        permissions.push(perm);
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            if <User2GroupStore<T>>::contains_key(&user_2_group_key) {
+                let val = <User2GroupStore<T>>::get(&user_2_group_key);
+
+                let itr = val.iter();
+
+                for u2g in itr {
+                    let key = Self::generate_key(&u2g.group, Tag::Role2Group);
+
+                    if <Role2GroupStore<T>>::contains_key(&key) {
+                        let val = <Role2GroupStore<T>>::get(&key);
+
+                        let r2g_itr = val.iter();
+
+                        for r2g in r2g_itr {
+                            // use to avoid duplicate transversal
+                            if !processed_roles.contains(&r2g.role) {
+                                let p2r_option = Self::get_role_permissions(*&r2g.role);
+
+                                match p2r_option {
+                                    Some(p2r_val) => {
+                                        let p2r_itr = p2r_val.iter();
+                                        for p2r in p2r_itr {
+                                            let perm_option =
+                                                Self::get_permission(*&p2r.permission);
+
+                                            match perm_option {
+                                                Some(perm) => {
+                                                    permissions.push(perm);
+                                                }
+                                                _ => {}
+                                            }
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Some(permissions)
+        }
+
+        fn get_group_permissions(group_id: T::EntityId) -> Option<Vec<Entity<T::EntityId>>> {
+            // Generate key for integrity check
+
+            let mut permissions: Vec<Entity<T::EntityId>> = vec![];
+
+            let key = Self::generate_key(&group_id, Tag::Role2Group);
+
+            if <Role2GroupStore<T>>::contains_key(&key) {
+                let val = <Role2GroupStore<T>>::get(&key);
+
+                let r2g_itr = val.iter();
+
+                for r2g in r2g_itr {
+                    let p2r_option = Self::get_role_permissions(*&r2g.role);
+
+                    match p2r_option {
+                        Some(p2r_val) => {
+                            let p2r_itr = p2r_val.iter();
+                            for p2r in p2r_itr {
+                                let perm_option = Self::get_permission(*&p2r.permission);
+
+                                match perm_option {
+                                    Some(perm) => {
+                                        permissions.push(perm);
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            Some(permissions)
+        }
+
         fn create_role_to_user(
             owner: &T::AccountId,
             role_id: T::EntityId,
