@@ -28,7 +28,7 @@ pub mod pallet {
     use sp_std::{vec, vec::Vec};
 
     use crate::rbac::Group;
-    use crate::structs::Role2Group;
+    use crate::structs::{Role2Group, User2Group};
     use crate::{
         rbac::{EntityError, Permission, Rbac, Role, Tag},
         structs::{Entity, Permission2Role, Role2User},
@@ -92,6 +92,16 @@ pub mod pallet {
     pub type Role2GroupStore<T: Config> =
         StorageMap<_, Blake2_128Concat, [u8; 32], Vec<Role2Group<T::EntityId>>, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn user_to_group_of)]
+    pub type User2GroupStore<T: Config> =
+        StorageMap<_, Blake2_128Concat, [u8; 32], Vec<User2Group<T::EntityId>>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn group_users_of)]
+    pub type GroupUsersStore<T: Config> =
+        StorageMap<_, Blake2_128Concat, [u8; 32], Vec<T::EntityId>, ValueQuery>;
+
     // Pallets use events to inform users when important changes are made.
     // https://docs.substrate.io/main-docs/build/events-errors/
     #[pallet::event]
@@ -115,6 +125,7 @@ pub mod pallet {
         RoleUnassignedToGroup(T::AccountId, T::EntityId, T::EntityId),
         FetchedGroupRoles(Vec<Role2Group<T::EntityId>>),
         FetchedUserRoles(Vec<Role2User<T::EntityId>>),
+        FetchedUserGroups(Vec<User2Group<T::EntityId>>),
 
         /// Event emitted when a permission has been added. [who, permissionId, permissionName]
         PermissionAdded(T::AccountId, T::EntityId, Vec<u8>),
@@ -138,6 +149,10 @@ pub mod pallet {
         GroupUpdated(T::AccountId, T::EntityId, Vec<u8>),
         /// Event emitted when a group has been disabled. [who, groupId]
         GroupDisabled(T::AccountId, T::EntityId),
+        /// Event emitted when a user to group relationship has been added. [who, userId, groupId]
+        UserAssignedToGroup(T::AccountId, T::EntityId, T::EntityId),
+        /// Event emitted when a user to group relationship has been removed. [who, userId, groupId]
+        UserUnAssignedToGroup(T::AccountId, T::EntityId, T::EntityId),
     }
 
     // Errors inform users that something went wrong.
@@ -600,6 +615,59 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// assign a user to group call
+        #[pallet::weight(1_000)]
+        pub fn assign_user_to_group(
+            origin: OriginFor<T>,
+            user_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            match Self::create_user_to_group(&sender, user_id, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::UserAssignedToGroup(sender, user_id, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
+        /// unassign a user to group call
+        #[pallet::weight(1_000)]
+        pub fn unassign_user_to_group(
+            origin: OriginFor<T>,
+            user_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            match Self::revoke_user_to_group(&sender, user_id, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::UserUnAssignedToGroup(sender, user_id, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
+
+        #[pallet::weight(1_000)]
+        pub fn fetch_user_groups(origin: OriginFor<T>, user_id: T::EntityId) -> DispatchResult {
+            ensure_signed(origin)?;
+            let user_to_group = Self::get_user_groups(user_id);
+
+            match user_to_group {
+                Some(u2g) => {
+                    Self::deposit_event(Event::FetchedUserGroups(u2g));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
+        }
     }
 
     // implement the Rbac trait to satify the methods
@@ -610,6 +678,15 @@ pub mod pallet {
 
             if <Role2UserStore<T>>::contains_key(&key) {
                 return Some(Self::role_to_user_of(&key));
+            }
+            None
+        }
+        fn get_user_groups(user_id: T::EntityId) -> Option<Vec<User2Group<T::EntityId>>> {
+            // Generate key for integrity check
+            let key = Self::generate_key(&user_id, Tag::User2Group);
+
+            if <User2GroupStore<T>>::contains_key(&key) {
+                return Some(Self::user_to_group_of(&key));
             }
             None
         }
@@ -740,6 +817,7 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> Result<(), EntityError> {
             // Generate key for integrity check
+            let group_key = Self::generate_key(&group_id, Tag::Group);
             let role_key = Self::generate_key(&role_id, Tag::Role);
             let role_2_group_key = Self::generate_key(&group_id, Tag::Role2Group);
 
@@ -748,8 +826,21 @@ pub mod pallet {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
+            // Check if group exists
+            if !<GroupStore<T>>::contains_key(&group_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
             // check role ownership
             let is_owner = Self::is_owner(owner, &role_key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            // check group ownership
+            let is_owner = Self::is_owner(owner, &group_key);
 
             match is_owner {
                 Err(e) => return Err(e),
@@ -832,6 +923,109 @@ pub mod pallet {
 
             if !val.is_empty() {
                 <Role2GroupStore<T>>::mutate(&role_2_group_key, |a| *a = val);
+            }
+
+            Ok(())
+        }
+
+        fn create_user_to_group(
+            owner: &T::AccountId,
+            user_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let group_key = Self::generate_key(&group_id, Tag::Group);
+            let user_2_group_key = Self::generate_key(&user_id, Tag::User2Group);
+
+            // Check if group exists
+            if !<GroupStore<T>>::contains_key(&group_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check group ownership
+            let is_owner = Self::is_owner(owner, &group_key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            let mut groups: Vec<User2Group<T::EntityId>> = vec![];
+
+            let new_assign = User2Group {
+                user: user_id,
+                group: group_id,
+            };
+
+            // Check if role has already been assigned to group
+            if <User2GroupStore<T>>::contains_key(&user_2_group_key) {
+                let mut val = <User2GroupStore<T>>::get(&user_2_group_key);
+
+                if val.contains(&new_assign) {
+                    return Err(EntityError::EntityAlreadyExist);
+                }
+
+                groups.append(&mut val);
+            }
+            groups.push(new_assign);
+
+            <User2GroupStore<T>>::insert(&user_2_group_key, groups);
+
+            // Store the owner of the group assignment for further validation
+            // when modification is requested
+            let key = (&owner, &user_2_group_key).using_encoded(blake2_256);
+            <OwnerStore<T>>::insert((&owner, &key), group_id.clone());
+
+            Ok(())
+        }
+
+        fn revoke_user_to_group(
+            owner: &T::AccountId,
+            user_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let user_2_group_key = Self::generate_key(&user_id, Tag::User2Group);
+
+            // Check if user exists
+            if !<User2GroupStore<T>>::contains_key(&user_2_group_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            let new_assign = User2Group {
+                user: user_id,
+                group: group_id,
+            };
+
+            let mut val = <User2GroupStore<T>>::get(&user_2_group_key);
+
+            if !val.contains(&new_assign) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check ownership
+            let is_owner = Self::is_owner(owner, &user_2_group_key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            match val.binary_search(&new_assign) {
+                Ok(i) => val.remove(i),
+                Err(_) => return Err(EntityError::EntityDoesNotExist),
+            };
+
+            if val.len() < 1 {
+                <User2GroupStore<T>>::remove(&user_2_group_key);
+
+                // Remove the ownership of the role
+                let key = (&owner, &user_2_group_key).using_encoded(blake2_256);
+                <OwnerStore<T>>::remove((&owner, &key));
+            }
+
+            if !val.is_empty() {
+                <User2GroupStore<T>>::mutate(&user_2_group_key, |a| *a = val);
             }
 
             Ok(())
