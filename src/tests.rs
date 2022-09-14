@@ -1005,3 +1005,50 @@ fn fetch_user_permissions_test() {
         ));
     });
 }
+
+#[test]
+fn fetch_group_permissions_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let group_id = *b"66736466618663776474645421676476";
+        let role_id = *b"46454667364666186637764721676476";
+        let permission_id = *b"76472167646454667364666186637476";
+        let origin = account_key(acct);
+        let name = b"Admin";
+
+        assert_ok!(PeaqRBAC::add_role(
+            Origin::signed(origin),
+            role_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::add_permission(
+            Origin::signed(origin),
+            permission_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::add_group(
+            Origin::signed(origin),
+            group_id,
+            name.to_vec(),
+        ));
+
+        assert_ok!(PeaqRBAC::assign_role_to_group(
+            Origin::signed(origin),
+            role_id,
+            group_id
+        ));
+
+        assert_ok!(PeaqRBAC::assign_permission_to_role(
+            Origin::signed(origin),
+            permission_id,
+            role_id
+        ));
+
+        assert_ok!(PeaqRBAC::fetch_group_permissions(
+            Origin::signed(origin),
+            group_id
+        ));
+    });
+}
