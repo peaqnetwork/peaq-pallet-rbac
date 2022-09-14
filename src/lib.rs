@@ -28,7 +28,7 @@ pub mod pallet {
     use sp_std::{vec, vec::Vec};
 
     use crate::rbac::Group;
-    use crate::structs::Role2Group;
+    use crate::structs::{Role2Group, User2Group};
     use crate::{
         rbac::{EntityError, Permission, Rbac, Role, Tag},
         structs::{Entity, Permission2Role, Role2User},
@@ -92,6 +92,16 @@ pub mod pallet {
     pub type Role2GroupStore<T: Config> =
         StorageMap<_, Blake2_128Concat, [u8; 32], Vec<Role2Group<T::EntityId>>, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn user_to_group_of)]
+    pub type User2GroupStore<T: Config> =
+        StorageMap<_, Blake2_128Concat, [u8; 32], Vec<User2Group<T::EntityId>>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn group_users_of)]
+    pub type GroupUsersStore<T: Config> =
+        StorageMap<_, Blake2_128Concat, [u8; 32], Vec<T::EntityId>, ValueQuery>;
+
     // Pallets use events to inform users when important changes are made.
     // https://docs.substrate.io/main-docs/build/events-errors/
     #[pallet::event]
@@ -138,6 +148,8 @@ pub mod pallet {
         GroupUpdated(T::AccountId, T::EntityId, Vec<u8>),
         /// Event emitted when a group has been disabled. [who, groupId]
         GroupDisabled(T::AccountId, T::EntityId),
+        /// Event emitted when a user has been added to a group. [who, userId, groupId]
+        UserAssignedToGroup(T::AccountId, T::EntityId, T::EntityId),
     }
 
     // Errors inform users that something went wrong.
@@ -600,6 +612,25 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// assign a user to group call
+        #[pallet::weight(1_000)]
+        pub fn assign_user_to_group(
+            origin: OriginFor<T>,
+            user_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            match Self::create_user_to_group(&sender, user_id, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::UserAssignedToGroup(sender, user_id, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
+        }
     }
 
     // implement the Rbac trait to satify the methods
@@ -833,6 +864,57 @@ pub mod pallet {
             if !val.is_empty() {
                 <Role2GroupStore<T>>::mutate(&role_2_group_key, |a| *a = val);
             }
+
+            Ok(())
+        }
+
+        fn create_user_to_group(
+            owner: &T::AccountId,
+            user_id: T::EntityId,
+            group_id: T::EntityId,
+        ) -> Result<(), EntityError> {
+            // Generate key for integrity check
+            let group_key = Self::generate_key(&group_id, Tag::Group);
+            let user_2_group_key = Self::generate_key(&group_id, Tag::User2Group);
+
+            // Check if group exists
+            if !<GroupStore<T>>::contains_key(&group_key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
+
+            // check group ownership
+            let is_owner = Self::is_owner(owner, &group_key);
+
+            match is_owner {
+                Err(e) => return Err(e),
+                _ => (),
+            }
+
+            let mut groups: Vec<User2Group<T::EntityId>> = vec![];
+
+            let new_assign = User2Group {
+                user: user_id,
+                group: group_id,
+            };
+
+            // Check if role has already been assigned to group
+            if <User2GroupStore<T>>::contains_key(&user_2_group_key) {
+                let mut val = <User2GroupStore<T>>::get(&user_2_group_key);
+
+                if val.contains(&new_assign) {
+                    return Err(EntityError::EntityAlreadyExist);
+                }
+
+                groups.append(&mut val);
+            }
+            groups.push(new_assign);
+
+            <User2GroupStore<T>>::insert(&user_2_group_key, groups);
+
+            // Store the owner of the group assignment for further validation
+            // when modification is requested
+            let key = (&owner, &user_2_group_key).using_encoded(blake2_256);
+            <OwnerStore<T>>::insert((&owner, &key), group_id.clone());
 
             Ok(())
         }
