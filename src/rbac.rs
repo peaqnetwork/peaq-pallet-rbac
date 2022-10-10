@@ -13,14 +13,19 @@ pub enum EntityError {
 }
 
 pub trait Rbac<AccountId, EntityId> {
-    fn generate_key(entity: &EntityId, tag: Tag) -> [u8; 32];
-    fn is_owner(owner: &AccountId, key: &[u8; 32]) -> Result<(), EntityError>;
-    fn get_user_roles(user_id: EntityId) -> Option<Vec<Role2User<EntityId>>>;
-    fn get_user_groups(user_id: EntityId) -> Option<Vec<User2Group<EntityId>>>;
-    fn get_group_roles(group_id: EntityId) -> Option<Vec<Role2Group<EntityId>>>;
-    fn get_role_permissions(role_id: EntityId) -> Option<Vec<Permission2Role<EntityId>>>;
-    fn get_user_permissions(user_id: EntityId) -> Option<Vec<Entity<EntityId>>>;
-    fn get_group_permissions(group_id: EntityId) -> Option<Vec<Entity<EntityId>>>;
+    fn generate_key(owner: &AccountId, entity: &EntityId, tag: Tag) -> [u8; 32];
+    fn get_user_roles(owner: &AccountId, user_id: EntityId) -> Option<Vec<Role2User<EntityId>>>;
+    fn get_user_groups(owner: &AccountId, user_id: EntityId) -> Option<Vec<User2Group<EntityId>>>;
+    fn get_group_roles(owner: &AccountId, group_id: EntityId) -> Option<Vec<Role2Group<EntityId>>>;
+    fn get_role_permissions(
+        owner: &AccountId,
+        role_id: EntityId,
+    ) -> Option<Vec<Permission2Role<EntityId>>>;
+    fn get_user_permissions(owner: &AccountId, user_id: EntityId) -> Option<Vec<Entity<EntityId>>>;
+    fn get_group_permissions(
+        owner: &AccountId,
+        group_id: EntityId,
+    ) -> Option<Vec<Entity<EntityId>>>;
     fn create_role_to_user(
         owner: &AccountId,
         role_id: EntityId,
@@ -64,8 +69,8 @@ pub trait Rbac<AccountId, EntityId> {
 }
 
 pub trait Role<AccountId, EntityId> {
-    fn get_role(role_id: EntityId) -> Option<Entity<EntityId>>;
-    fn get_roles() -> Vec<Entity<EntityId>>;
+    fn get_role(owner: &AccountId, role_id: EntityId) -> Option<Entity<EntityId>>;
+    fn get_roles(owner: &AccountId) -> Vec<Entity<EntityId>>;
     fn create_role(owner: &AccountId, role_id: EntityId, name: &[u8]) -> Result<(), EntityError>;
     fn update_existing_role(
         owner: &AccountId,
@@ -76,8 +81,8 @@ pub trait Role<AccountId, EntityId> {
 }
 
 pub trait Permission<AccountId, EntityId> {
-    fn get_permission(permission_id: EntityId) -> Option<Entity<EntityId>>;
-    fn get_permissions() -> Vec<Entity<EntityId>>;
+    fn get_permission(owner: &AccountId, permission_id: EntityId) -> Option<Entity<EntityId>>;
+    fn get_permissions(owner: &AccountId) -> Vec<Entity<EntityId>>;
     fn create_permission(
         owner: &AccountId,
         permission_id: EntityId,
@@ -95,8 +100,8 @@ pub trait Permission<AccountId, EntityId> {
 }
 
 pub trait Group<AccountId, EntityId> {
-    fn get_group(group_id: EntityId) -> Option<Entity<EntityId>>;
-    fn get_groups() -> Vec<Entity<EntityId>>;
+    fn get_group(owner: &AccountId, group_id: EntityId) -> Option<Entity<EntityId>>;
+    fn get_groups(owner: &AccountId) -> Vec<Entity<EntityId>>;
     fn create_group(owner: &AccountId, group_id: EntityId, name: &[u8]) -> Result<(), EntityError>;
     fn update_existing_group(
         owner: &AccountId,
