@@ -70,7 +70,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn permission_of)]
     pub type PermissionStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, [u8; 32], Entity<T::EntityId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, T::AccountId, Vec<Entity<T::EntityId>>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn permission_to_role_of)]
@@ -1160,7 +1160,7 @@ pub mod pallet {
             }
 
             // Check if permission exists
-            if !<PermissionStore<T>>::contains_key(&permission_key) {
+            if !<KeysLookUpStore<T>>::contains_key(&permission_key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -1321,7 +1321,11 @@ pub mod pallet {
 
             for entity in iterator {
                 if entity.id == entity_id {
-                    entity.name = (&name).to_vec()
+                    if !entity.enabled {
+                        return Err(EntityError::EntityDoesNotExist);
+                    }
+                    entity.name = (&name).to_vec();
+                    break;
                 }
             }
 
@@ -1373,25 +1377,27 @@ pub mod pallet {
         ) -> Option<Entity<T::EntityId>> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &permission_id, Tag::Permission);
+            if !<KeysLookUpStore<T>>::contains_key(&key) {
+                return None;
+            }
 
-            if <PermissionStore<T>>::contains_key(&key) {
-                return Some(Self::permission_of(&key));
+            let mut val = <PermissionStore<T>>::get(&owner);
+
+            let iterator = val.iter_mut();
+
+            for entity in iterator {
+                if entity.id == permission_id {
+                    if !entity.enabled {
+                        return None;
+                    }
+                    return Some(entity.clone());
+                }
             }
             None
         }
 
         fn get_permissions(owner: &T::AccountId) -> Vec<Entity<T::EntityId>> {
-            let mut permissions: Vec<Entity<T::EntityId>> = vec![];
-
-            let iter = <PermissionStore<T>>::iter_values();
-
-            for value in iter {
-                if value.enabled {
-                    permissions.push(value);
-                }
-            }
-
-            permissions
+            <PermissionStore<T>>::get(&owner)
         }
 
         fn create_permission(
@@ -1403,7 +1409,7 @@ pub mod pallet {
             let key = Self::generate_key(&owner, &permission_id, Tag::Permission);
 
             // Check if permission already exists
-            if <PermissionStore<T>>::contains_key(&key) {
+            if <KeysLookUpStore<T>>::contains_key(&key) {
                 return Err(EntityError::EntityAlreadyExist);
             }
 
@@ -1413,7 +1419,17 @@ pub mod pallet {
                 enabled: true,
             };
 
-            <PermissionStore<T>>::insert(&key, new_permission);
+            let mut permissions: Vec<Entity<T::EntityId>> = vec![];
+
+            // Check if this account already had roles
+            if <PermissionStore<T>>::contains_key(&owner) {
+                let mut val = <PermissionStore<T>>::get(&owner);
+                permissions.append(&mut val);
+            }
+            permissions.push(new_permission);
+
+            <PermissionStore<T>>::insert(&owner, permissions);
+            <KeysLookUpStore<T>>::insert(&key, &key);
 
             Ok(())
         }
@@ -1426,21 +1442,29 @@ pub mod pallet {
             let key = Self::generate_key(&owner, &permission_id, Tag::Permission);
 
             // Check if permission exists
-            if !<PermissionStore<T>>::contains_key(&key) {
+            if !<KeysLookUpStore<T>>::contains_key(&key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
-            let perm = Self::get_permission(&owner, permission_id);
+            let mut val = <PermissionStore<T>>::get(&owner);
 
-            match perm {
-                Some(mut p) => {
-                    p.name = (&name).to_vec();
+            let iterator = val.iter_mut();
 
-                    <PermissionStore<T>>::mutate(&key, |a| *a = p);
-                    Ok(())
+            for entity in iterator {
+                if entity.id == permission_id {
+                    if !entity.enabled {
+                        return Err(EntityError::EntityDoesNotExist);
+                    }
+                    entity.name = (&name).to_vec();
+                    break;
                 }
-                None => Err(EntityError::EntityDoesNotExist),
             }
+
+            if !val.is_empty() {
+                <PermissionStore<T>>::mutate(&owner, |a| *a = val);
+            }
+
+            Ok(())
         }
 
         fn disable_existing_permission(
@@ -1451,25 +1475,29 @@ pub mod pallet {
             let key = Self::generate_key(&owner, &permission_id, Tag::Permission);
 
             // Check if permission exists
-            if !<PermissionStore<T>>::contains_key(&key) {
+            if !<KeysLookUpStore<T>>::contains_key(&key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
-            let perm = Self::get_permission(&owner, permission_id);
+            let mut val = <PermissionStore<T>>::get(&owner);
 
-            match perm {
-                Some(mut p) => {
-                    if !p.enabled {
+            let iterator = val.iter_mut();
+
+            for entity in iterator {
+                if entity.id == permission_id {
+                    if !entity.enabled {
                         return Err(EntityError::EntityDoesNotExist);
                     }
-
-                    p.enabled = false;
-
-                    <PermissionStore<T>>::mutate(&key, |a| *a = p);
-                    Ok(())
+                    entity.enabled = false;
+                    break;
                 }
-                None => Err(EntityError::EntityDoesNotExist),
             }
+
+            if !val.is_empty() {
+                <PermissionStore<T>>::mutate(&owner, |a| *a = val);
+            }
+
+            Ok(())
         }
     }
 
