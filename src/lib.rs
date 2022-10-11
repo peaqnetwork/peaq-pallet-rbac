@@ -60,7 +60,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn role_of)]
     pub type RoleStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, [u8; 32], Entity<T::EntityId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, T::AccountId, Vec<Entity<T::EntityId>>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn role_to_user_of)]
@@ -91,6 +91,11 @@ pub mod pallet {
     #[pallet::getter(fn user_to_group_of)]
     pub type User2GroupStore<T: Config> =
         StorageMap<_, Blake2_128Concat, [u8; 32], Vec<User2Group<T::EntityId>>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn keys_lookup_of)]
+    pub type KeysLookUpStore<T: Config> =
+        StorageMap<_, Blake2_128Concat, [u8; 32], [u8; 32], ValueQuery>;
 
     // Pallets use events to inform users when important changes are made.
     // https://docs.substrate.io/main-docs/build/events-errors/
@@ -909,7 +914,7 @@ pub mod pallet {
             let role_2_user_key = Self::generate_key(&owner, &user_id, Tag::Role2User);
 
             // Check if role exists
-            if !<RoleStore<T>>::contains_key(&role_key) {
+            if !<KeysLookUpStore<T>>::contains_key(&role_key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -988,7 +993,7 @@ pub mod pallet {
             let role_2_group_key = Self::generate_key(&owner, &group_id, Tag::Role2Group);
 
             // Check if role exists
-            if !<RoleStore<T>>::contains_key(&role_key) {
+            if !<KeysLookUpStore<T>>::contains_key(&role_key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -1150,7 +1155,7 @@ pub mod pallet {
             let permission_2_role_key = Self::generate_key(&owner, &role_id, Tag::Permission2Role);
 
             // Check if role exists
-            if !<RoleStore<T>>::contains_key(&role_key) {
+            if !<KeysLookUpStore<T>>::contains_key(&role_key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -1235,79 +1240,96 @@ pub mod pallet {
 
     // implement the role Entity trait to satify the methods
     impl<T: Config> Role<T::AccountId, T::EntityId> for Pallet<T> {
-        fn get_role(owner: &T::AccountId, entity: T::EntityId) -> Option<Entity<T::EntityId>> {
+        fn get_role(owner: &T::AccountId, role_id: T::EntityId) -> Option<Entity<T::EntityId>> {
             // Generate key for integrity check
-            let key = Self::generate_key(&owner, &entity, Tag::Role);
+            let key = Self::generate_key(&owner, &role_id, Tag::Role);
 
-            if <RoleStore<T>>::contains_key(&key) {
-                return Some(Self::role_of(&key));
+            // Check if role exists
+            if !<KeysLookUpStore<T>>::contains_key(&key) {
+                return None;
+            }
+
+            let mut val = <RoleStore<T>>::get(&owner);
+
+            let iterator = val.iter_mut();
+
+            for entity in iterator {
+                if entity.id == role_id {
+                    if !entity.enabled {
+                        return None;
+                    }
+                    return Some(entity.clone());
+                }
             }
             None
         }
 
         fn get_roles(owner: &T::AccountId) -> Vec<Entity<T::EntityId>> {
-            let mut roles: Vec<Entity<T::EntityId>> = vec![];
-
-            let iter = <RoleStore<T>>::iter_values();
-
-            for value in iter {
-                if value.enabled {
-                    roles.push(value);
-                }
-            }
-
-            roles
+            <RoleStore<T>>::get(&owner)
         }
 
         fn create_role(
             owner: &T::AccountId,
-            entity: T::EntityId,
+            role_id: T::EntityId,
             name: &[u8],
         ) -> Result<(), EntityError> {
             // Generate key for integrity check
-            let key = Self::generate_key(&owner, &entity, Tag::Role);
+            let key = Self::generate_key(&owner, &role_id, Tag::Role);
 
             // Check if role already exists
-            if <RoleStore<T>>::contains_key(&key) {
+            if <KeysLookUpStore<T>>::contains_key(&key) {
                 return Err(EntityError::EntityAlreadyExist);
             }
 
+            let mut roles: Vec<Entity<T::EntityId>> = vec![];
+
             let new_role = Entity {
-                id: entity,
+                id: role_id,
                 name: (&name).to_vec(),
                 enabled: true,
             };
 
-            <RoleStore<T>>::insert(&key, new_role);
+            // Check if this account already had roles
+            if <RoleStore<T>>::contains_key(&owner) {
+                let mut val = <RoleStore<T>>::get(&owner);
+                roles.append(&mut val);
+            }
+            roles.push(new_role);
+
+            <RoleStore<T>>::insert(&owner, roles);
+            <KeysLookUpStore<T>>::insert(&key, &key);
 
             Ok(())
         }
 
         fn update_existing_role(
             owner: &T::AccountId,
-            entity: T::EntityId,
+            entity_id: T::EntityId,
             name: &[u8],
         ) -> Result<(), EntityError> {
             // Generate key for integrity check
-            let key = Self::generate_key(&owner, &entity, Tag::Role);
+            let key = Self::generate_key(&owner, &entity_id, Tag::Role);
 
             // Check if role exists
-            if !<RoleStore<T>>::contains_key(&key) {
+            if !<KeysLookUpStore<T>>::contains_key(&key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
-            // Get role
-            let role = Self::get_role(&owner, entity);
+            let mut val = <RoleStore<T>>::get(&owner);
 
-            match role {
-                Some(mut role) => {
-                    role.name = (&name).to_vec();
+            let iterator = val.iter_mut();
 
-                    <RoleStore<T>>::mutate(&key, |a| *a = role);
-                    Ok(())
+            for entity in iterator {
+                if entity.id == entity_id {
+                    entity.name = (&name).to_vec()
                 }
-                None => Err(EntityError::EntityDoesNotExist),
             }
+
+            if !val.is_empty() {
+                <RoleStore<T>>::mutate(&owner, |a| *a = val);
+            }
+
+            Ok(())
         }
 
         fn disable_existing_role(
@@ -1318,27 +1340,29 @@ pub mod pallet {
             let key = Self::generate_key(&owner, &role_id, Tag::Role);
 
             // Check if role exists
-            if !<RoleStore<T>>::contains_key(&key) {
+            if !<KeysLookUpStore<T>>::contains_key(&key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
-            // Get role
-            let role = Self::get_role(&owner, role_id);
+            let mut val = <RoleStore<T>>::get(&owner);
 
-            match role {
-                Some(mut role) => {
-                    // Check if role is enabled
-                    if !role.enabled {
+            let iterator = val.iter_mut();
+
+            for entity in iterator {
+                if entity.id == role_id {
+                    if !entity.enabled {
                         return Err(EntityError::EntityDoesNotExist);
                     }
+                    entity.enabled = false;
 
-                    role.enabled = false;
-
-                    <RoleStore<T>>::mutate(&key, |a| *a = role);
-                    Ok(())
+                    break;
                 }
-                None => Err(EntityError::EntityDoesNotExist),
             }
+
+            if !val.is_empty() {
+                <RoleStore<T>>::mutate(&owner, |a| *a = val);
+            }
+            Ok(())
         }
     }
 
