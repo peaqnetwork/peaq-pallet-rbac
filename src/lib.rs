@@ -80,7 +80,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn group_of)]
     pub type GroupStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, [u8; 32], Entity<T::EntityId>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, T::AccountId, Vec<Entity<T::EntityId>>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn role_to_group_of)]
@@ -998,7 +998,7 @@ pub mod pallet {
             }
 
             // Check if group exists
-            if !<GroupStore<T>>::contains_key(&group_key) {
+            if !<KeysLookUpStore<T>>::contains_key(&group_key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -1076,7 +1076,7 @@ pub mod pallet {
             let user_2_group_key = Self::generate_key(&owner, &user_id, Tag::User2Group);
 
             // Check if group exists
-            if !<GroupStore<T>>::contains_key(&group_key) {
+            if !<KeysLookUpStore<T>>::contains_key(&group_key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -1421,7 +1421,7 @@ pub mod pallet {
 
             let mut permissions: Vec<Entity<T::EntityId>> = vec![];
 
-            // Check if this account already had roles
+            // Check if this account already had permissions
             if <PermissionStore<T>>::contains_key(&owner) {
                 let mut val = <PermissionStore<T>>::get(&owner);
                 permissions.append(&mut val);
@@ -1506,23 +1506,26 @@ pub mod pallet {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &group_id, Tag::Group);
 
-            if <GroupStore<T>>::contains_key(&key) {
-                return Some(Self::group_of(&key));
+            if !<KeysLookUpStore<T>>::contains_key(&key) {
+                return None;
+            }
+
+            let mut val = <GroupStore<T>>::get(&owner);
+
+            let iterator = val.iter_mut();
+
+            for entity in iterator {
+                if entity.id == group_id {
+                    if !entity.enabled {
+                        return None;
+                    }
+                    return Some(entity.clone());
+                }
             }
             None
         }
         fn get_groups(owner: &T::AccountId) -> Vec<Entity<T::EntityId>> {
-            let mut groups: Vec<Entity<T::EntityId>> = vec![];
-
-            let iter = <GroupStore<T>>::iter_values();
-
-            for value in iter {
-                if value.enabled {
-                    groups.push(value);
-                }
-            }
-
-            groups
+            <GroupStore<T>>::get(&owner)
         }
         fn create_group(
             owner: &T::AccountId,
@@ -1533,7 +1536,7 @@ pub mod pallet {
             let key = Self::generate_key(&owner, &group_id, Tag::Group);
 
             // Check if group already exists
-            if <GroupStore<T>>::contains_key(&key) {
+            if <KeysLookUpStore<T>>::contains_key(&key) {
                 return Err(EntityError::EntityAlreadyExist);
             }
 
@@ -1543,7 +1546,17 @@ pub mod pallet {
                 enabled: true,
             };
 
-            <GroupStore<T>>::insert(&key, new_group);
+            let mut groups: Vec<Entity<T::EntityId>> = vec![];
+
+            // Check if this account already had groups
+            if <GroupStore<T>>::contains_key(&owner) {
+                let mut val = <GroupStore<T>>::get(&owner);
+                groups.append(&mut val);
+            }
+            groups.push(new_group);
+
+            <GroupStore<T>>::insert(&owner, groups);
+            <KeysLookUpStore<T>>::insert(&key, &key);
 
             Ok(())
         }
@@ -1557,22 +1570,28 @@ pub mod pallet {
             let key = Self::generate_key(&owner, &group_id, Tag::Group);
 
             // Check if group exists
-            if !<GroupStore<T>>::contains_key(&key) {
+            if !<KeysLookUpStore<T>>::contains_key(&key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
-            // Get group
-            let group = Self::get_group(&owner, group_id);
+            let mut val = <GroupStore<T>>::get(&owner);
 
-            match group {
-                Some(mut g) => {
-                    g.name = (&name).to_vec();
+            let iterator = val.iter_mut();
 
-                    <GroupStore<T>>::mutate(&key, |a| *a = g);
-                    Ok(())
+            for entity in iterator {
+                if entity.id == group_id {
+                    if !entity.enabled {
+                        return Err(EntityError::EntityDoesNotExist);
+                    }
+                    entity.name = (&name).to_vec();
+                    break;
                 }
-                None => Err(EntityError::EntityDoesNotExist),
             }
+
+            if !val.is_empty() {
+                <GroupStore<T>>::mutate(&owner, |a| *a = val);
+            }
+            Ok(())
         }
 
         fn disable_existing_group(
@@ -1583,26 +1602,28 @@ pub mod pallet {
             let key = Self::generate_key(&owner, &group_id, Tag::Group);
 
             // Check if group exists
-            if !<GroupStore<T>>::contains_key(&key) {
+            if !<KeysLookUpStore<T>>::contains_key(&key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
-            // Get group
-            let group = Self::get_group(&owner, group_id);
+            let mut val = <GroupStore<T>>::get(&owner);
 
-            match group {
-                Some(mut g) => {
-                    // Check if group is enabled
-                    if !g.enabled {
+            let iterator = val.iter_mut();
+
+            for entity in iterator {
+                if entity.id == group_id {
+                    if !entity.enabled {
                         return Err(EntityError::EntityDoesNotExist);
                     }
-                    g.enabled = false;
-
-                    <GroupStore<T>>::mutate(&key, |a| *a = g);
-                    Ok(())
+                    entity.enabled = false;
+                    break;
                 }
-                None => Err(EntityError::EntityDoesNotExist),
             }
+
+            if !val.is_empty() {
+                <GroupStore<T>>::mutate(&owner, |a| *a = val);
+            }
+            Ok(())
         }
     }
 }
