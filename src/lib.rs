@@ -95,7 +95,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn keys_lookup_of)]
     pub type KeysLookUpStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, [u8; 32], [u8; 32], ValueQuery>;
+        StorageMap<_, Blake2_128Concat, [u8; 32], Entity<T::EntityId>, ValueQuery>;
 
     // Pallets use events to inform users when important changes are made.
     // https://docs.substrate.io/main-docs/build/events-errors/
@@ -729,6 +729,36 @@ pub mod pallet {
 
     // implement the Rbac trait to satify the methods
     impl<T: Config> Rbac<T::AccountId, T::EntityId> for Pallet<T> {
+        fn get_entity(key: [u8; 32]) -> Option<Entity<T::EntityId>> {
+            if !<KeysLookUpStore<T>>::contains_key(&key) {
+                return None;
+            }
+
+            let entity = <KeysLookUpStore<T>>::get(&key);
+
+            if !entity.enabled {
+                return None;
+            }
+
+            Some(entity)
+        }
+        fn check_entity_exists(key: [u8; 32]) -> bool {
+            // Check if entity exists and it's enabled
+            let entity = Self::get_entity(key);
+
+            match entity {
+                Some(data) => {
+                    if !data.enabled {
+                        return false;
+                    }
+                }
+                None => {
+                    return false;
+                }
+            }
+
+            true
+        }
         fn get_user_roles(
             owner: &T::AccountId,
             user_id: T::EntityId,
@@ -1241,27 +1271,9 @@ pub mod pallet {
     // implement the role Entity trait to satify the methods
     impl<T: Config> Role<T::AccountId, T::EntityId> for Pallet<T> {
         fn get_role(owner: &T::AccountId, role_id: T::EntityId) -> Option<Entity<T::EntityId>> {
-            // Generate key for integrity check
             let key = Self::generate_key(&owner, &role_id, Tag::Role);
 
-            // Check if role exists
-            if !<KeysLookUpStore<T>>::contains_key(&key) {
-                return None;
-            }
-
-            let mut val = <RoleStore<T>>::get(&owner);
-
-            let iterator = val.iter_mut();
-
-            for entity in iterator {
-                if entity.id == role_id {
-                    if !entity.enabled {
-                        return None;
-                    }
-                    return Some(entity.clone());
-                }
-            }
-            None
+            Self::get_entity(key)
         }
 
         fn get_roles(owner: &T::AccountId) -> Vec<Entity<T::EntityId>> {
@@ -1294,24 +1306,24 @@ pub mod pallet {
                 let mut val = <RoleStore<T>>::get(&owner);
                 roles.append(&mut val);
             }
-            roles.push(new_role);
+            roles.push(new_role.clone());
 
             <RoleStore<T>>::insert(&owner, roles);
-            <KeysLookUpStore<T>>::insert(&key, &key);
+            <KeysLookUpStore<T>>::insert(&key, new_role);
 
             Ok(())
         }
 
         fn update_existing_role(
             owner: &T::AccountId,
-            entity_id: T::EntityId,
+            role_id: T::EntityId,
             name: &[u8],
         ) -> Result<(), EntityError> {
             // Generate key for integrity check
-            let key = Self::generate_key(&owner, &entity_id, Tag::Role);
+            let key = Self::generate_key(&owner, &role_id, Tag::Role);
 
-            // Check if role exists
-            if !<KeysLookUpStore<T>>::contains_key(&key) {
+            // Check if role exists and it's enabled
+            if !Self::check_entity_exists(key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -1320,11 +1332,10 @@ pub mod pallet {
             let iterator = val.iter_mut();
 
             for entity in iterator {
-                if entity.id == entity_id {
-                    if !entity.enabled {
-                        return Err(EntityError::EntityDoesNotExist);
-                    }
+                if entity.id == role_id {
                     entity.name = (&name).to_vec();
+                    <KeysLookUpStore<T>>::mutate(&key, |e| *e = entity.clone());
+
                     break;
                 }
             }
@@ -1343,8 +1354,8 @@ pub mod pallet {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &role_id, Tag::Role);
 
-            // Check if role exists
-            if !<KeysLookUpStore<T>>::contains_key(&key) {
+            // Check if role exists and it's enabled
+            if !Self::check_entity_exists(key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -1354,17 +1365,14 @@ pub mod pallet {
 
             for entity in iterator {
                 if entity.id == role_id {
-                    if !entity.enabled {
-                        return Err(EntityError::EntityDoesNotExist);
-                    }
                     entity.enabled = false;
-
+                    <KeysLookUpStore<T>>::mutate(&key, |e| *e = entity.clone());
                     break;
                 }
             }
 
             if !val.is_empty() {
-                <RoleStore<T>>::mutate(&owner, |a| *a = val);
+                <RoleStore<T>>::mutate(&owner, |v| *v = val);
             }
             Ok(())
         }
@@ -1375,25 +1383,9 @@ pub mod pallet {
             owner: &T::AccountId,
             permission_id: T::EntityId,
         ) -> Option<Entity<T::EntityId>> {
-            // Generate key for integrity check
             let key = Self::generate_key(&owner, &permission_id, Tag::Permission);
-            if !<KeysLookUpStore<T>>::contains_key(&key) {
-                return None;
-            }
 
-            let mut val = <PermissionStore<T>>::get(&owner);
-
-            let iterator = val.iter_mut();
-
-            for entity in iterator {
-                if entity.id == permission_id {
-                    if !entity.enabled {
-                        return None;
-                    }
-                    return Some(entity.clone());
-                }
-            }
-            None
+            Self::get_entity(key)
         }
 
         fn get_permissions(owner: &T::AccountId) -> Vec<Entity<T::EntityId>> {
@@ -1426,10 +1418,10 @@ pub mod pallet {
                 let mut val = <PermissionStore<T>>::get(&owner);
                 permissions.append(&mut val);
             }
-            permissions.push(new_permission);
+            permissions.push(new_permission.clone());
 
             <PermissionStore<T>>::insert(&owner, permissions);
-            <KeysLookUpStore<T>>::insert(&key, &key);
+            <KeysLookUpStore<T>>::insert(&key, new_permission);
 
             Ok(())
         }
@@ -1441,8 +1433,8 @@ pub mod pallet {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &permission_id, Tag::Permission);
 
-            // Check if permission exists
-            if !<KeysLookUpStore<T>>::contains_key(&key) {
+            // Check if permission exists and it's enabled
+            if !Self::check_entity_exists(key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -1452,16 +1444,14 @@ pub mod pallet {
 
             for entity in iterator {
                 if entity.id == permission_id {
-                    if !entity.enabled {
-                        return Err(EntityError::EntityDoesNotExist);
-                    }
                     entity.name = (&name).to_vec();
+                    <KeysLookUpStore<T>>::mutate(&key, |e| *e = entity.clone());
                     break;
                 }
             }
 
             if !val.is_empty() {
-                <PermissionStore<T>>::mutate(&owner, |a| *a = val);
+                <PermissionStore<T>>::mutate(&owner, |v| *v = val);
             }
 
             Ok(())
@@ -1474,8 +1464,8 @@ pub mod pallet {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &permission_id, Tag::Permission);
 
-            // Check if permission exists
-            if !<KeysLookUpStore<T>>::contains_key(&key) {
+            // Check if permission exists and it's enabled
+            if !Self::check_entity_exists(key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -1485,16 +1475,14 @@ pub mod pallet {
 
             for entity in iterator {
                 if entity.id == permission_id {
-                    if !entity.enabled {
-                        return Err(EntityError::EntityDoesNotExist);
-                    }
                     entity.enabled = false;
+                    <KeysLookUpStore<T>>::mutate(&key, |e| *e = entity.clone());
                     break;
                 }
             }
 
             if !val.is_empty() {
-                <PermissionStore<T>>::mutate(&owner, |a| *a = val);
+                <PermissionStore<T>>::mutate(&owner, |v| *v = val);
             }
 
             Ok(())
@@ -1503,26 +1491,9 @@ pub mod pallet {
 
     impl<T: Config> Group<T::AccountId, T::EntityId> for Pallet<T> {
         fn get_group(owner: &T::AccountId, group_id: T::EntityId) -> Option<Entity<T::EntityId>> {
-            // Generate key for integrity check
             let key = Self::generate_key(&owner, &group_id, Tag::Group);
 
-            if !<KeysLookUpStore<T>>::contains_key(&key) {
-                return None;
-            }
-
-            let mut val = <GroupStore<T>>::get(&owner);
-
-            let iterator = val.iter_mut();
-
-            for entity in iterator {
-                if entity.id == group_id {
-                    if !entity.enabled {
-                        return None;
-                    }
-                    return Some(entity.clone());
-                }
-            }
-            None
+            Self::get_entity(key)
         }
         fn get_groups(owner: &T::AccountId) -> Vec<Entity<T::EntityId>> {
             <GroupStore<T>>::get(&owner)
@@ -1553,10 +1524,10 @@ pub mod pallet {
                 let mut val = <GroupStore<T>>::get(&owner);
                 groups.append(&mut val);
             }
-            groups.push(new_group);
+            groups.push(new_group.clone());
 
             <GroupStore<T>>::insert(&owner, groups);
-            <KeysLookUpStore<T>>::insert(&key, &key);
+            <KeysLookUpStore<T>>::insert(&key, new_group);
 
             Ok(())
         }
@@ -1569,8 +1540,8 @@ pub mod pallet {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &group_id, Tag::Group);
 
-            // Check if group exists
-            if !<KeysLookUpStore<T>>::contains_key(&key) {
+            // Check if group exists and it's enabled
+            if !Self::check_entity_exists(key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
 
@@ -1580,16 +1551,14 @@ pub mod pallet {
 
             for entity in iterator {
                 if entity.id == group_id {
-                    if !entity.enabled {
-                        return Err(EntityError::EntityDoesNotExist);
-                    }
                     entity.name = (&name).to_vec();
+                    <KeysLookUpStore<T>>::mutate(&key, |e| *e = entity.clone());
                     break;
                 }
             }
 
             if !val.is_empty() {
-                <GroupStore<T>>::mutate(&owner, |a| *a = val);
+                <GroupStore<T>>::mutate(&owner, |v| *v = val);
             }
             Ok(())
         }
@@ -1601,27 +1570,24 @@ pub mod pallet {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &group_id, Tag::Group);
 
-            // Check if group exists
-            if !<KeysLookUpStore<T>>::contains_key(&key) {
+            // Check if group exists and it's enabled
+            if !Self::check_entity_exists(key) {
                 return Err(EntityError::EntityDoesNotExist);
             }
-
             let mut val = <GroupStore<T>>::get(&owner);
 
             let iterator = val.iter_mut();
 
             for entity in iterator {
                 if entity.id == group_id {
-                    if !entity.enabled {
-                        return Err(EntityError::EntityDoesNotExist);
-                    }
                     entity.enabled = false;
+                    <KeysLookUpStore<T>>::mutate(&key, |e| *e = entity.clone());
                     break;
                 }
             }
 
             if !val.is_empty() {
-                <GroupStore<T>>::mutate(&owner, |a| *a = val);
+                <GroupStore<T>>::mutate(&owner, |v| *v = val);
             }
             Ok(())
         }

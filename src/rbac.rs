@@ -14,6 +14,8 @@ pub enum EntityError {
 
 pub trait Rbac<AccountId, EntityId> {
     fn generate_key(owner: &AccountId, entity: &EntityId, tag: Tag) -> [u8; 32];
+    fn get_entity(key: [u8; 32]) -> Option<Entity<EntityId>>;
+    fn check_entity_exists(key: [u8; 32]) -> bool;
     fn get_user_roles(owner: &AccountId, user_id: EntityId) -> Option<Vec<Role2User<EntityId>>>;
     fn get_user_groups(owner: &AccountId, user_id: EntityId) -> Option<Vec<User2Group<EntityId>>>;
     fn get_group_roles(owner: &AccountId, group_id: EntityId) -> Option<Vec<Role2Group<EntityId>>>;
