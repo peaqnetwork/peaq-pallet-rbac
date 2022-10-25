@@ -70,6 +70,7 @@ impl pallet_timestamp::Config for Test {
 impl peaq_rbac::Config for Test {
     type Event = Event;
     type EntityId = [u8; 32];
+    type WeightInfo = peaq_rbac::weights::SubstrateWeight<Test>;
 }
 
 // Build genesis storage according to the mock runtime.

@@ -14,8 +14,12 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+
 pub mod rbac;
 pub mod structs;
+
+pub mod weights;
+pub use weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -33,6 +37,7 @@ pub mod pallet {
         rbac::{EntityError, Permission, Rbac, Role, Tag},
         structs::{Entity, Permission2Role, Role2User},
     };
+    use super::WeightInfo;
 
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
@@ -53,6 +58,8 @@ pub mod pallet {
             + Copy
             + MaxEncodedLen
             + Default;
+        /// Weight information for extrinsics in this pallet.
+        type WeightInfo: WeightInfo;
     }
 
     // The pallet's runtime storage items.
@@ -189,7 +196,7 @@ pub mod pallet {
     // Dispatchable functions must be annotated with a weight and must return a DispatchResult.
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::fetch_role())]
         pub fn fetch_role(
             origin: OriginFor<T>,
             owner: T::AccountId,
@@ -211,7 +218,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::fetch_roles())]
         pub fn fetch_roles(origin: OriginFor<T>, owner: T::AccountId) -> DispatchResult {
             ensure_signed(origin)?;
             let roles = Self::get_roles(&owner);
@@ -222,7 +229,7 @@ pub mod pallet {
         }
 
         /// create role call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::add_role())]
         pub fn add_role(
             origin: OriginFor<T>,
             role_id: T::EntityId,
@@ -244,7 +251,7 @@ pub mod pallet {
         }
 
         /// update role call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::update_role())]
         pub fn update_role(
             origin: OriginFor<T>,
             role_id: T::EntityId,
@@ -265,7 +272,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::disable_role())]
         pub fn disable_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -279,7 +286,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::fetch_user_roles())]
         pub fn fetch_user_roles(
             origin: OriginFor<T>,
             owner: T::AccountId,
@@ -299,7 +306,7 @@ pub mod pallet {
         }
 
         /// assign a role to user call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::assign_role_to_user())]
         pub fn assign_role_to_user(
             origin: OriginFor<T>,
             role_id: T::EntityId,
@@ -318,7 +325,7 @@ pub mod pallet {
         }
 
         /// unassign role to user relationship call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::unassign_role_to_user())]
         pub fn unassign_role_to_user(
             origin: OriginFor<T>,
             role_id: T::EntityId,
@@ -336,7 +343,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::fetch_permission())]
         pub fn fetch_permission(
             origin: OriginFor<T>,
             owner: T::AccountId,
@@ -355,7 +362,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::fetch_permissions())]
         pub fn fetch_permissions(origin: OriginFor<T>, owner: T::AccountId) -> DispatchResult {
             ensure_signed(origin)?;
             let permissions = Self::get_permissions(&owner);
@@ -366,7 +373,7 @@ pub mod pallet {
         }
 
         /// create permission call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::add_permission())]
         pub fn add_permission(
             origin: OriginFor<T>,
             permission_id: T::EntityId,
@@ -388,7 +395,7 @@ pub mod pallet {
         }
 
         /// update permission call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::update_permission())]
         pub fn update_permission(
             origin: OriginFor<T>,
             permission_id: T::EntityId,
@@ -409,7 +416,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::disable_permission())]
         pub fn disable_permission(
             origin: OriginFor<T>,
             permission_id: T::EntityId,
@@ -426,7 +433,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::fetch_role_permissions())]
         pub fn fetch_role_permissions(
             origin: OriginFor<T>,
             owner: T::AccountId,
@@ -446,7 +453,7 @@ pub mod pallet {
         }
 
         /// assign a permission to role call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::assign_permission_to_role())]
         pub fn assign_permission_to_role(
             origin: OriginFor<T>,
             permission_id: T::EntityId,
@@ -465,7 +472,7 @@ pub mod pallet {
         }
 
         /// unassign permission to role relationship call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::unassign_permission_to_role())]
         pub fn unassign_permission_to_role(
             origin: OriginFor<T>,
             permission_id: T::EntityId,
@@ -487,7 +494,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::fetch_group())]
         pub fn fetch_group(
             origin: OriginFor<T>,
             owner: T::AccountId,
@@ -506,7 +513,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::fetch_groups())]
         pub fn fetch_groups(origin: OriginFor<T>, owner: T::AccountId) -> DispatchResult {
             ensure_signed(origin)?;
             let groups = Self::get_groups(&owner);
@@ -517,7 +524,7 @@ pub mod pallet {
         }
 
         /// create group call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::add_group())]
         pub fn add_group(
             origin: OriginFor<T>,
             group_id: T::EntityId,
@@ -539,7 +546,7 @@ pub mod pallet {
         }
 
         /// update group call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::update_group())]
         pub fn update_group(
             origin: OriginFor<T>,
             group_id: T::EntityId,
@@ -561,7 +568,7 @@ pub mod pallet {
         }
 
         /// disable group call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::disable_group())]
         pub fn disable_group(origin: OriginFor<T>, group_id: T::EntityId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -576,7 +583,7 @@ pub mod pallet {
         }
 
         /// assign a role to group call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::assign_role_to_group())]
         pub fn assign_role_to_group(
             origin: OriginFor<T>,
             role_id: T::EntityId,
@@ -594,7 +601,7 @@ pub mod pallet {
             Ok(())
         }
         /// unassign role to group relationship call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::unassign_role_to_group())]
         pub fn unassign_role_to_group(
             origin: OriginFor<T>,
             role_id: T::EntityId,
@@ -612,7 +619,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::fetch_group_roles())]
         pub fn fetch_group_roles(
             origin: OriginFor<T>,
             owner: T::AccountId,
@@ -632,7 +639,7 @@ pub mod pallet {
         }
 
         /// assign a user to group call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::assign_user_to_group())]
         pub fn assign_user_to_group(
             origin: OriginFor<T>,
             user_id: T::EntityId,
@@ -651,7 +658,7 @@ pub mod pallet {
         }
 
         /// unassign a user to group call
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::unassign_user_to_group())]
         pub fn unassign_user_to_group(
             origin: OriginFor<T>,
             user_id: T::EntityId,
@@ -669,7 +676,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::fetch_user_groups())]
         pub fn fetch_user_groups(
             origin: OriginFor<T>,
             owner: T::AccountId,
@@ -688,7 +695,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::fetch_user_permissions())]
         pub fn fetch_user_permissions(
             origin: OriginFor<T>,
             owner: T::AccountId,
@@ -707,7 +714,7 @@ pub mod pallet {
             Ok(())
         }
 
-        #[pallet::weight(1_000)]
+        #[pallet::weight(T::WeightInfo::fetch_group_permissions())]
         pub fn fetch_group_permissions(
             origin: OriginFor<T>,
             owner: T::AccountId,
