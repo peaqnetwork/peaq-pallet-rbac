@@ -3,6 +3,8 @@
 //! The RBAC pallet allows resolving and management for  role-base access control in a generic manner.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+// Fix benchmarking failure
+#![recursion_limit = "256"]
 
 pub use pallet::*;
 
