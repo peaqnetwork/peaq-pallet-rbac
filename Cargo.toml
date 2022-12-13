@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "pallet",
-    "rpc"
+    "rpc",
+    "rpc/runtime-api"
 ]
 
 [profile.release]

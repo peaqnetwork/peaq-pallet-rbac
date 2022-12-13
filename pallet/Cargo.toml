@@ -67,6 +67,9 @@ default-features = false
 git = 'https://github.com/peaqnetwork/substrate'
 branch = 'peaq-polkadot-v0.9.29'  # or the latest monthly
 
+[dependencies.serde]
+serde = '1.0.136'
+
 [features]
 default = ['std']
 std = [

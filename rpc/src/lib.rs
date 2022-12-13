@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::convert::From;
 
-use codec::{Decode, Encode};
+// use codec::{Decode, Encode};
 use codec::Codec;
 use jsonrpc_core::{Error as RpcError, ErrorCode, Result};
 use jsonrpc_derive::rpc;
@@ -9,9 +9,11 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 // use peaq_pallet_did::structs::Attribute;
 // pub use peaq_pallet_did_runtime_api::PeaqDIDApi as PeaqDIDRuntimeApi;
+use peaq_pallet_rbac::structs::{Entity};
+pub use peaq_pallet_rbac_runtime_api::PeaqRBACApi as PeaqRBACRuntimeApi;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
-use sp_core::Bytes;
-use serde::{Deserialize, Serialize};
+// use sp_core::Bytes;
+// use serde::{Deserialize, Serialize};
 
 
 // #[derive(
@@ -34,67 +36,77 @@ use serde::{Deserialize, Serialize};
 //         }
 //     }
 // }
-use peaq_pallet_rbac::structs::{Entity};
+// Note: use peaq_pallet_rbac::structs::{Entity};
 
 #[rpc]
-pub trait PeaqDIDApi<OriginFor, AccountId, EntityId> {
+pub trait PeaqRBACApi<OriginFor, AccountId, EntityId, BlockHash> {
 	#[rpc(name = "peaqrbac_fetchRole")]
-	fn fetch_role(&self, owner: OriginFor, did_account: AccountId, name: Bytes, at: Option<BlockHash>) -> 
+	fn fetch_role(&self, owner: OriginFor, did_account: AccountId, entity: EntityId, at: Option<BlockHash>) -> 
         Result<Option<Entity<EntityId>>>;
 }
 
-// A struct that implements the [`PeaqDIDApi`].
-// pub struct PeaqDID<C, B> {
-// 	client: Arc<C>,
-// 	_marker: std::marker::PhantomData<B>,
-// }
+/// A struct that implements the [`PeaqRBACApi`].
+pub struct PeaqRBAC<Client, Block> {
+	client: Arc<Client>,
+	_marker: std::marker::PhantomData<Block>,
+}
 
-// impl<C, B> PeaqDID<C, B> {
-// 	/// Create new `PeaqDID` with the given reference to the client.
-// 	pub fn new(client: Arc<C>) -> Self {
-// 		PeaqDID {
-// 			client,
-// 			_marker: Default::default(),
-// 		}
-// 	}
-// }
+impl<Client, Block> PeaqRBAC<Client, Block> {
+	/// Create new `PeaqRBAC` with the given reference to the client.
+	pub fn new(client: Arc<Client>) -> Self {
+		PeaqRBAC {
+			client,
+			_marker: Default::default(),
+		}
+	}
+}
 
-// pub enum Error {
-// 	RuntimeError,
-// }
+pub enum Error {
+	RuntimeError,
+}
 
-// impl From<Error> for i64 {
-// 	fn from(e: Error) -> i64 {
-// 		match e {
-// 			Error::RuntimeError => 1,
-// 		}
-// 	}
-// }
+impl From<Error> for i64 {
+	fn from(e: Error) -> i64 {
+		match e {
+			Error::RuntimeError => 1,
+		}
+	}
+}
 
 
-// impl<C, Block, AccountId, BlockNumber, Moment> PeaqDIDApi<<Block as BlockT>::Hash, AccountId, BlockNumber, Moment> for PeaqDID<C, Block>
-// where
-// 	Block: BlockT,
-// 	C: Send + Sync + 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
-// 	C::Api: PeaqDIDRuntimeApi<Block, AccountId, BlockNumber, Moment>,
-// 	AccountId: Codec,
-// 	BlockNumber: Codec,
-// 	Moment: Codec,
-// {
-// 	fn read_attribute(&self, did_account: AccountId, name: Bytes, at: Option<<Block as BlockT>::Hash>) -> 
-//         Result<Option<RPCAttribute<BlockNumber, Moment>>>
-//     {
-//    		let api = self.client.runtime_api();
-// 		let at = BlockId::hash(at.unwrap_or(
-// 			// If the block hash is not supplied assume the best block.
-// 			self.client.info().best_hash,
-// 		));
-//         api.read(&at, did_account, name.to_vec()).map(|o| {
-//             o.map(|item| RPCAttribute::from(item))
-//         }).map_err(|e| RpcError {
-//     		code: ErrorCode::ServerError(Error::RuntimeError.into()),
-//     		message: "Unable to get value.".into(),
-//     		data: Some(format!("{:?}", e).into()),
-//     	})
-//     }
-// }
+impl<Client, Block, OriginFor, AccountId, EntityId> PeaqRBACApi<OriginFor, AccountId, EntityId, <Block as BlockT>::Hash> for PeaqRBAC<Client, Block>
+where
+    Block: BlockT,
+    Client: Send + Sync + 'static + ProvideRuntimeApi<Block> + HeaderBackend<Block>,
+    Client::Api: PeaqRBACRuntimeApi<Block, OriginFor, AccountId, EntityId>,
+    OriginFor: Codec,
+	AccountId: Codec,
+	EntityId: Codec
+{
+	fn fetch_role(&self, 
+            owner: OriginFor, 
+            did_account: AccountId, 
+            entity: EntityId, 
+            at: Option<<Block as BlockT>::Hash>) -> 
+        Result<Option<Entity<EntityId>>>
+    {
+   		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash,
+		));
+        // api.read(&at, owner, did_account, entity).map(|o| {
+        //     o.map(|item| RPCAttribute::from(item))
+        // }).map_err(|e| RpcError {
+    	// 	code: ErrorCode::ServerError(Error::RuntimeError.into()),
+    	// 	message: "Unable to get value.".into(),
+    	// 	data: Some(format!("{:?}", e).into()),
+    	// })
+        api.read(&at, owner, did_account, entity)
+            .map_err(|e| RpcError {
+                code: ErrorCode::ServerError(Error::RuntimeError.into()),
+                message: "Unable to get value.".into(),
+                data: Some(format!("{:?}", e).into()),
+    	    })
+    }
+}
