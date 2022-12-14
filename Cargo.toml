@@ -2,8 +2,5 @@
 members = [
     "pallet",
     "rpc",
-    "rpc/runtime-api"
+    "rpc/runtime-api",
 ]
-
-[profile.release]
-panic = "unwind"

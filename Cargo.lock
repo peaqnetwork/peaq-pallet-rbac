@@ -1717,7 +1717,7 @@ dependencies = [
 
 [[package]]
 name = "peaq-pallet-rbac-rpc"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "jsonrpc-core",
  "jsonrpc-core-client",
@@ -1735,7 +1735,7 @@ dependencies = [
 
 [[package]]
 name = "peaq-pallet-rbac-runtime-api"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "parity-scale-codec",
  "peaq-pallet-rbac",
