@@ -16,11 +16,11 @@ jsonrpc-core-client = "18.0.0"
 jsonrpc-derive = "18.0.0"
 serde = "1.0.136"
 
-sp-api = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.19" }
-sp-blockchain = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.19" }
-sp-core = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.19" }
-sp-rpc = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.19" }
-sp-runtime = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.19" }
+sp-api = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
+sp-blockchain = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
+sp-core = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
+sp-rpc = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
+sp-runtime = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
 
 peaq-pallet-rbac-runtime-api = { version = "0.0.2", path = "./runtime-api" }
 peaq-pallet-rbac = { version = "0.0.2", path = "../pallet/" }
