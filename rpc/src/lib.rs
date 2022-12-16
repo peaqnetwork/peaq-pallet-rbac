@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::convert::From;
 
-// use codec::{Decode, Encode};
+use codec::{Decode, Encode};
 use codec::Codec;
 use jsonrpc_core::{Error as RpcError, ErrorCode, Result};
 use jsonrpc_derive::rpc;
@@ -13,7 +13,7 @@ use peaq_pallet_rbac::structs::{Entity};
 pub use peaq_pallet_rbac_runtime_api::PeaqRBACApi as PeaqRBACRuntimeApi;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 // use sp_core::Bytes;
-// use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 
 // #[derive(
@@ -38,11 +38,31 @@ use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 // }
 // Note: use peaq_pallet_rbac::structs::{Entity};
 
+#[derive(
+	Clone, Encode, Decode, Serialize, Deserialize
+)]
+pub struct RPCEntity<EntityId> {
+    pub id: EntityId,
+    pub name: Vec<u8>,
+    pub enabled: bool,
+}
+
+impl<EntityId> From<Entity::<EntityId>> for RPCEntity<EntityId> {
+    fn from(item: Entity::<EntityId>) -> Self {
+        RPCEntity {
+            id: item.id,
+            name: item.name,
+            enabled: item.enabled,
+        }
+    }
+}
+
+
 #[rpc]
 pub trait PeaqRBACApi<OriginFor, AccountId, EntityId, BlockHash> {
 	#[rpc(name = "peaqrbac_fetchRole")]
 	fn fetch_role(&self, owner: OriginFor, did_account: AccountId, entity: EntityId, at: Option<BlockHash>) -> 
-        Result<Option<Entity<EntityId>>>;
+        Result<Option<RPCEntity<EntityId>>>;
 }
 
 /// A struct that implements the [`PeaqRBACApi`].
@@ -88,25 +108,19 @@ where
             did_account: AccountId, 
             entity: EntityId, 
             at: Option<<Block as BlockT>::Hash>) -> 
-        Result<Option<Entity<EntityId>>>
+        Result<Option<RPCEntity<EntityId>>>
     {
    		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or(
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        // api.read(&at, owner, did_account, entity).map(|o| {
-        //     o.map(|item| RPCAttribute::from(item))
-        // }).map_err(|e| RpcError {
-    	// 	code: ErrorCode::ServerError(Error::RuntimeError.into()),
-    	// 	message: "Unable to get value.".into(),
-    	// 	data: Some(format!("{:?}", e).into()),
-    	// })
-        api.read(&at, owner, did_account, entity)
-            .map_err(|e| RpcError {
-                code: ErrorCode::ServerError(Error::RuntimeError.into()),
-                message: "Unable to get value.".into(),
-                data: Some(format!("{:?}", e).into()),
-    	    })
+        api.read(&at, owner, did_account, entity).map(|o| {
+            o.map(|item| RPCEntity::from(item))
+        }).map_err(|e| RpcError {
+    		code: ErrorCode::ServerError(Error::RuntimeError.into()),
+    		message: "Unable to get value.".into(),
+    		data: Some(format!("{:?}", e).into()),
+    	})
     }
 }

@@ -2,10 +2,10 @@ use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 use sp_std::vec::Vec;
-use serde::{Deserialize, Serialize};
+// use serde::{Deserialize, Serialize};
 
 #[derive(
-    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug, Serialize, Deserialize
+    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug, //Serialize, Deserialize
 )]
 pub struct Entity<EntityId> {
     pub id: EntityId,
