@@ -15,26 +15,26 @@ sp_api::decl_runtime_apis! {
     {
         fn fetch_role(account: AccountId, entity: EntityId) -> Option<Entity<EntityId>>;
 
-        fn fetch_roles(owner: AccountId) -> Vec<Entity<EntityId>>;
+        // fn fetch_roles(owner: AccountId) -> Vec<Entity<EntityId>>;
 
-        fn fetch_user_roles(owner: AccountId, user_id: EntityId) -> Option<Vec<Role2User<EntityId>>>;
+        // fn fetch_user_roles(owner: AccountId, user_id: EntityId) -> Option<Vec<Role2User<EntityId>>>;
 
-        fn fetch_permission(owner: AccountId, permission_id: EntityId) -> Option<Entity<EntityId>>;
+        // fn fetch_permission(owner: AccountId, permission_id: EntityId) -> Option<Entity<EntityId>>;
 
-        fn fetch_permissions(owner: AccountId) -> Vec<Entity<EntityId>>;
+        // fn fetch_permissions(owner: AccountId) -> Vec<Entity<EntityId>>;
 
-        fn fetch_role_permissions(owner: AccountId, role_id: EntityId) -> Option<Vec<Permission2Role<EntityId>>>;
+        // fn fetch_role_permissions(owner: AccountId, role_id: EntityId) -> Option<Vec<Permission2Role<EntityId>>>;
 
-        fn fetch_group(owner: AccountId, group_id: EntityId) -> Option<Entity<EntityId>>;
+        // fn fetch_group(owner: AccountId, group_id: EntityId) -> Option<Entity<EntityId>>;
 
-        fn fetch_groups(owner: AccountId) -> Vec<Entity<EntityId>>;
+        // fn fetch_groups(owner: AccountId) -> Vec<Entity<EntityId>>;
 
-        fn fetch_group_roles(owner: AccountId, group_id: EntityId) -> Option<Vec<Role2Group<EntityId>>>;
+        // fn fetch_group_roles(owner: AccountId, group_id: EntityId) -> Option<Vec<Role2Group<EntityId>>>;
         
-        fn fetch_user_groups(owner: AccountId, user_id: EntityId) -> Option<Vec<User2Group<EntityId>>>;
+        // fn fetch_user_groups(owner: AccountId, user_id: EntityId) -> Option<Vec<User2Group<EntityId>>>;
 
-        fn fetch_user_permissions(owner: AccountId, user_id: EntityId) -> Option<Vec<Entity<EntityId>>>;
+        // fn fetch_user_permissions(owner: AccountId, user_id: EntityId) -> Option<Vec<Entity<EntityId>>>;
         
-        fn fetch_group_permissions(owner: AccountId, group_id: EntityId) -> Option<Vec<Entity<EntityId>>>;
+        // fn fetch_group_permissions(owner: AccountId, group_id: EntityId) -> Option<Vec<Entity<EntityId>>>;
     }
 }
