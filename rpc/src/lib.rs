@@ -6,7 +6,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 // use peaq_pallet_did::structs::Attribute;
 // pub use peaq_pallet_did_runtime_api::PeaqDIDApi as PeaqDIDRuntimeApi;
-use peaq_pallet_rbac::structs::{Entity};
+use peaq_pallet_rbac::structs::{Entity, Role2User, Role2Group, User2Group, Permission2Role};
 pub use peaq_pallet_rbac_runtime_api::PeaqRBACApi as PeaqRBACRuntimeApi;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 use sp_core::Bytes;
@@ -62,9 +62,77 @@ impl<EntityId> From<Entity::<EntityId>> for RPCEntity<EntityId> {
 
 #[rpc(client, server)]
 pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
+	/// RPC method for extrinsic call fetchRole
 	#[method(name = "peaqrbac_fetchRole")]
-	fn fetch_role(&self, account: AccountId, entity: EntityId, at: Option<BlockHash>) -> 
-		RpcResult<Option<RPCEntity<EntityId>>>;
+	fn fetch_role(
+		&self, account: AccountId, entity: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<RPCEntity<EntityId>>>;
+
+	/// RPC method for extrinsic call fetchRoles
+	#[method(name = "peaqrbac_fetchRoles")]
+	fn fetch_roles(
+		&self, owner: AccountId, at: Option<BlockHash>
+	) -> RpcResult<Vec<Entity<EntityId>>>;
+
+	/// RPC method for extrinsic call fetchUserRoles
+	#[method(name = "peaqrbac_fetchUserRoles")]
+	fn fetch_user_roles(
+		&self, owner: AccountId, user_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Vec<Role2User<EntityId>>>>;
+
+	/// RPC method for extrinsic call fetchPermission
+	#[method(name = "peaqrbac_fetchPermission")]
+	fn fetch_permission(
+		&self, owner: AccountId, permission_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Entity<EntityId>>>;
+
+	/// RPC method for extrinsic call fetchPermissions
+	#[method(name = "peaqrbac_fetchPermissions")]
+	fn fetch_permissions(
+		&self, owner: AccountId, at: Option<BlockHash>
+	) -> RpcResult<Vec<Entity<EntityId>>>;
+
+	/// RPC method for extrinsic call fetchRolePermissions
+	#[method(name = "peaqrbac_fetchRolePermissions")]
+	fn fetch_role_permissions(
+		&self, owner: AccountId, role_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Vec<Permission2Role<EntityId>>>>;
+
+	/// RPC method for extrinsic call fetchGroup
+	#[method(name = "peaqrbac_fetchGroup")]
+	fn fetch_group(
+		&self, owner: AccountId, group_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Entity<EntityId>>>;
+
+	/// RPC method for extrinsic call fetchGroups
+	#[method(name = "peaqrbac_fetchGroups")]
+	fn fetch_groups(
+		&self, owner: AccountId, at: Option<BlockHash>
+	) -> RpcResult<Vec<Entity<EntityId>>>;
+
+	/// RPC method for extrinsic call fetchGroupRoles
+	#[method(name = "peaqrbac_fetchGroupRoles")]
+	fn fetch_group_roles(
+		&self, owner: AccountId, group_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Vec<Role2Group<EntityId>>>>;
+	
+	/// RPC method for extrinsic call fetchUserGroups
+	#[method(name = "peaqrbac_fetchUserGroups")]
+	fn fetch_user_groups(
+		&self, owner: AccountId, user_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Vec<User2Group<EntityId>>>>;
+
+	/// RPC method for extrinsic call fetchUserPermissions
+	#[method(name = "peaqrbac_fetchUserPermissions")]
+	fn fetch_user_permissions(
+		&self, owner: AccountId, user_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Vec<Entity<EntityId>>>>;
+	
+	/// RPC method for extrinsic call fetchGroupPermissions
+	#[method(name = "peaqrbac_fetchGroupPermissions")]
+	fn fetch_group_permissions(
+		&self, owner: AccountId, group_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Vec<Entity<EntityId>>>>;
 }
 
 /// A struct that implements the [`PeaqRBACApi`].
@@ -126,4 +194,100 @@ where
 			)))
 		})
     }
+
+	fn fetch_roles(&self,
+			owner: AccountId,
+			at: Option<<Block as BlockT>::Hash>) -> 
+		RpcResult<Vec<Entity<EntityId>>>
+	{
+		// get_roles(&owner)
+	}
+
+	fn fetch_user_roles(&self,
+			owner: AccountId,
+			user_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) -> 
+		RpcResult<Option<Vec<Role2User<EntityId>>>>
+	{
+		// get_user_roles(&owner, user_id)
+	}
+
+	fn fetch_permission(&self,
+			owner: AccountId,
+			permission_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<Entity<EntityId>>>
+	{
+		// get_permission(&owner, permission_id)
+	}
+
+	fn fetch_permissions(&self,
+			owner: AccountId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Vec<Entity<EntityId>>>
+	{
+		// get_permissions(&owner)
+	}
+
+	fn fetch_role_permissions(&self,
+			owner: AccountId,
+			role_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<Vec<Permission2Role<EntityId>>>>
+	{
+		// get_role_permissions(&owner, role_id)
+	}
+
+	fn fetch_group(&self,
+			owner: AccountId,
+			group_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<Entity<EntityId>>>
+	{
+		// get_group(&owner, group_id)
+	}
+
+	fn fetch_groups(&self,
+			owner: AccountId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Vec<Entity<EntityId>>>
+	{
+		// get_groups(&owner)
+	}
+
+	fn fetch_group_roles(&self,
+			owner: AccountId,
+			group_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<Vec<Role2Group<EntityId>>>>
+	{
+		// get_group_roles(&owner, group_id)
+	}
+	 
+	fn fetch_user_groups(&self,
+			owner: AccountId,
+			user_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<Vec<User2Group<EntityId>>>>
+	{
+		// get_user_groups(&owner, user_id)
+	}
+
+	fn fetch_user_permissions(&self,
+			owner: AccountId,
+			user_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<Vec<Entity<EntityId>>>>
+	{
+		// get_user_permissions(&owner, user_id)
+	}
+	
+	fn fetch_group_permissions(&self,
+			owner: AccountId,
+			group_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<Vec<Entity<EntityId>>>>
+	{
+		// get_group_permissions(&owner, group_id)
+	}
 }
