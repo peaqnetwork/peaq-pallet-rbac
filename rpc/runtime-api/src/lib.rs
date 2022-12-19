@@ -8,12 +8,11 @@ use codec::Codec;
 use peaq_pallet_rbac::structs::Entity;
 
 sp_api::decl_runtime_apis! {
-    pub trait PeaqRBACApi<OriginFor, AccountId, EntityId>
+    pub trait PeaqRBACApi<AccountId, EntityId>
     where
-        OriginFor: Codec,
         AccountId: Codec,
         EntityId: Codec
     {
-        fn read(owner: OriginFor, did_account: AccountId, entity: EntityId) -> Option<Entity<EntityId>>;
+        fn fetch_role(account: AccountId, entity: EntityId) -> Option<Entity<EntityId>>;
     }
 }
