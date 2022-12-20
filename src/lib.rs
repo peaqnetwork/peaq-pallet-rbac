@@ -4,6 +4,8 @@
 
 #![recursion_limit = "256"]
 #![cfg_attr(not(feature = "std"), no_std)]
+// Fix benchmarking failure
+#![recursion_limit = "256"]
 
 pub use pallet::*;
 

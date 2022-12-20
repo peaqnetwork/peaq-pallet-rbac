@@ -69,162 +69,162 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:1)
 	// Storage: PeaqRbac RoleStore (r:1 w:1)
 	fn add_role() -> Weight {
-		(20_419_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(20_419_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:1)
 	// Storage: PeaqRbac RoleStore (r:1 w:1)
 	fn update_role() -> Weight {
-		(25_529_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(25_529_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:1)
 	// Storage: PeaqRbac RoleStore (r:1 w:1)
 	fn disable_role() -> Weight {
-		(24_807_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(24_807_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:0)
 	fn fetch_role() -> Weight {
-		(16_912_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+		Weight::from_ref_time(16_912_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: PeaqRbac RoleStore (r:1 w:0)
 	fn fetch_roles() -> Weight {
-		(15_599_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+		Weight::from_ref_time(15_599_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:0)
 	// Storage: PeaqRbac Role2UserStore (r:1 w:1)
 	fn assign_role_to_user() -> Weight {
-		(20_780_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(20_780_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PeaqRbac Role2UserStore (r:1 w:1)
 	fn unassign_role_to_user() -> Weight {
-		(19_046_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(19_046_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:2 w:0)
 	// Storage: PeaqRbac Role2GroupStore (r:1 w:1)
 	fn assign_role_to_group() -> Weight {
-		(25_038_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(25_038_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PeaqRbac Role2GroupStore (r:1 w:1)
 	fn unassign_role_to_group() -> Weight {
-		(19_587_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(19_587_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PeaqRbac Role2UserStore (r:1 w:0)
 	fn fetch_user_roles() -> Weight {
-		(17_082_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+		Weight::from_ref_time(17_082_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:1)
 	// Storage: PeaqRbac PermissionStore (r:1 w:1)
 	fn add_permission() -> Weight {
-		(20_779_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(20_779_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:1)
 	// Storage: PeaqRbac PermissionStore (r:1 w:1)
 	fn update_permission() -> Weight {
-		(25_849_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(25_849_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:1)
 	// Storage: PeaqRbac PermissionStore (r:1 w:1)
 	fn disable_permission() -> Weight {
-		(25_358_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(25_358_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:0)
 	fn fetch_permission() -> Weight {
-		(17_293_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+		Weight::from_ref_time(17_293_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: PeaqRbac PermissionStore (r:1 w:0)
 	fn fetch_permissions() -> Weight {
-		(15_429_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+		Weight::from_ref_time(15_429_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:2 w:0)
 	// Storage: PeaqRbac Permission2RoleStore (r:1 w:1)
 	fn assign_permission_to_role() -> Weight {
-		(24_978_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(24_978_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PeaqRbac Permission2RoleStore (r:1 w:1)
 	fn unassign_permission_to_role() -> Weight {
-		(19_247_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(19_247_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PeaqRbac Permission2RoleStore (r:1 w:0)
 	fn fetch_role_permissions() -> Weight {
-		(17_573_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+		Weight::from_ref_time(17_573_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:1)
 	// Storage: PeaqRbac GroupStore (r:1 w:1)
 	fn add_group() -> Weight {
-		(20_679_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(20_679_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:1)
 	// Storage: PeaqRbac GroupStore (r:1 w:1)
 	fn update_group() -> Weight {
-		(25_488_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(25_488_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:1)
 	// Storage: PeaqRbac GroupStore (r:1 w:1)
 	fn disable_group() -> Weight {
-		(25_238_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(25_238_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(2 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:0)
 	fn fetch_group() -> Weight {
-		(17_092_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+		Weight::from_ref_time(17_092_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: PeaqRbac GroupStore (r:1 w:0)
 	fn fetch_groups() -> Weight {
-		(15_389_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+		Weight::from_ref_time(15_389_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:0)
 	// Storage: PeaqRbac User2GroupStore (r:1 w:1)
 	fn assign_user_to_group() -> Weight {
-		(20_469_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(20_469_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(2 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PeaqRbac User2GroupStore (r:1 w:1)
 	fn unassign_user_to_group() -> Weight {
-		(19_036_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(19_036_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
+			.saturating_add(T::DbWeight::get().writes(1 as u64))
 	}
 	// Storage: PeaqRbac User2GroupStore (r:1 w:0)
 	fn fetch_user_groups() -> Weight {
-		(17_433_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+		Weight::from_ref_time(17_433_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 	// Storage: PeaqRbac Role2UserStore (r:1 w:0)
 	// Storage: PeaqRbac User2GroupStore (r:1 w:0)
@@ -232,19 +232,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: PeaqRbac Permission2RoleStore (r:1 w:0)
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:0)
 	fn fetch_user_permissions() -> Weight {
-		(38_674_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
+		Weight::from_ref_time(38_674_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(5 as u64))
 	}
 	// Storage: PeaqRbac Role2GroupStore (r:1 w:0)
 	// Storage: PeaqRbac Permission2RoleStore (r:1 w:0)
 	// Storage: PeaqRbac KeysLookUpStore (r:1 w:0)
 	fn fetch_group_permissions() -> Weight {
-		(29_356_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
+		Weight::from_ref_time(29_356_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(3 as u64))
 	}
 	// Storage: PeaqRbac Role2GroupStore (r:1 w:0)
 	fn fetch_group_roles() -> Weight {
-		(17_553_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+		Weight::from_ref_time(17_553_000 as u64)
+			.saturating_add(T::DbWeight::get().reads(1 as u64))
 	}
 }
