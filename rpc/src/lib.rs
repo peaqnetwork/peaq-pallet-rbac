@@ -43,18 +43,90 @@ use jsonrpsee::{
 #[derive(
 	Clone, Encode, Decode, Serialize, Deserialize
 )]
-pub struct RPCEntity<EntityId> {
+pub struct RpcEntity<EntityId> {
     pub id: EntityId,
     pub name: Bytes,
     pub enabled: bool,
 }
 
-impl<EntityId> From<Entity::<EntityId>> for RPCEntity<EntityId> {
+impl<EntityId> From<Entity::<EntityId>> for RpcEntity<EntityId> {
     fn from(item: Entity::<EntityId>) -> Self {
-        RPCEntity {
+        RpcEntity {
             id: item.id,
             name: item.name.into(),
             enabled: item.enabled,
+        }
+    }
+}
+
+
+#[derive(
+    Clone, Encode, Decode, Serialize, Deserialize
+)]
+pub struct RpcRole2User<EntityId> {
+    pub role: EntityId,
+    pub user: EntityId,
+}
+
+impl<EntityId> From<Role2User::<EntityId>> for RpcRole2User<EntityId> {
+    fn from(item: Role2User::<EntityId>) -> Self {
+        RpcRole2User {
+            role: item.role,
+            user: item.user,
+        }
+    }
+}
+
+
+#[derive(
+    Clone, Encode, Decode, Serialize, Deserialize
+)]
+pub struct RpcRole2Group<EntityId> {
+    pub role: EntityId,
+    pub group: EntityId,
+}
+
+impl<EntityId> From<Role2Group::<EntityId>> for RpcRole2Group<EntityId> {
+    fn from(item: Role2Group::<EntityId>) -> Self {
+        RpcRole2Group {
+            role: item.role,
+            group: item.group,
+        }
+    }
+}
+
+
+#[derive(
+    Clone, Encode, Decode, Serialize, Deserialize
+)]
+pub struct RpcUser2Group<EntityId> {
+    pub user: EntityId,
+    pub group: EntityId,
+}
+
+impl<EntityId> From<User2Group::<EntityId>> for RpcUser2Group<EntityId> {
+    fn from(item: User2Group::<EntityId>) -> Self {
+        RpcUser2Group {
+            user: item.user,
+            group: item.group,
+        }
+    }
+}
+
+
+#[derive(
+    Clone, Encode, Decode, Serialize, Deserialize
+)]
+pub struct RpcPermission2Role<EntityId> {
+    pub permission: EntityId,
+    pub role: EntityId,
+}
+
+impl<EntityId> From<Permission2Role::<EntityId>> for RpcPermission2Role<EntityId> {
+    fn from(item: Permission2Role::<EntityId>) -> Self {
+        RpcPermission2Role {
+            permission: item.permission,
+            role: item.role,
         }
     }
 }
@@ -66,73 +138,73 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
 	#[method(name = "peaqrbac_fetchRole")]
 	fn fetch_role(
 		&self, account: AccountId, entity: EntityId, at: Option<BlockHash>
-	) -> RpcResult<Option<RPCEntity<EntityId>>>;
+	) -> RpcResult<Option<RpcEntity<EntityId>>>;
 
-	// /// RPC method for extrinsic call fetchRoles
-	// #[method(name = "peaqrbac_fetchRoles")]
-	// fn fetch_roles(
-	// 	&self, owner: AccountId, at: Option<BlockHash>
-	// ) -> RpcResult<Vec<Entity<EntityId>>>;
+	/// RPC method for extrinsic call fetchRoles
+	#[method(name = "peaqrbac_fetchRoles")]
+	fn fetch_roles(
+		&self, owner: AccountId, at: Option<BlockHash>
+	) -> RpcResult<Vec<RpcEntity<EntityId>>>;
 
-	// /// RPC method for extrinsic call fetchUserRoles
-	// #[method(name = "peaqrbac_fetchUserRoles")]
-	// fn fetch_user_roles(
-	// 	&self, owner: AccountId, user_id: EntityId, at: Option<BlockHash>
-	// ) -> RpcResult<Option<Vec<Role2User<EntityId>>>>;
+	/// RPC method for extrinsic call fetchUserRoles
+	#[method(name = "peaqrbac_fetchUserRoles")]
+	fn fetch_user_roles(
+		&self, owner: AccountId, user_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Vec<RpcRole2User<EntityId>>>>;
 
-	// /// RPC method for extrinsic call fetchPermission
-	// #[method(name = "peaqrbac_fetchPermission")]
-	// fn fetch_permission(
-	// 	&self, owner: AccountId, permission_id: EntityId, at: Option<BlockHash>
-	// ) -> RpcResult<Option<Entity<EntityId>>>;
+	/// RPC method for extrinsic call fetchPermission
+	#[method(name = "peaqrbac_fetchPermission")]
+	fn fetch_permission(
+		&self, owner: AccountId, permission_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<RpcEntity<EntityId>>>;
 
-	// /// RPC method for extrinsic call fetchPermissions
-	// #[method(name = "peaqrbac_fetchPermissions")]
-	// fn fetch_permissions(
-	// 	&self, owner: AccountId, at: Option<BlockHash>
-	// ) -> RpcResult<Vec<Entity<EntityId>>>;
+	/// RPC method for extrinsic call fetchPermissions
+	#[method(name = "peaqrbac_fetchPermissions")]
+	fn fetch_permissions(
+		&self, owner: AccountId, at: Option<BlockHash>
+	) -> RpcResult<Vec<RpcEntity<EntityId>>>;
 
-	// /// RPC method for extrinsic call fetchRolePermissions
-	// #[method(name = "peaqrbac_fetchRolePermissions")]
-	// fn fetch_role_permissions(
-	// 	&self, owner: AccountId, role_id: EntityId, at: Option<BlockHash>
-	// ) -> RpcResult<Option<Vec<Permission2Role<EntityId>>>>;
+	/// RPC method for extrinsic call fetchRolePermissions
+	#[method(name = "peaqrbac_fetchRolePermissions")]
+	fn fetch_role_permissions(
+		&self, owner: AccountId, role_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Vec<RpcPermission2Role<EntityId>>>>;
 
-	// /// RPC method for extrinsic call fetchGroup
-	// #[method(name = "peaqrbac_fetchGroup")]
-	// fn fetch_group(
-	// 	&self, owner: AccountId, group_id: EntityId, at: Option<BlockHash>
-	// ) -> RpcResult<Option<Entity<EntityId>>>;
+	/// RPC method for extrinsic call fetchGroup
+	#[method(name = "peaqrbac_fetchGroup")]
+	fn fetch_group(
+		&self, owner: AccountId, group_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<RpcEntity<EntityId>>>;
 
-	// /// RPC method for extrinsic call fetchGroups
-	// #[method(name = "peaqrbac_fetchGroups")]
-	// fn fetch_groups(
-	// 	&self, owner: AccountId, at: Option<BlockHash>
-	// ) -> RpcResult<Vec<Entity<EntityId>>>;
+	/// RPC method for extrinsic call fetchGroups
+	#[method(name = "peaqrbac_fetchGroups")]
+	fn fetch_groups(
+		&self, owner: AccountId, at: Option<BlockHash>
+	) -> RpcResult<Vec<RpcEntity<EntityId>>>;
 
-	// /// RPC method for extrinsic call fetchGroupRoles
-	// #[method(name = "peaqrbac_fetchGroupRoles")]
-	// fn fetch_group_roles(
-	// 	&self, owner: AccountId, group_id: EntityId, at: Option<BlockHash>
-	// ) -> RpcResult<Option<Vec<Role2Group<EntityId>>>>;
+	/// RPC method for extrinsic call fetchGroupRoles
+	#[method(name = "peaqrbac_fetchGroupRoles")]
+	fn fetch_group_roles(
+		&self, owner: AccountId, group_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Vec<RpcRole2Group<EntityId>>>>;
 	
-	// /// RPC method for extrinsic call fetchUserGroups
-	// #[method(name = "peaqrbac_fetchUserGroups")]
-	// fn fetch_user_groups(
-	// 	&self, owner: AccountId, user_id: EntityId, at: Option<BlockHash>
-	// ) -> RpcResult<Option<Vec<User2Group<EntityId>>>>;
+	/// RPC method for extrinsic call fetchUserGroups
+	#[method(name = "peaqrbac_fetchUserGroups")]
+	fn fetch_user_groups(
+		&self, owner: AccountId, user_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Vec<RpcUser2Group<EntityId>>>>;
 
-	// /// RPC method for extrinsic call fetchUserPermissions
-	// #[method(name = "peaqrbac_fetchUserPermissions")]
-	// fn fetch_user_permissions(
-	// 	&self, owner: AccountId, user_id: EntityId, at: Option<BlockHash>
-	// ) -> RpcResult<Option<Vec<Entity<EntityId>>>>;
+	/// RPC method for extrinsic call fetchUserPermissions
+	#[method(name = "peaqrbac_fetchUserPermissions")]
+	fn fetch_user_permissions(
+		&self, owner: AccountId, user_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Vec<RpcEntity<EntityId>>>>;
 	
-	// /// RPC method for extrinsic call fetchGroupPermissions
-	// #[method(name = "peaqrbac_fetchGroupPermissions")]
-	// fn fetch_group_permissions(
-	// 	&self, owner: AccountId, group_id: EntityId, at: Option<BlockHash>
-	// ) -> RpcResult<Option<Vec<Entity<EntityId>>>>;
+	/// RPC method for extrinsic call fetchGroupPermissions
+	#[method(name = "peaqrbac_fetchGroupPermissions")]
+	fn fetch_group_permissions(
+		&self, owner: AccountId, group_id: EntityId, at: Option<BlockHash>
+	) -> RpcResult<Option<Vec<RpcEntity<EntityId>>>>;
 }
 
 /// A struct that implements the [`PeaqRBACApi`].
@@ -165,8 +237,8 @@ impl From<Error> for i32 {
 
 
 // This macro simplifies copy&paste-work
-// macro_rules! block_from_api {
-//     ($method:expr, $convert:expr) => {
+// macro_rules! operate_with_api {
+//     ($method:tt, $convert:tt) => {
 //         let api = self.client.runtime_api();
 // 		let at = BlockId::hash(at.unwrap_or(
 // 			// If the block hash is not supplied assume the best block.
@@ -198,7 +270,7 @@ where
             account: AccountId, 
             entity: EntityId, 
             at: Option<<Block as BlockT>::Hash>) -> 
-		RpcResult<Option<RPCEntity<EntityId>>>
+		RpcResult<Option<RpcEntity<EntityId>>>
     {
    		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or(
@@ -206,7 +278,7 @@ where
 			self.client.info().best_hash,
 		));
         api.fetch_role(&at, account, entity).map(|o| {
-            o.map(|item| RPCEntity::from(item))
+            o.map(|item| RpcEntity::from(item))
         }).map_err(|e| {
 			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
 				Error::RuntimeError.into(),
@@ -214,102 +286,244 @@ where
 				Some(format!("{:?}", e)),
 			)))
 		})
-		// block_from_api!(fetch_role(&at, account, entity), RPCEntity::from(item))
     }
 
-	// fn fetch_roles(&self,
-	// 		owner: AccountId,
-	// 		at: Option<<Block as BlockT>::Hash>) -> 
-	// 	RpcResult<Vec<Entity<EntityId>>>
-	// {
-	// 	// get_roles(&owner)
-	// }
+	fn fetch_roles(&self,
+			owner: AccountId,
+			at: Option<<Block as BlockT>::Hash>) -> 
+		RpcResult<Vec<RpcEntity<EntityId>>>
+	{
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash,
+		));
+        api.get_roles(&owner).map(|o| {
+            o.map(|item| RpcEntity::from(item))
+        }).map_err(|e| {
+			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to get value.",
+				Some(format!("{:?}", e)),
+			)))
+		})
+	}
 
-	// fn fetch_user_roles(&self,
-	// 		owner: AccountId,
-	// 		user_id: EntityId,
-	// 		at: Option<<Block as BlockT>::Hash>) -> 
-	// 	RpcResult<Option<Vec<Role2User<EntityId>>>>
-	// {
-	// 	// get_user_roles(&owner, user_id)
-	// }
+	fn fetch_user_roles(&self,
+			owner: AccountId,
+			user_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) -> 
+		RpcResult<Option<Vec<RpcRole2User<EntityId>>>>
+	{
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash,
+		));
+        api.get_user_roles(&owner, user_id).map(|o| {
+            o.map(|item| RpcRole2User::from(item))
+        }).map_err(|e| {
+			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to get value.",
+				Some(format!("{:?}", e)),
+			)))
+		})
+	}
 
-	// fn fetch_permission(&self,
-	// 		owner: AccountId,
-	// 		permission_id: EntityId,
-	// 		at: Option<<Block as BlockT>::Hash>) ->
-	// 	RpcResult<Option<Entity<EntityId>>>
-	// {
-	// 	// get_permission(&owner, permission_id)
-	// }
+	fn fetch_permission(&self,
+			owner: AccountId,
+			permission_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<RpcEntity<EntityId>>>
+	{
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash,
+		));
+        api.get_permission(&owner, permission_id).map(|o| {
+            o.map(|item| RpcEntity::from(item))
+        }).map_err(|e| {
+			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to get value.",
+				Some(format!("{:?}", e)),
+			)))
+		})
+	}
 
-	// fn fetch_permissions(&self,
-	// 		owner: AccountId,
-	// 		at: Option<<Block as BlockT>::Hash>) ->
-	// 	RpcResult<Vec<Entity<EntityId>>>
-	// {
-	// 	// get_permissions(&owner)
-	// }
+	fn fetch_permissions(&self,
+			owner: AccountId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Vec<RpcEntity<EntityId>>>
+	{
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash,
+		));
+        api.get_permissions(&owner).map(|o| {
+            o.map(|item| RpcEntity::from(item))
+        }).map_err(|e| {
+			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to get value.",
+				Some(format!("{:?}", e)),
+			)))
+		})
+	}
 
-	// fn fetch_role_permissions(&self,
-	// 		owner: AccountId,
-	// 		role_id: EntityId,
-	// 		at: Option<<Block as BlockT>::Hash>) ->
-	// 	RpcResult<Option<Vec<Permission2Role<EntityId>>>>
-	// {
-	// 	// get_role_permissions(&owner, role_id)
-	// }
+	fn fetch_role_permissions(&self,
+			owner: AccountId,
+			role_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<Vec<RpcPermission2Role<EntityId>>>>
+	{
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash,
+		));
+        api.get_role_permissions(&owner, role_id).map(|o| {
+            o.map(|item| RpcPermission2Role::from(item))
+        }).map_err(|e| {
+			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to get value.",
+				Some(format!("{:?}", e)),
+			)))
+		})
+	}
 
-	// fn fetch_group(&self,
-	// 		owner: AccountId,
-	// 		group_id: EntityId,
-	// 		at: Option<<Block as BlockT>::Hash>) ->
-	// 	RpcResult<Option<Entity<EntityId>>>
-	// {
-	// 	// get_group(&owner, group_id)
-	// }
+	fn fetch_group(&self,
+			owner: AccountId,
+			group_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<RpcEntity<EntityId>>>
+	{
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash,
+		));
+        api.get_group(&owner, group_id).map(|o| {
+            o.map(|item| RpcEntity::from(item))
+        }).map_err(|e| {
+			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to get value.",
+				Some(format!("{:?}", e)),
+			)))
+		})
+	}
 
-	// fn fetch_groups(&self,
-	// 		owner: AccountId,
-	// 		at: Option<<Block as BlockT>::Hash>) ->
-	// 	RpcResult<Vec<Entity<EntityId>>>
-	// {
-	// 	// get_groups(&owner)
-	// }
+	fn fetch_groups(&self,
+			owner: AccountId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Vec<RpcEntity<EntityId>>>
+	{
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash,
+		));
+        api.get_groups(&owner).map(|o| {
+            o.map(|item| RpcEntity::from(item))
+        }).map_err(|e| {
+			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to get value.",
+				Some(format!("{:?}", e)),
+			)))
+		})
+	}
 
-	// fn fetch_group_roles(&self,
-	// 		owner: AccountId,
-	// 		group_id: EntityId,
-	// 		at: Option<<Block as BlockT>::Hash>) ->
-	// 	RpcResult<Option<Vec<Role2Group<EntityId>>>>
-	// {
-	// 	// get_group_roles(&owner, group_id)
-	// }
+	fn fetch_group_roles(&self,
+			owner: AccountId,
+			group_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<Vec<RpcRole2Group<EntityId>>>>
+	{
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash,
+		));
+        api.get_group_roles(&owner, group_id).map(|o| {
+            o.map(|item| RpcRole2Group::from(item))
+        }).map_err(|e| {
+			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to get value.",
+				Some(format!("{:?}", e)),
+			)))
+		})
+	}
 	 
-	// fn fetch_user_groups(&self,
-	// 		owner: AccountId,
-	// 		user_id: EntityId,
-	// 		at: Option<<Block as BlockT>::Hash>) ->
-	// 	RpcResult<Option<Vec<User2Group<EntityId>>>>
-	// {
-	// 	// get_user_groups(&owner, user_id)
-	// }
+	fn fetch_user_groups(&self,
+			owner: AccountId,
+			user_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<Vec<RpcUser2Group<EntityId>>>>
+	{
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash,
+		));
+        api.get_user_groups(&owner, user_id).map(|o| {
+            o.map(|item| RpcUser2Group::from(item))
+        }).map_err(|e| {
+			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to get value.",
+				Some(format!("{:?}", e)),
+			)))
+		})
+	}
 
-	// fn fetch_user_permissions(&self,
-	// 		owner: AccountId,
-	// 		user_id: EntityId,
-	// 		at: Option<<Block as BlockT>::Hash>) ->
-	// 	RpcResult<Option<Vec<Entity<EntityId>>>>
-	// {
-	// 	// get_user_permissions(&owner, user_id)
-	// }
+	fn fetch_user_permissions(&self,
+			owner: AccountId,
+			user_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<Vec<RpcEntity<EntityId>>>>
+	{
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash,
+		));
+        api.get_user_permissions(&owner, user_id).map(|o| {
+            o.map(|item| RpcEntity::from(item))
+        }).map_err(|e| {
+			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to get value.",
+				Some(format!("{:?}", e)),
+			)))
+		})
+	}
 	
-	// fn fetch_group_permissions(&self,
-	// 		owner: AccountId,
-	// 		group_id: EntityId,
-	// 		at: Option<<Block as BlockT>::Hash>) ->
-	// 	RpcResult<Option<Vec<Entity<EntityId>>>>
-	// {
-	// 	// get_group_permissions(&owner, group_id)
-	// }
+	fn fetch_group_permissions(&self,
+			owner: AccountId,
+			group_id: EntityId,
+			at: Option<<Block as BlockT>::Hash>) ->
+		RpcResult<Option<Vec<RpcEntity<EntityId>>>>
+	{
+		let api = self.client.runtime_api();
+		let at = BlockId::hash(at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			self.client.info().best_hash,
+		));
+        api.get_group_permissions(&owner, group_id).map(|o| {
+            o.map(|item| RpcEntity::from(item))
+        }).map_err(|e| {
+			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+				Error::RuntimeError.into(),
+				"Unable to get value.",
+				Some(format!("{:?}", e)),
+			)))
+		})
+	}
 }
