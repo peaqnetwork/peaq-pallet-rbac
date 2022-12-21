@@ -321,15 +321,6 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        // api.fetch_roles(&at, owner).map(|o| {
-        //     o.iter().map(|&item| RpcEntity::from(item)).collect()
-        // }).map_err(|e| {
-		// 	JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-		// 		Error::RuntimeError.into(),
-		// 		"Unable to get value.",
-		// 		Some(format!("{:?}", e)),
-		// 	)))
-		// })
 		api.fetch_roles(&at, owner).map(|v| {
             v.into_iter().map(|item| RpcEntity::from(item)).collect()
 			// Vec::<RpcEntity<EntityId>>::from(v)
