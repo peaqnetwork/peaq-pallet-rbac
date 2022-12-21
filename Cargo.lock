@@ -1940,7 +1940,6 @@ dependencies = [
  "parity-scale-codec",
  "peaq-pallet-rbac",
  "peaq-pallet-rbac-runtime-api",
- "serde",
  "sp-api",
  "sp-blockchain",
  "sp-core",
