@@ -2,12 +2,12 @@ use std::sync::Arc;
 use std::convert::From;
 
 use codec::{Codec, Decode, Encode};
-use sp_api::ProvideRuntimeApi;
+use sp_api::{ProvideRuntimeApi, ApiError};
 use sp_blockchain::HeaderBackend;
 // use peaq_pallet_did::structs::Attribute;
 // pub use peaq_pallet_did_runtime_api::PeaqDIDApi as PeaqDIDRuntimeApi;
 use peaq_pallet_rbac::structs::{Entity, Role2User, Role2Group, User2Group, Permission2Role};
-pub use peaq_pallet_rbac_runtime_api::PeaqRBACApi as PeaqRBACRuntimeApi;
+pub use peaq_pallet_rbac_runtime_api::PeaqRBACRuntimeApi;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 use sp_core::Bytes;
 use serde::{Deserialize, Serialize};
@@ -58,6 +58,16 @@ impl<EntityId> From<Entity::<EntityId>> for RpcEntity<EntityId> {
         }
     }
 }
+
+// impl<EntityId> From<Vec<Entity::<EntityId>>> for RpcEntity<EntityId> {
+//     fn from(item: Vec<Entity::<EntityId>>) -> Vec<Self> {
+//         RpcEntity {
+//             id: item.id,
+//             name: item.name.into(),
+//             enabled: item.enabled,
+//         }
+//     }
+// }
 
 
 #[derive(
@@ -257,6 +267,16 @@ impl From<Error> for i32 {
 // }
 
 
+#[inline]
+fn map_api_err(err: ApiError) -> JsonRpseeError {
+	JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+		Error::RuntimeError.into(),
+		"Unable to get value.",
+		Some(format!("{:?}", err)),
+	)))
+}
+
+
 #[async_trait]
 impl<Client, Block, AccountId, EntityId> PeaqRBACApiServer<<Block as BlockT>::Hash, AccountId, EntityId> for PeaqRBAC<Client, Block>
 where
@@ -277,15 +297,18 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        api.fetch_role(&at, account, entity).map(|o| {
+        // api.fetch_role(&at, account, entity).map(|o| {
+        //     o.map(|item| RpcEntity::from(item))
+        // }).map_err(|e| {
+		// 	JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+		// 		Error::RuntimeError.into(),
+		// 		"Unable to get value.",
+		// 		Some(format!("{:?}", e)),
+		// 	)))
+		// })
+		api.fetch_role(&at, account, entity).map(|o| {
             o.map(|item| RpcEntity::from(item))
-        }).map_err(|e| {
-			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-				Error::RuntimeError.into(),
-				"Unable to get value.",
-				Some(format!("{:?}", e)),
-			)))
-		})
+        }).map_err(|e| map_api_err(e))
     }
 
 	fn fetch_roles(&self,
@@ -298,15 +321,19 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        api.get_roles(&owner).map(|o| {
-            o.map(|item| RpcEntity::from(item))
-        }).map_err(|e| {
-			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-				Error::RuntimeError.into(),
-				"Unable to get value.",
-				Some(format!("{:?}", e)),
-			)))
-		})
+        // api.fetch_roles(&at, owner).map(|o| {
+        //     o.iter().map(|&item| RpcEntity::from(item)).collect()
+        // }).map_err(|e| {
+		// 	JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
+		// 		Error::RuntimeError.into(),
+		// 		"Unable to get value.",
+		// 		Some(format!("{:?}", e)),
+		// 	)))
+		// })
+		api.fetch_roles(&at, owner).map(|v| {
+            v.into_iter().map(|item| RpcEntity::from(item)).collect()
+			// Vec::<RpcEntity<EntityId>>::from(v)
+        }).map_err(|e| map_api_err(e))
 	}
 
 	fn fetch_user_roles(&self,
@@ -320,15 +347,9 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        api.get_user_roles(&owner, user_id).map(|o| {
-            o.map(|item| RpcRole2User::from(item))
-        }).map_err(|e| {
-			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-				Error::RuntimeError.into(),
-				"Unable to get value.",
-				Some(format!("{:?}", e)),
-			)))
-		})
+        api.fetch_user_roles(&at, owner, user_id).map(|o| o.map(|v| {
+            v.into_iter().map(|item| RpcRole2User::from(item)).collect()
+        })).map_err(|e| map_api_err(e))
 	}
 
 	fn fetch_permission(&self,
@@ -342,15 +363,9 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        api.get_permission(&owner, permission_id).map(|o| {
+        api.fetch_permission(&at, owner, permission_id).map(|o| {
             o.map(|item| RpcEntity::from(item))
-        }).map_err(|e| {
-			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-				Error::RuntimeError.into(),
-				"Unable to get value.",
-				Some(format!("{:?}", e)),
-			)))
-		})
+        }).map_err(|e| map_api_err(e))
 	}
 
 	fn fetch_permissions(&self,
@@ -363,15 +378,9 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        api.get_permissions(&owner).map(|o| {
-            o.map(|item| RpcEntity::from(item))
-        }).map_err(|e| {
-			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-				Error::RuntimeError.into(),
-				"Unable to get value.",
-				Some(format!("{:?}", e)),
-			)))
-		})
+        api.fetch_permissions(&at, owner).map(|o| {
+            o.into_iter().map(|item| RpcEntity::from(item)).collect()
+        }).map_err(|e| map_api_err(e))
 	}
 
 	fn fetch_role_permissions(&self,
@@ -385,15 +394,9 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        api.get_role_permissions(&owner, role_id).map(|o| {
-            o.map(|item| RpcPermission2Role::from(item))
-        }).map_err(|e| {
-			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-				Error::RuntimeError.into(),
-				"Unable to get value.",
-				Some(format!("{:?}", e)),
-			)))
-		})
+        api.fetch_role_permissions(&at, owner, role_id).map(|o| o.map(|v| {
+            v.into_iter().map(|item| RpcPermission2Role::from(item)).collect()
+        })).map_err(|e| map_api_err(e))
 	}
 
 	fn fetch_group(&self,
@@ -407,15 +410,9 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        api.get_group(&owner, group_id).map(|o| {
+        api.fetch_group(&at, owner, group_id).map(|o| {
             o.map(|item| RpcEntity::from(item))
-        }).map_err(|e| {
-			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-				Error::RuntimeError.into(),
-				"Unable to get value.",
-				Some(format!("{:?}", e)),
-			)))
-		})
+        }).map_err(|e| map_api_err(e))
 	}
 
 	fn fetch_groups(&self,
@@ -428,15 +425,9 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        api.get_groups(&owner).map(|o| {
-            o.map(|item| RpcEntity::from(item))
-        }).map_err(|e| {
-			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-				Error::RuntimeError.into(),
-				"Unable to get value.",
-				Some(format!("{:?}", e)),
-			)))
-		})
+        api.fetch_groups(&at, owner).map(|v| {
+            v.into_iter().map(|item| RpcEntity::from(item)).collect()
+        }).map_err(|e| map_api_err(e))
 	}
 
 	fn fetch_group_roles(&self,
@@ -450,15 +441,9 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        api.get_group_roles(&owner, group_id).map(|o| {
-            o.map(|item| RpcRole2Group::from(item))
-        }).map_err(|e| {
-			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-				Error::RuntimeError.into(),
-				"Unable to get value.",
-				Some(format!("{:?}", e)),
-			)))
-		})
+        api.fetch_group_roles(&at, owner, group_id).map(|o| o.map(|v| {
+            v.into_iter().map(|item| RpcRole2Group::from(item)).collect()
+        })).map_err(|e| map_api_err(e))
 	}
 	 
 	fn fetch_user_groups(&self,
@@ -472,15 +457,9 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        api.get_user_groups(&owner, user_id).map(|o| {
-            o.map(|item| RpcUser2Group::from(item))
-        }).map_err(|e| {
-			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-				Error::RuntimeError.into(),
-				"Unable to get value.",
-				Some(format!("{:?}", e)),
-			)))
-		})
+        api.fetch_user_groups(&at, owner, user_id).map(|o| o.map(|v| {
+            v.into_iter().map(|item| RpcUser2Group::from(item)).collect()
+        })).map_err(|e| map_api_err(e))
 	}
 
 	fn fetch_user_permissions(&self,
@@ -494,15 +473,9 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        api.get_user_permissions(&owner, user_id).map(|o| {
-            o.map(|item| RpcEntity::from(item))
-        }).map_err(|e| {
-			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-				Error::RuntimeError.into(),
-				"Unable to get value.",
-				Some(format!("{:?}", e)),
-			)))
-		})
+        api.fetch_user_permissions(&at, owner, user_id).map(|o| o.map(|v| {
+            v.into_iter().map(|item| RpcEntity::from(item)).collect()
+        })).map_err(|e| map_api_err(e))
 	}
 	
 	fn fetch_group_permissions(&self,
@@ -516,14 +489,8 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        api.get_group_permissions(&owner, group_id).map(|o| {
-            o.map(|item| RpcEntity::from(item))
-        }).map_err(|e| {
-			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-				Error::RuntimeError.into(),
-				"Unable to get value.",
-				Some(format!("{:?}", e)),
-			)))
-		})
+        api.fetch_group_permissions(&at, owner, group_id).map(|o| o.map(|v| {
+            v.into_iter().map(|item| RpcEntity::from(item)).collect()
+        })).map_err(|e| map_api_err(e))
 	}
 }

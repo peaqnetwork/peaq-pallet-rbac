@@ -8,7 +8,7 @@ use codec::Codec;
 use peaq_pallet_rbac::structs::{Entity, Role2User, Role2Group, Permission2Role, User2Group};
 
 sp_api::decl_runtime_apis! {
-    pub trait PeaqRBACApi<AccountId, EntityId>
+    pub trait PeaqRBACRuntimeApi<AccountId, EntityId>
     where
         AccountId: Codec,
         EntityId: Codec
