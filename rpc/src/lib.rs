@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::convert::From;
 
 use codec::{Codec, Decode, Encode};
+use sp_std::{vec, vec::Vec};
 use sp_api::{ProvideRuntimeApi, ApiError};
 use sp_blockchain::HeaderBackend;
 use peaq_pallet_rbac::structs::{Entity, Role2User, Role2Group, User2Group, Permission2Role};

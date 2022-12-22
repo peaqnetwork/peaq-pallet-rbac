@@ -6,6 +6,7 @@
 
 use codec::Codec;
 use peaq_pallet_rbac::structs::{Entity, Role2User, Role2Group, Permission2Role, User2Group};
+use sp_std::vec::Vec;
 
 sp_api::decl_runtime_apis! {
     pub trait PeaqRBACRuntimeApi<AccountId, EntityId>
