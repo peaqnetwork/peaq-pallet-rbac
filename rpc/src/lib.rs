@@ -4,8 +4,6 @@ use std::convert::From;
 use codec::{Codec, Decode, Encode};
 use sp_api::{ProvideRuntimeApi, ApiError};
 use sp_blockchain::HeaderBackend;
-// use peaq_pallet_did::structs::Attribute;
-// pub use peaq_pallet_did_runtime_api::PeaqDIDApi as PeaqDIDRuntimeApi;
 use peaq_pallet_rbac::structs::{Entity, Role2User, Role2Group, User2Group, Permission2Role};
 pub use peaq_pallet_rbac_runtime_api::PeaqRBACRuntimeApi;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
@@ -18,27 +16,6 @@ use jsonrpsee::{
 };
 
 
-// #[derive(
-// 	Clone, Encode, Decode, Serialize, Deserialize
-// )]
-// pub struct RPCAttribute<BlockNumber, Moment> {
-// 	pub name: Bytes,
-// 	pub value: Bytes,
-// 	pub validity: BlockNumber,
-// 	pub created: Moment,
-// }
-
-// impl<BlockNumber, Moment> From<Attribute::<BlockNumber, Moment>> for RPCAttribute<BlockNumber, Moment> {
-//     fn from(item: Attribute::<BlockNumber, Moment>) -> Self {
-//         RPCAttribute {
-//             name: item.name.into(),
-//             value: item.value.into(),
-//             validity: item.validity,
-//             created: item.created,
-//         }
-//     }
-// }
-// Note: use peaq_pallet_rbac::structs::{Entity};
 
 #[derive(
 	Clone, Encode, Decode, Serialize, Deserialize
@@ -58,16 +35,6 @@ impl<EntityId> From<Entity::<EntityId>> for RpcEntity<EntityId> {
         }
     }
 }
-
-// impl<EntityId> From<Vec<Entity::<EntityId>>> for RpcEntity<EntityId> {
-//     fn from(item: Vec<Entity::<EntityId>>) -> Vec<Self> {
-//         RpcEntity {
-//             id: item.id,
-//             name: item.name.into(),
-//             enabled: item.enabled,
-//         }
-//     }
-// }
 
 
 #[derive(
@@ -297,15 +264,6 @@ where
 			// If the block hash is not supplied assume the best block.
 			self.client.info().best_hash,
 		));
-        // api.fetch_role(&at, account, entity).map(|o| {
-        //     o.map(|item| RpcEntity::from(item))
-        // }).map_err(|e| {
-		// 	JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-		// 		Error::RuntimeError.into(),
-		// 		"Unable to get value.",
-		// 		Some(format!("{:?}", e)),
-		// 	)))
-		// })
 		api.fetch_role(&at, account, entity).map(|o| {
             o.map(|item| RpcEntity::from(item))
         }).map_err(|e| map_api_err(e))
@@ -323,7 +281,6 @@ where
 		));
 		api.fetch_roles(&at, owner).map(|v| {
             v.into_iter().map(|item| RpcEntity::from(item)).collect()
-			// Vec::<RpcEntity<EntityId>>::from(v)
         }).map_err(|e| map_api_err(e))
 	}
 
