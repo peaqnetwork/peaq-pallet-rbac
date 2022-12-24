@@ -215,24 +215,15 @@ impl From<Error> for i32 {
 
 
 // This macro simplifies copy&paste-work
-// macro_rules! operate_with_api {
-//     ($method:tt, $convert:tt) => {
-//         let api = self.client.runtime_api();
-// 		let at = BlockId::hash(at.unwrap_or(
-// 			// If the block hash is not supplied assume the best block.
-// 			self.client.info().best_hash,
-// 		));
-//         api.$method.map(|o| {
-//             o.map($convert)
-//         }).map_err(|e| {
-// 			JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
-// 				Error::RuntimeError.into(),
-// 				"Unable to get value.",
-// 				Some(format!("{:?}", e)),
-// 			)))
-// 		})
-//     };
-// }
+macro_rules! dry_api_at {
+    ( $self:expr, $at:expr ) => {
+        ($self.client.runtime_api(),
+		BlockId::hash($at.unwrap_or(
+			// If the block hash is not supplied assume the best block.
+			$self.client.info().best_hash,
+		)))
+    };
+}
 
 
 #[inline]
@@ -260,11 +251,12 @@ where
             at: Option<<Block as BlockT>::Hash>) -> 
 		RpcResult<Option<RpcEntity<EntityId>>>
     {
-   		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or(
-			// If the block hash is not supplied assume the best block.
-			self.client.info().best_hash,
-		));
+   		// let api = self.client.runtime_api();
+		// let at = BlockId::hash(at.unwrap_or(
+		// 	// If the block hash is not supplied assume the best block.
+		// 	self.client.info().best_hash,
+		// ));
+		let (api, at) = dry_api_at!(self, at);
 		api.fetch_role(&at, account, entity).map(|o| {
             o.map(|item| RpcEntity::from(item))
         }).map_err(|e| map_api_err(e))
@@ -275,11 +267,7 @@ where
 			at: Option<<Block as BlockT>::Hash>) -> 
 		RpcResult<Vec<RpcEntity<EntityId>>>
 	{
-		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or(
-			// If the block hash is not supplied assume the best block.
-			self.client.info().best_hash,
-		));
+		let (api, at) = dry_api_at!(self, at);
 		api.fetch_roles(&at, owner).map(|v| {
             v.into_iter().map(|item| RpcEntity::from(item)).collect()
         }).map_err(|e| map_api_err(e))
@@ -291,11 +279,7 @@ where
 			at: Option<<Block as BlockT>::Hash>) -> 
 		RpcResult<Option<Vec<RpcRole2User<EntityId>>>>
 	{
-		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or(
-			// If the block hash is not supplied assume the best block.
-			self.client.info().best_hash,
-		));
+		let (api, at) = dry_api_at!(self, at);
         api.fetch_user_roles(&at, owner, user_id).map(|o| o.map(|v| {
             v.into_iter().map(|item| RpcRole2User::from(item)).collect()
         })).map_err(|e| map_api_err(e))
@@ -307,11 +291,7 @@ where
 			at: Option<<Block as BlockT>::Hash>) ->
 		RpcResult<Option<RpcEntity<EntityId>>>
 	{
-		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or(
-			// If the block hash is not supplied assume the best block.
-			self.client.info().best_hash,
-		));
+		let (api, at) = dry_api_at!(self, at);
         api.fetch_permission(&at, owner, permission_id).map(|o| {
             o.map(|item| RpcEntity::from(item))
         }).map_err(|e| map_api_err(e))
@@ -322,11 +302,7 @@ where
 			at: Option<<Block as BlockT>::Hash>) ->
 		RpcResult<Vec<RpcEntity<EntityId>>>
 	{
-		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or(
-			// If the block hash is not supplied assume the best block.
-			self.client.info().best_hash,
-		));
+		let (api, at) = dry_api_at!(self, at);
         api.fetch_permissions(&at, owner).map(|o| {
             o.into_iter().map(|item| RpcEntity::from(item)).collect()
         }).map_err(|e| map_api_err(e))
@@ -338,11 +314,7 @@ where
 			at: Option<<Block as BlockT>::Hash>) ->
 		RpcResult<Option<Vec<RpcPermission2Role<EntityId>>>>
 	{
-		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or(
-			// If the block hash is not supplied assume the best block.
-			self.client.info().best_hash,
-		));
+		let (api, at) = dry_api_at!(self, at);
         api.fetch_role_permissions(&at, owner, role_id).map(|o| o.map(|v| {
             v.into_iter().map(|item| RpcPermission2Role::from(item)).collect()
         })).map_err(|e| map_api_err(e))
@@ -354,11 +326,7 @@ where
 			at: Option<<Block as BlockT>::Hash>) ->
 		RpcResult<Option<RpcEntity<EntityId>>>
 	{
-		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or(
-			// If the block hash is not supplied assume the best block.
-			self.client.info().best_hash,
-		));
+		let (api, at) = dry_api_at!(self, at);
         api.fetch_group(&at, owner, group_id).map(|o| {
             o.map(|item| RpcEntity::from(item))
         }).map_err(|e| map_api_err(e))
@@ -369,11 +337,7 @@ where
 			at: Option<<Block as BlockT>::Hash>) ->
 		RpcResult<Vec<RpcEntity<EntityId>>>
 	{
-		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or(
-			// If the block hash is not supplied assume the best block.
-			self.client.info().best_hash,
-		));
+		let (api, at) = dry_api_at!(self, at);
         api.fetch_groups(&at, owner).map(|v| {
             v.into_iter().map(|item| RpcEntity::from(item)).collect()
         }).map_err(|e| map_api_err(e))
@@ -385,11 +349,7 @@ where
 			at: Option<<Block as BlockT>::Hash>) ->
 		RpcResult<Option<Vec<RpcRole2Group<EntityId>>>>
 	{
-		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or(
-			// If the block hash is not supplied assume the best block.
-			self.client.info().best_hash,
-		));
+		let (api, at) = dry_api_at!(self, at);
         api.fetch_group_roles(&at, owner, group_id).map(|o| o.map(|v| {
             v.into_iter().map(|item| RpcRole2Group::from(item)).collect()
         })).map_err(|e| map_api_err(e))
@@ -401,11 +361,7 @@ where
 			at: Option<<Block as BlockT>::Hash>) ->
 		RpcResult<Option<Vec<RpcUser2Group<EntityId>>>>
 	{
-		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or(
-			// If the block hash is not supplied assume the best block.
-			self.client.info().best_hash,
-		));
+		let (api, at) = dry_api_at!(self, at);
         api.fetch_user_groups(&at, owner, user_id).map(|o| o.map(|v| {
             v.into_iter().map(|item| RpcUser2Group::from(item)).collect()
         })).map_err(|e| map_api_err(e))
@@ -417,11 +373,7 @@ where
 			at: Option<<Block as BlockT>::Hash>) ->
 		RpcResult<Option<Vec<RpcEntity<EntityId>>>>
 	{
-		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or(
-			// If the block hash is not supplied assume the best block.
-			self.client.info().best_hash,
-		));
+		let (api, at) = dry_api_at!(self, at);
         api.fetch_user_permissions(&at, owner, user_id).map(|o| o.map(|v| {
             v.into_iter().map(|item| RpcEntity::from(item)).collect()
         })).map_err(|e| map_api_err(e))
@@ -433,11 +385,7 @@ where
 			at: Option<<Block as BlockT>::Hash>) ->
 		RpcResult<Option<Vec<RpcEntity<EntityId>>>>
 	{
-		let api = self.client.runtime_api();
-		let at = BlockId::hash(at.unwrap_or(
-			// If the block hash is not supplied assume the best block.
-			self.client.info().best_hash,
-		));
+		let (api, at) = dry_api_at!(self, at);
         api.fetch_group_permissions(&at, owner, group_id).map(|o| o.map(|v| {
             v.into_iter().map(|item| RpcEntity::from(item)).collect()
         })).map_err(|e| map_api_err(e))
