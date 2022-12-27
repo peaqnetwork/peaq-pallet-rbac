@@ -110,6 +110,7 @@ impl<EntityId> From<Permission2Role::<EntityId>> for RpcPermission2Role<EntityId
 }
 
 
+/// Trait defines RBAC-RPC interface
 #[rpc(client, server)]
 pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
 	/// RPC method for extrinsic call fetchRole
@@ -214,7 +215,7 @@ impl From<Error> for i32 {
 }
 
 
-// This macro simplifies copy&paste-work
+/// This macro simplifies copy&paste-work in every rpc-method
 macro_rules! dry_api_at {
     ( $self:expr, $at:expr ) => {
         ($self.client.runtime_api(),
@@ -225,7 +226,7 @@ macro_rules! dry_api_at {
     };
 }
 
-
+/// Default error mapping in rpc methods
 #[inline]
 fn map_api_err(err: ApiError) -> JsonRpseeError {
 	JsonRpseeError::Call(CallError::Custom(ErrorObject::owned(
@@ -251,11 +252,6 @@ where
             at: Option<<Block as BlockT>::Hash>) -> 
 		RpcResult<Option<RpcEntity<EntityId>>>
     {
-   		// let api = self.client.runtime_api();
-		// let at = BlockId::hash(at.unwrap_or(
-		// 	// If the block hash is not supplied assume the best block.
-		// 	self.client.info().best_hash,
-		// ));
 		let (api, at) = dry_api_at!(self, at);
 		api.fetch_role(&at, account, entity).map(|o| {
             o.map(|item| RpcEntity::from(item))
