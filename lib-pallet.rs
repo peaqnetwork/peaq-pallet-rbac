@@ -36,36 +36,10 @@ pub mod pallet {
     use crate::rbac::Group;
     use crate::structs::{Role2Group, User2Group};
     use crate::{
-        rbac::{EntityError, Permission, Rbac, Result, Role, Tag},
+        rbac::{EntityError, Permission, Rbac, Role, Tag},
         structs::{Entity, Permission2Role, Role2User},
     };
     use super::WeightInfo;
-
-
-    macro_rules! dpatch_dposit {
-        ($res:expr, $event:expr) => {
-            match $res {
-                Ok(d) => {
-                    Self::deposit_event($event(d));
-                    Ok(())
-                },
-                Err(e) => Error::<T>::dispatch_error(e)
-            }
-        };
-    }
-
-    macro_rules! dpatch_dposit_par {
-        ($res:expr, $event:expr) => {
-            match $res {
-                Ok(_d) => {
-                    Self::deposit_event($event);
-                    Ok(())
-                },
-                Err(e) => Error::<T>::dispatch_error(e)
-            }
-        };
-    }
-
 
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
@@ -196,8 +170,6 @@ pub mod pallet {
         EntityAlreadyExist,
         // Returned if the Role does not exists
         EntityDoesNotExist,
-        // Returned if the Entity is not enabled
-        EntityDisabled,
         // Failed to verify entity ownership
         EntityAuthorizationFailed,
     }
@@ -216,9 +188,6 @@ pub mod pallet {
                 }
                 EntityError::EntityAuthorizationFailed => {
                     return Err(Error::<T>::EntityAuthorizationFailed.into())
-                }
-                EntityError::EntityDisabled => {
-                    return Err(Error::<T>::EntityDisabled.into())
                 }
             }
         }
@@ -241,14 +210,14 @@ pub mod pallet {
             ensure_signed(origin)?;
             let role = Self::get_role(&owner, entity);
 
-            // match res {
-            //     Ok(role) => {
-            //         Self::deposit_event(Event::RoleFetched(role));
-            //         Ok(())
-            //     },
-            //     Err(e) => Error::<T>::dispatch_error(e)
-            // }
-            dpatch_dposit!(role, Event::RoleFetched)
+            match role {
+                Some(role) => {
+                    Self::deposit_event(Event::RoleFetched(role));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::fetch_roles())]
@@ -256,8 +225,9 @@ pub mod pallet {
             ensure_signed(origin)?;
             let roles = Self::get_roles(&owner);
 
-            // Self::deposit_event(Event::AllRolesFetched(roles));
-            dpatch_dposit!(roles, Event::AllRolesFetched)
+            Self::deposit_event(Event::AllRolesFetched(roles));
+
+            Ok(())
         }
 
         /// create role call
@@ -272,16 +242,14 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            // match Self::create_role(&sender, role_id, &name) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleAdded(sender, role_id, name));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::create_role(&sender, role_id, &name),
-                Event::RoleAdded(sender, role_id, name)
-            )
+            match Self::create_role(&sender, role_id, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleAdded(sender, role_id, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         /// update role call
@@ -296,32 +264,28 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            // match Self::update_existing_role(&sender, role_id, &name) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleUpdated(sender, role_id, name));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::update_existing_role(&sender, role_id, &name),
-                Event::RoleUpdated(sender, role_id, name)
-            )
+            match Self::update_existing_role(&sender, role_id, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleUpdated(sender, role_id, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::disable_role())]
         pub fn disable_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::disable_existing_role(&sender, role_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleRemoved(sender, role_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::disable_existing_role(&sender, role_id),
-                Event::RoleRemoved(sender, role_id)
-            )
+            match Self::disable_existing_role(&sender, role_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleRemoved(sender, role_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::fetch_user_roles())]
@@ -331,18 +295,16 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let role_to_user = Self::get_user_roles(&owner, user_id);
+            let role_to_user = Self::get_user_roles(&owner, user_id);
 
-            // match role_to_user {
-            //     Some(r2u) => {
-            //         Self::deposit_event(Event::FetchedUserRoles(r2u));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
-            dpatch_dposit!(
-                Self::get_user_roles(&owner, user_id),
-                Event::FetchedUserRoles
-            )
+            match role_to_user {
+                Some(r2u) => {
+                    Self::deposit_event(Event::FetchedUserRoles(r2u));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
         }
 
         /// assign a role to user call
@@ -354,16 +316,14 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::create_role_to_user(&sender, role_id, user_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleAssignedToUser(sender, role_id, user_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::create_role_to_user(&sender, role_id, user_id),
-                Event::RoleAssignedToUser(sender, role_id, user_id)
-            )
+            match Self::create_role_to_user(&sender, role_id, user_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleAssignedToUser(sender, role_id, user_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         /// unassign role to user relationship call
@@ -375,16 +335,14 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::revoke_role_to_user(&sender, role_id, user_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleUnassignedToUser(sender, role_id, user_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::revoke_role_to_user(&sender, role_id, user_id),
-                Event::RoleUnassignedToUser(sender, role_id, user_id)
-            )
+            match Self::revoke_role_to_user(&sender, role_id, user_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleUnassignedToUser(sender, role_id, user_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::fetch_permission())]
@@ -394,30 +352,26 @@ pub mod pallet {
             permission_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let permission = Self::get_permission(&owner, permission_id);
+            let permission = Self::get_permission(&owner, permission_id);
 
-            // match permission {
-            //     Some(p) => {
-            //         Self::deposit_event(Event::PermissionFetched(p));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
-            dpatch_dposit!(
-                Self::get_permission(&owner, permission_id),
-                Event::PermissionFetched
-            )
+            match permission {
+                Some(p) => {
+                    Self::deposit_event(Event::PermissionFetched(p));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::fetch_permissions())]
         pub fn fetch_permissions(origin: OriginFor<T>, owner: T::AccountId) -> DispatchResult {
             ensure_signed(origin)?;
-            // let permissions = Self::get_permissions(&owner);
+            let permissions = Self::get_permissions(&owner);
 
-            // Self::deposit_event(Event::AllPermissionsFetched(permissions));
-            dpatch_dposit!(
-                Self::get_permissions(&owner),
-                Event::AllPermissionsFetched
-            )
+            Self::deposit_event(Event::AllPermissionsFetched(permissions));
+
+            Ok(())
         }
 
         /// create permission call
@@ -432,16 +386,14 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            // match Self::create_permission(&sender, permission_id, &name) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::PermissionAdded(sender, permission_id, name));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::create_permission(&sender, permission_id, &name),
-                Event::PermissionAdded(sender, permission_id, name)
-            )
+            match Self::create_permission(&sender, permission_id, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::PermissionAdded(sender, permission_id, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         /// update permission call
@@ -456,16 +408,14 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            // match Self::update_existing_permission(&sender, permission_id, &name) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::PermissionUpdated(sender, permission_id, name));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::update_existing_permission(&sender, permission_id, &name),
-                Event::PermissionUpdated(sender, permission_id, name)
-            )
+            match Self::update_existing_permission(&sender, permission_id, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::PermissionUpdated(sender, permission_id, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::disable_permission())]
@@ -475,16 +425,14 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::disable_existing_permission(&sender, permission_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::PermissionDisabled(sender, permission_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::disable_existing_permission(&sender, permission_id),
-                Event::PermissionDisabled(sender, permission_id)
-            )
+            match Self::disable_existing_permission(&sender, permission_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::PermissionDisabled(sender, permission_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::fetch_role_permissions())]
@@ -494,18 +442,16 @@ pub mod pallet {
             role_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let permission_to_role = Self::get_role_permissions(&owner, role_id);
+            let permission_to_role = Self::get_role_permissions(&owner, role_id);
 
-            // match permission_to_role {
-            //     Some(p2r) => {
-            //         Self::deposit_event(Event::FetchedRolePermissions(p2r));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
-            dpatch_dposit!(
-                Self::get_role_permissions(&owner, role_id),
-                Event::FetchedRolePermissions
-            )
+            match permission_to_role {
+                Some(p2r) => {
+                    Self::deposit_event(Event::FetchedRolePermissions(p2r));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
         }
 
         /// assign a permission to role call
@@ -517,16 +463,14 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::create_permission_to_role(&sender, permission_id, role_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::PermissionAssigned(sender, permission_id, role_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::create_permission_to_role(&sender, permission_id, role_id),
-                Event::PermissionAssigned(sender, permission_id, role_id)
-            )
+            match Self::create_permission_to_role(&sender, permission_id, role_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::PermissionAssigned(sender, permission_id, role_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         /// unassign permission to role relationship call
@@ -538,20 +482,18 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::revoke_permission_to_role(&sender, permission_id, role_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::PermissionUnassignedToRole(
-            //             sender,
-            //             permission_id,
-            //             role_id,
-            //         ));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::revoke_permission_to_role(&sender, permission_id, role_id),
-                Event::PermissionUnassignedToRole(sender, permission_id, role_id)
-            )
+            match Self::revoke_permission_to_role(&sender, permission_id, role_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::PermissionUnassignedToRole(
+                        sender,
+                        permission_id,
+                        role_id,
+                    ));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::fetch_group())]
@@ -561,30 +503,26 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let group = Self::get_group(&owner, group_id);
+            let group = Self::get_group(&owner, group_id);
 
-            // match group {
-            //     Some(g) => {
-            //         Self::deposit_event(Event::GroupFetched(g));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
-            dpatch_dposit!(
-                Self::get_group(&owner, group_id),
-                Event::GroupFetched
-            )
+            match group {
+                Some(g) => {
+                    Self::deposit_event(Event::GroupFetched(g));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::fetch_groups())]
         pub fn fetch_groups(origin: OriginFor<T>, owner: T::AccountId) -> DispatchResult {
             ensure_signed(origin)?;
-            // let groups = Self::get_groups(&owner);
+            let groups = Self::get_groups(&owner);
 
-            // Self::deposit_event(Event::AllGroupsFetched(groups));
-            dpatch_dposit!(
-                Self::get_groups(&owner),
-                Event::AllGroupsFetched
-            )
+            Self::deposit_event(Event::AllGroupsFetched(groups));
+
+            Ok(())
         }
 
         /// create group call
@@ -599,16 +537,14 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            // match Self::create_group(&sender, group_id, &name) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::GroupAdded(sender, group_id, name));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::create_group(&sender, group_id, &name),
-                Event::GroupAdded(sender, group_id, name)
-            )
+            match Self::create_group(&sender, group_id, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::GroupAdded(sender, group_id, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         /// update group call
@@ -623,16 +559,14 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            // match Self::update_existing_group(&sender, group_id, &name) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::GroupUpdated(sender, group_id, name));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::update_existing_group(&sender, group_id, &name),
-                Event::GroupUpdated(sender, group_id, name)
-            )
+            match Self::update_existing_group(&sender, group_id, &name) {
+                Ok(()) => {
+                    Self::deposit_event(Event::GroupUpdated(sender, group_id, name));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         /// disable group call
@@ -640,16 +574,14 @@ pub mod pallet {
         pub fn disable_group(origin: OriginFor<T>, group_id: T::EntityId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::disable_existing_group(&sender, group_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::GroupDisabled(sender, group_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::disable_existing_group(&sender, group_id),
-                Event::GroupDisabled(sender, group_id)
-            )
+            match Self::disable_existing_group(&sender, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::GroupDisabled(sender, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         /// assign a role to group call
@@ -661,18 +593,15 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::create_role_to_group(&sender, role_id, group_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleAssignedToGroup(sender, role_id, group_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::create_role_to_group(&sender, role_id, group_id),
-                Event::RoleAssignedToGroup(sender, role_id, group_id)
-            )
-        }
+            match Self::create_role_to_group(&sender, role_id, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleAssignedToGroup(sender, role_id, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
 
+            Ok(())
+        }
         /// unassign role to group relationship call
         #[pallet::weight(T::WeightInfo::unassign_role_to_group())]
         pub fn unassign_role_to_group(
@@ -682,16 +611,14 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::revoke_role_to_group(&sender, role_id, group_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleUnassignedToGroup(sender, role_id, group_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::revoke_role_to_group(&sender, role_id, group_id),
-                Event::RoleUnassignedToGroup(sender, role_id, group_id)
-            )
+            match Self::revoke_role_to_group(&sender, role_id, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::RoleUnassignedToGroup(sender, role_id, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::fetch_group_roles())]
@@ -701,18 +628,16 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let role_to_group = Self::get_group_roles(&owner, group_id);
+            let role_to_group = Self::get_group_roles(&owner, group_id);
 
-            // match role_to_group {
-            //     Some(r2g) => {
-            //         Self::deposit_event(Event::FetchedGroupRoles(r2g));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
-            dpatch_dposit!(
-                Self::get_group_roles(&owner, group_id),
-                Event::FetchedGroupRoles
-            )
+            match role_to_group {
+                Some(r2g) => {
+                    Self::deposit_event(Event::FetchedGroupRoles(r2g));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
         }
 
         /// assign a user to group call
@@ -724,16 +649,14 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::create_user_to_group(&sender, user_id, group_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::UserAssignedToGroup(sender, user_id, group_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::create_user_to_group(&sender, user_id, group_id),
-                Event::UserAssignedToGroup(sender, user_id, group_id)
-            )
+            match Self::create_user_to_group(&sender, user_id, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::UserAssignedToGroup(sender, user_id, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         /// unassign a user to group call
@@ -745,16 +668,14 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::revoke_user_to_group(&sender, user_id, group_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::UserUnAssignedToGroup(sender, user_id, group_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
-            dpatch_dposit_par!(
-                Self::revoke_user_to_group(&sender, user_id, group_id),
-                Event::UserUnAssignedToGroup(sender, user_id, group_id)
-            )
+            match Self::revoke_user_to_group(&sender, user_id, group_id) {
+                Ok(()) => {
+                    Self::deposit_event(Event::UserUnAssignedToGroup(sender, user_id, group_id));
+                }
+                Err(e) => return Error::<T>::dispatch_error(e),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::fetch_user_groups())]
@@ -764,18 +685,16 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let user_to_group = Self::get_user_groups(&owner, user_id);
+            let user_to_group = Self::get_user_groups(&owner, user_id);
 
-            // match user_to_group {
-            //     Some(u2g) => {
-            //         Self::deposit_event(Event::FetchedUserGroups(u2g));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
-            dpatch_dposit!(
-                Self::get_user_groups(&owner, user_id),
-                Event::FetchedUserGroups
-            )
+            match user_to_group {
+                Some(u2g) => {
+                    Self::deposit_event(Event::FetchedUserGroups(u2g));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::fetch_user_permissions())]
@@ -785,18 +704,16 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let permissions = Self::get_user_permissions(&owner, user_id);
+            let permissions = Self::get_user_permissions(&owner, user_id);
 
-            // match permissions {
-            //     Some(p) => {
-            //         Self::deposit_event(Event::FetchedUserPermissions(p));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
-            dpatch_dposit!(
-                Self::get_user_permissions(&owner, user_id),
-                Event::FetchedUserPermissions
-            )
+            match permissions {
+                Some(p) => {
+                    Self::deposit_event(Event::FetchedUserPermissions(p));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
         }
 
         #[pallet::weight(T::WeightInfo::fetch_group_permissions())]
@@ -806,114 +723,104 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let permissions = Self::get_group_permissions(&owner, group_id);
+            let permissions = Self::get_group_permissions(&owner, group_id);
 
-            // match permissions {
-            //     Some(p) => {
-            //         Self::deposit_event(Event::FetchedGroupPermissions(p));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
-            dpatch_dposit!(
-                Self::get_group_permissions(&owner, group_id),
-                Event::FetchedGroupPermissions
-            )
+            match permissions {
+                Some(p) => {
+                    Self::deposit_event(Event::FetchedGroupPermissions(p));
+                }
+                None => return Err(Error::<T>::EntityDoesNotExist.into()),
+            };
+
+            Ok(())
         }
     }
 
     // implement the Rbac trait to satify the methods
     impl<T: Config> Rbac<T::AccountId, T::EntityId> for Pallet<T> {
-        fn get_entity(key: [u8; 32]) -> Result<Entity<T::EntityId>> {
+        fn get_entity(key: [u8; 32]) -> Option<Entity<T::EntityId>> {
             if !<KeysLookUpStore<T>>::contains_key(&key) {
-                return Err(EntityError::EntityDoesNotExist);
+                return None;
             }
 
             let entity = <KeysLookUpStore<T>>::get(&key);
 
             if !entity.enabled {
-                return Err(EntityError::EntityDisabled);
+                return None;
             }
 
-            Ok(entity)
+            Some(entity)
         }
-        
-        // fn check_entity(key: [u8; 32]) -> Result<()> {
-        //     // Check if entity exists and it's enabled
-        //     // let entity = Self::get_entity(key);
+        fn check_entity_exists(key: [u8; 32]) -> bool {
+            // Check if entity exists and it's enabled
+            let entity = Self::get_entity(key);
 
-        //     // match entity {
-        //     //     Some(data) => {
-        //     //         if !data.enabled {
-        //     //             return false;
-        //     //         }
-        //     //     }
-        //     //     None => {
-        //     //         return false;
-        //     //     }
-        //     // }
+            match entity {
+                Some(data) => {
+                    if !data.enabled {
+                        return false;
+                    }
+                }
+                None => {
+                    return false;
+                }
+            }
 
-        //     // true
-        //     <KeysLookUpStore<T>>::contains_key(&key)
-        // }
-
+            true
+        }
         fn get_user_roles(
             owner: &T::AccountId,
             user_id: T::EntityId,
-        ) -> Result<Vec<Role2User<T::EntityId>>> {
+        ) -> Option<Vec<Role2User<T::EntityId>>> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &user_id, Tag::Role2User);
 
             if <Role2UserStore<T>>::contains_key(&key) {
-                Ok(Self::role_to_user_of(&key))
-            } else {
-                Err(EntityError::EntityDoesNotExist)
+                return Some(Self::role_to_user_of(&key));
             }
+            None
         }
-
         fn get_user_groups(
             owner: &T::AccountId,
             user_id: T::EntityId,
-        ) -> Result<Vec<User2Group<T::EntityId>>> {
+        ) -> Option<Vec<User2Group<T::EntityId>>> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &user_id, Tag::User2Group);
 
             if <User2GroupStore<T>>::contains_key(&key) {
-                Ok(Self::user_to_group_of(&key))
-            } else {
-                Err(EntityError::EntityDoesNotExist)
+                return Some(Self::user_to_group_of(&key));
             }
+            None
         }
         fn get_group_roles(
             owner: &T::AccountId,
             group_id: T::EntityId,
-        ) -> Result<Vec<Role2Group<T::EntityId>>> {
+        ) -> Option<Vec<Role2Group<T::EntityId>>> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &group_id, Tag::Role2Group);
 
             if <Role2GroupStore<T>>::contains_key(&key) {
-                Ok(Self::role_to_group_of(&key))
-            } else {
-                Err(EntityError::EntityDoesNotExist)
+                return Some(Self::role_to_group_of(&key));
             }
+            None
         }
         fn get_role_permissions(
             owner: &T::AccountId,
             role_id: T::EntityId,
-        ) -> Result<Vec<Permission2Role<T::EntityId>>> {
+        ) -> Option<Vec<Permission2Role<T::EntityId>>> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &role_id, Tag::Permission2Role);
 
             if <Permission2RoleStore<T>>::contains_key(&key) {
-                Ok(Self::permission_to_role_of(&key))
-            } else {
-                Err(EntityError::EntityDoesNotExist)
+                return Some(Self::permission_to_role_of(&key));
             }
+            None
         }
 
         fn get_user_permissions(
             owner: &T::AccountId,
             user_id: T::EntityId,
-        ) -> Result<Vec<Entity<T::EntityId>>> {
+        ) -> Option<Vec<Entity<T::EntityId>>> {
             // Generate key for integrity check
             let role_2_user_key = Self::generate_key(&owner, &user_id, Tag::Role2User);
             let user_2_group_key = Self::generate_key(&owner, &user_id, Tag::User2Group);
@@ -931,24 +838,24 @@ pub mod pallet {
                     // use to avoid duplicate transversal
                     processed_roles.push(*&r2u.role);
 
-                    let p2r_option = Self::get_role_permissions(&owner, *&r2u.role)?;
+                    let p2r_option = Self::get_role_permissions(&owner, *&r2u.role);
 
-                    // match p2r_option {
-                    //     Some(p2r_val) => {
-                            // let p2r_itr = ;
-                            for p2r in p2r_option.iter() {
-                                let perm_option = Self::get_permission(&owner, *&p2r.permission)?;
+                    match p2r_option {
+                        Some(p2r_val) => {
+                            let p2r_itr = p2r_val.iter();
+                            for p2r in p2r_itr {
+                                let perm_option = Self::get_permission(&owner, *&p2r.permission);
 
-                                // match perm_option {
-                                //     Some(perm) => {
-                                        permissions.push(perm_option);
-                                //     }
-                                //     _ => {}
-                                // }
+                                match perm_option {
+                                    Some(perm) => {
+                                        permissions.push(perm);
+                                    }
+                                    _ => {}
+                                }
                             }
-                        // }
-                        // _ => {}
-                    // }
+                        }
+                        _ => {}
+                    }
                 }
             }
 
@@ -968,38 +875,38 @@ pub mod pallet {
                         for r2g in r2g_itr {
                             // use to avoid duplicate transversal
                             if !processed_roles.contains(&r2g.role) {
-                                let p2r_option = Self::get_role_permissions(&owner, *&r2g.role)?;
+                                let p2r_option = Self::get_role_permissions(&owner, *&r2g.role);
 
-                                // match p2r_option {
-                                //     Some(p2r_val) => {
-                                //         let p2r_itr = p2r_val.iter();
-                                        for p2r in p2r_option.iter() {
+                                match p2r_option {
+                                    Some(p2r_val) => {
+                                        let p2r_itr = p2r_val.iter();
+                                        for p2r in p2r_itr {
                                             let perm_option =
-                                                Self::get_permission(&owner, *&p2r.permission)?;
+                                                Self::get_permission(&owner, *&p2r.permission);
 
-                                            // match perm_option {
-                                            //     Some(perm) => {
-                                                    permissions.push(perm_option);
-                                                // }
-                                                // _ => {}
-                                            // }
+                                            match perm_option {
+                                                Some(perm) => {
+                                                    permissions.push(perm);
+                                                }
+                                                _ => {}
+                                            }
                                         }
-                                //     }
-                                //     _ => {}
-                                // }
+                                    }
+                                    _ => {}
+                                }
                             }
                         }
                     }
                 }
             }
 
-            Ok(permissions)
+            Some(permissions)
         }
 
         fn get_group_permissions(
             owner: &T::AccountId,
             group_id: T::EntityId,
-        ) -> Result<Vec<Entity<T::EntityId>>> {
+        ) -> Option<Vec<Entity<T::EntityId>>> {
             // Generate key for integrity check
 
             let mut permissions: Vec<Entity<T::EntityId>> = vec![];
@@ -1012,35 +919,35 @@ pub mod pallet {
                 let r2g_itr = val.iter();
 
                 for r2g in r2g_itr {
-                    let p2r_option = Self::get_role_permissions(&owner, *&r2g.role)?;
+                    let p2r_option = Self::get_role_permissions(&owner, *&r2g.role);
 
-                    // match p2r_option {
-                    //     Some(p2r_val) => {
-                    //         let p2r_itr = p2r_val.iter();
-                            for p2r in p2r_option.iter() {
-                                let perm_option = Self::get_permission(&owner, *&p2r.permission)?;
+                    match p2r_option {
+                        Some(p2r_val) => {
+                            let p2r_itr = p2r_val.iter();
+                            for p2r in p2r_itr {
+                                let perm_option = Self::get_permission(&owner, *&p2r.permission);
 
-                                // match perm_option {
-                                //     Some(perm) => {
-                                        permissions.push(perm_option);
-                                //     }
-                                //     _ => {}
-                                // }
+                                match perm_option {
+                                    Some(perm) => {
+                                        permissions.push(perm);
+                                    }
+                                    _ => {}
+                                }
                             }
-                    //     }
-                    //     _ => {}
-                    // }
+                        }
+                        _ => {}
+                    }
                 }
             }
 
-            Ok(permissions)
+            Some(permissions)
         }
 
         fn create_role_to_user(
             owner: &T::AccountId,
             role_id: T::EntityId,
             user_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let role_key = Self::generate_key(&owner, &role_id, Tag::Role);
             let role_2_user_key = Self::generate_key(&owner, &user_id, Tag::Role2User);
@@ -1078,7 +985,7 @@ pub mod pallet {
             owner: &T::AccountId,
             role_id: T::EntityId,
             user_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let role_2_user_key = Self::generate_key(&owner, &user_id, Tag::Role2User);
 
@@ -1118,7 +1025,7 @@ pub mod pallet {
             owner: &T::AccountId,
             role_id: T::EntityId,
             group_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let group_key = Self::generate_key(&owner, &group_id, Tag::Group);
             let role_key = Self::generate_key(&owner, &role_id, Tag::Role);
@@ -1162,7 +1069,7 @@ pub mod pallet {
             owner: &T::AccountId,
             role_id: T::EntityId,
             group_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let role_2_group_key = Self::generate_key(&owner, &group_id, Tag::Role2Group);
 
@@ -1202,7 +1109,7 @@ pub mod pallet {
             owner: &T::AccountId,
             user_id: T::EntityId,
             group_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let group_key = Self::generate_key(&owner, &group_id, Tag::Group);
             let user_2_group_key = Self::generate_key(&owner, &user_id, Tag::User2Group);
@@ -1240,7 +1147,7 @@ pub mod pallet {
             owner: &T::AccountId,
             user_id: T::EntityId,
             group_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let user_2_group_key = Self::generate_key(&owner, &user_id, Tag::User2Group);
 
@@ -1280,7 +1187,7 @@ pub mod pallet {
             owner: &T::AccountId,
             permission_id: T::EntityId,
             role_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let role_key = Self::generate_key(&owner, &role_id, Tag::Role);
             let permission_key = Self::generate_key(&owner, &permission_id, Tag::Permission);
@@ -1324,7 +1231,7 @@ pub mod pallet {
             owner: &T::AccountId,
             permission_id: T::EntityId,
             role_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let permission_2_role_key = Self::generate_key(&owner, &role_id, Tag::Permission2Role);
 
@@ -1372,21 +1279,21 @@ pub mod pallet {
 
     // implement the role Entity trait to satify the methods
     impl<T: Config> Role<T::AccountId, T::EntityId> for Pallet<T> {
-        fn get_role(owner: &T::AccountId, role_id: T::EntityId) -> Result<Entity<T::EntityId>> {
+        fn get_role(owner: &T::AccountId, role_id: T::EntityId) -> Option<Entity<T::EntityId>> {
             let key = Self::generate_key(&owner, &role_id, Tag::Role);
 
             Self::get_entity(key)
         }
 
-        fn get_roles(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>> {
-            Ok(<RoleStore<T>>::get(&owner))
+        fn get_roles(owner: &T::AccountId) -> Vec<Entity<T::EntityId>> {
+            <RoleStore<T>>::get(&owner)
         }
 
         fn create_role(
             owner: &T::AccountId,
             role_id: T::EntityId,
             name: &[u8],
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &role_id, Tag::Role);
 
@@ -1420,15 +1327,14 @@ pub mod pallet {
             owner: &T::AccountId,
             role_id: T::EntityId,
             name: &[u8],
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &role_id, Tag::Role);
 
             // Check if role exists and it's enabled
-            // if !Self::check_entity_exists(key) {
-            //     return Err(EntityError::EntityDoesNotExist);
-            // }
-            Self::get_entity(key)?;
+            if !Self::check_entity_exists(key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
 
             let mut val = <RoleStore<T>>::get(&owner);
 
@@ -1453,15 +1359,14 @@ pub mod pallet {
         fn disable_existing_role(
             owner: &T::AccountId,
             role_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &role_id, Tag::Role);
 
             // Check if role exists and it's enabled
-            // if !Self::check_entity_exists(key) {
-            //     return Err(EntityError::EntityDoesNotExist);
-            // }
-            Self::get_entity(key)?;
+            if !Self::check_entity_exists(key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
 
             let mut val = <RoleStore<T>>::get(&owner);
 
@@ -1486,21 +1391,21 @@ pub mod pallet {
         fn get_permission(
             owner: &T::AccountId,
             permission_id: T::EntityId,
-        ) -> Result<Entity<T::EntityId>> {
+        ) -> Option<Entity<T::EntityId>> {
             let key = Self::generate_key(&owner, &permission_id, Tag::Permission);
 
             Self::get_entity(key)
         }
 
-        fn get_permissions(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>> {
-            Ok(<PermissionStore<T>>::get(&owner))
+        fn get_permissions(owner: &T::AccountId) -> Vec<Entity<T::EntityId>> {
+            <PermissionStore<T>>::get(&owner)
         }
 
         fn create_permission(
             owner: &T::AccountId,
             permission_id: T::EntityId,
             name: &[u8],
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &permission_id, Tag::Permission);
 
@@ -1533,15 +1438,14 @@ pub mod pallet {
             owner: &T::AccountId,
             permission_id: T::EntityId,
             name: &[u8],
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &permission_id, Tag::Permission);
 
             // Check if permission exists and it's enabled
-            // if !Self::check_entity_exists(key) {
-            //     return Err(EntityError::EntityDoesNotExist);
-            // }
-            Self::get_entity(key)?;
+            if !Self::check_entity_exists(key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
 
             let mut val = <PermissionStore<T>>::get(&owner);
 
@@ -1565,15 +1469,14 @@ pub mod pallet {
         fn disable_existing_permission(
             owner: &T::AccountId,
             permission_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &permission_id, Tag::Permission);
 
             // Check if permission exists and it's enabled
-            // if !Self::check_entity_exists(key) {
-            //     return Err(EntityError::EntityDoesNotExist);
-            // }
-            Self::get_entity(key)?;
+            if !Self::check_entity_exists(key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
 
             let mut val = <PermissionStore<T>>::get(&owner);
 
@@ -1596,21 +1499,19 @@ pub mod pallet {
     }
 
     impl<T: Config> Group<T::AccountId, T::EntityId> for Pallet<T> {
-        fn get_group(owner: &T::AccountId, group_id: T::EntityId) -> Result<Entity<T::EntityId>> {
+        fn get_group(owner: &T::AccountId, group_id: T::EntityId) -> Option<Entity<T::EntityId>> {
             let key = Self::generate_key(&owner, &group_id, Tag::Group);
 
             Self::get_entity(key)
         }
-
-        fn get_groups(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>> {
-            Ok(<GroupStore<T>>::get(&owner))
+        fn get_groups(owner: &T::AccountId) -> Vec<Entity<T::EntityId>> {
+            <GroupStore<T>>::get(&owner)
         }
-
         fn create_group(
             owner: &T::AccountId,
             group_id: T::EntityId,
             name: &[u8],
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &group_id, Tag::Group);
 
@@ -1644,19 +1545,20 @@ pub mod pallet {
             owner: &T::AccountId,
             group_id: T::EntityId,
             name: &[u8],
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &group_id, Tag::Group);
 
             // Check if group exists and it's enabled
-            // if !Self::check_entity_exists(key) {
-            //     return Err(EntityError::EntityDoesNotExist);
-            // }
-            Self::get_entity(key)?;
+            if !Self::check_entity_exists(key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
 
             let mut val = <GroupStore<T>>::get(&owner);
 
-            for entity in val.iter_mut() {
+            let iterator = val.iter_mut();
+
+            for entity in iterator {
                 if entity.id == group_id {
                     entity.name = (&name).to_vec();
                     <KeysLookUpStore<T>>::mutate(&key, |e| *e = entity.clone());
@@ -1673,18 +1575,19 @@ pub mod pallet {
         fn disable_existing_group(
             owner: &T::AccountId,
             group_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), EntityError> {
             // Generate key for integrity check
             let key = Self::generate_key(&owner, &group_id, Tag::Group);
 
             // Check if group exists and it's enabled
-            // if !Self::check_entity_exists(key) {
-            //     return Err(EntityError::EntityDoesNotExist);
-            // }
-            Self::get_entity(key)?;
+            if !Self::check_entity_exists(key) {
+                return Err(EntityError::EntityDoesNotExist);
+            }
             let mut val = <GroupStore<T>>::get(&owner);
 
-            for entity in val.iter_mut() {
+            let iterator = val.iter_mut();
+
+            for entity in iterator {
                 if entity.id == group_id {
                     entity.enabled = false;
                     <KeysLookUpStore<T>>::mutate(&key, |e| *e = entity.clone());
