@@ -883,6 +883,7 @@ pub mod pallet {
                 Err(EntityError::EntityDoesNotExist)
             }
         }
+        
         fn get_group_roles(
             owner: &T::AccountId,
             group_id: T::EntityId,
@@ -896,6 +897,7 @@ pub mod pallet {
                 Err(EntityError::EntityDoesNotExist)
             }
         }
+
         fn get_role_permissions(
             owner: &T::AccountId,
             role_id: T::EntityId,

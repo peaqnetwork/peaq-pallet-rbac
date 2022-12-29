@@ -1,8 +1,11 @@
 use crate::structs::*;
+use codec::{Decode, Encode};
+use serde::{Deserialize, Serialize};
 use sp_std::vec::Vec;
 
 pub type Result<T> = std::result::Result<T, EntityError>;
 
+#[derive(Debug, Encode, Decode, Serialize, Deserialize)]
 pub enum EntityError {
     // Returned if the Entity already exists
     EntityAlreadyExist,
