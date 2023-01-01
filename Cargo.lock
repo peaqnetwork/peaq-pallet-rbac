@@ -1942,8 +1942,6 @@ dependencies = [
  "peaq-pallet-rbac-runtime-api",
  "sp-api",
  "sp-blockchain",
- "sp-core",
- "sp-rpc",
  "sp-runtime",
 ]
 
@@ -1955,7 +1953,6 @@ dependencies = [
  "peaq-pallet-rbac",
  "serde_json",
  "sp-api",
- "sp-std",
 ]
 
 [[package]]
@@ -2777,16 +2774,6 @@ dependencies = [
  "backtrace",
  "lazy_static",
  "regex",
-]
-
-[[package]]
-name = "sp-rpc"
-version = "6.0.0"
-source = "git+https://github.com/peaqnetwork/substrate?branch=peaq-polkadot-v0.9.29#91ad2fcb1a76a7ee4d81b2039824524307a6b54f"
-dependencies = [
- "rustc-hash",
- "serde",
- "sp-core",
 ]
 
 [[package]]
