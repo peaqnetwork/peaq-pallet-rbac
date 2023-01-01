@@ -5,7 +5,8 @@ use sp_std::vec::Vec;
 
 pub type Result<T> = std::result::Result<T, EntityError>;
 
-#[derive(Debug, Encode, Decode, Serialize, Deserialize)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Debug, Encode, Decode)]
 pub enum EntityError {
     // Returned if the Entity already exists
     EntityAlreadyExist,
