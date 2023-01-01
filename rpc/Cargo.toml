@@ -14,8 +14,8 @@ codec = { package = "parity-scale-codec", version = "3.0.0" }
 jsonrpc-core = "18.0.0"
 jsonrpc-core-client = "18.0.0"
 jsonrpc-derive = "18.0.0"
-# serde = "1.0.136"
 
+sp-std = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
 sp-api = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
 sp-blockchain = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
 # sp-core = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
@@ -23,5 +23,5 @@ sp-blockchain = { git = "https://github.com/peaqnetwork/substrate", branch = "pe
 sp-runtime = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
 jsonrpsee = { git = "https://github.com/peaqnetwork/jsonrpsee", branch = "peaq-v0.15.1", features = ["server", "macros"] }
 
+peaq-pallet-rbac-runtime-api = { path = "./runtime-api" } # version = "0.0.2", 
 peaq-pallet-rbac = { version = "0.0.2", path = "../pallet/" }
-peaq-pallet-rbac-runtime-api = { version = "0.0.2", path = "./runtime-api" }

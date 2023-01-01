@@ -20,10 +20,10 @@ default-features = false
 git = "https://github.com/peaqnetwork/substrate"
 branch = "peaq-polkadot-v0.9.29"
 
-# [dependencies.sp-std]
-# default-features = false
-# git = "https://github.com/peaqnetwork/substrate"
-# branch = "peaq-polkadot-v0.9.29"
+[dependencies.sp-std]
+default-features = false
+git = "https://github.com/peaqnetwork/substrate"
+branch = "peaq-polkadot-v0.9.29"
 
 [dependencies.peaq-pallet-rbac]
 default-features = false
@@ -37,6 +37,6 @@ default = ["std"]
 std = [
     "codec/std",
 	"sp-api/std",
-	# "sp-std/std",
+	"sp-std/std",
 	"peaq-pallet-rbac/std",
 ]

@@ -1943,6 +1943,7 @@ dependencies = [
  "sp-api",
  "sp-blockchain",
  "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -1953,6 +1954,7 @@ dependencies = [
  "peaq-pallet-rbac",
  "serde_json",
  "sp-api",
+ "sp-std",
 ]
 
 [[package]]

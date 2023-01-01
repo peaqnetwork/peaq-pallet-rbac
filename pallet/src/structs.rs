@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(
-    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug //, Serialize, Deserialize
+    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug,
 )]
 pub struct Entity<EntityId> {
     pub id: EntityId,
@@ -17,7 +17,7 @@ pub struct Entity<EntityId> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(
-    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug //, Serialize, Deserialize
+    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug
 )]
 pub struct Role2User<EntityId> {
     pub role: EntityId,
@@ -26,7 +26,7 @@ pub struct Role2User<EntityId> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(
-    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug //, Serialize, Deserialize
+    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug
 )]
 pub struct Role2Group<EntityId> {
     pub role: EntityId,
@@ -35,7 +35,7 @@ pub struct Role2Group<EntityId> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(
-    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug //, Serialize, Deserialize
+    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug
 )]
 pub struct User2Group<EntityId> {
     pub user: EntityId,
@@ -44,7 +44,7 @@ pub struct User2Group<EntityId> {
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(
-    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug //, Serialize, Deserialize
+    Clone, PartialEq, Eq, PartialOrd, Ord, Default, TypeInfo, Decode, Encode, RuntimeDebug
 )]
 pub struct Permission2Role<EntityId> {
     pub permission: EntityId,
