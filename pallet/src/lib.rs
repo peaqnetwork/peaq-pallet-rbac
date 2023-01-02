@@ -241,13 +241,6 @@ pub mod pallet {
             ensure_signed(origin)?;
             let role = Self::get_role(&owner, entity);
 
-            // match res {
-            //     Ok(role) => {
-            //         Self::deposit_event(Event::RoleFetched(role));
-            //         Ok(())
-            //     },
-            //     Err(e) => Error::<T>::dispatch_error(e)
-            // }
             dpatch_dposit!(role, Event::RoleFetched)
         }
 
@@ -272,12 +265,6 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            // match Self::create_role(&sender, role_id, &name) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleAdded(sender, role_id, name));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::create_role(&sender, role_id, &name),
                 Event::RoleAdded(sender, role_id, name)
@@ -296,12 +283,6 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            // match Self::update_existing_role(&sender, role_id, &name) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleUpdated(sender, role_id, name));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::update_existing_role(&sender, role_id, &name),
                 Event::RoleUpdated(sender, role_id, name)
@@ -312,12 +293,6 @@ pub mod pallet {
         pub fn disable_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::disable_existing_role(&sender, role_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleRemoved(sender, role_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::disable_existing_role(&sender, role_id),
                 Event::RoleRemoved(sender, role_id)
@@ -333,12 +308,6 @@ pub mod pallet {
             ensure_signed(origin)?;
             // let role_to_user = Self::get_user_roles(&owner, user_id);
 
-            // match role_to_user {
-            //     Some(r2u) => {
-            //         Self::deposit_event(Event::FetchedUserRoles(r2u));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
             dpatch_dposit!(
                 Self::get_user_roles(&owner, user_id),
                 Event::FetchedUserRoles
@@ -354,12 +323,6 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::create_role_to_user(&sender, role_id, user_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleAssignedToUser(sender, role_id, user_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::create_role_to_user(&sender, role_id, user_id),
                 Event::RoleAssignedToUser(sender, role_id, user_id)
@@ -375,12 +338,6 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::revoke_role_to_user(&sender, role_id, user_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleUnassignedToUser(sender, role_id, user_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::revoke_role_to_user(&sender, role_id, user_id),
                 Event::RoleUnassignedToUser(sender, role_id, user_id)
@@ -396,12 +353,6 @@ pub mod pallet {
             ensure_signed(origin)?;
             // let permission = Self::get_permission(&owner, permission_id);
 
-            // match permission {
-            //     Some(p) => {
-            //         Self::deposit_event(Event::PermissionFetched(p));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
             dpatch_dposit!(
                 Self::get_permission(&owner, permission_id),
                 Event::PermissionFetched
@@ -411,9 +362,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::fetch_permissions())]
         pub fn fetch_permissions(origin: OriginFor<T>, owner: T::AccountId) -> DispatchResult {
             ensure_signed(origin)?;
-            // let permissions = Self::get_permissions(&owner);
 
-            // Self::deposit_event(Event::AllPermissionsFetched(permissions));
             dpatch_dposit!(
                 Self::get_permissions(&owner),
                 Event::AllPermissionsFetched
@@ -432,12 +381,6 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            // match Self::create_permission(&sender, permission_id, &name) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::PermissionAdded(sender, permission_id, name));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::create_permission(&sender, permission_id, &name),
                 Event::PermissionAdded(sender, permission_id, name)
@@ -456,12 +399,6 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            // match Self::update_existing_permission(&sender, permission_id, &name) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::PermissionUpdated(sender, permission_id, name));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::update_existing_permission(&sender, permission_id, &name),
                 Event::PermissionUpdated(sender, permission_id, name)
@@ -475,12 +412,6 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::disable_existing_permission(&sender, permission_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::PermissionDisabled(sender, permission_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::disable_existing_permission(&sender, permission_id),
                 Event::PermissionDisabled(sender, permission_id)
@@ -496,12 +427,6 @@ pub mod pallet {
             ensure_signed(origin)?;
             // let permission_to_role = Self::get_role_permissions(&owner, role_id);
 
-            // match permission_to_role {
-            //     Some(p2r) => {
-            //         Self::deposit_event(Event::FetchedRolePermissions(p2r));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
             dpatch_dposit!(
                 Self::get_role_permissions(&owner, role_id),
                 Event::FetchedRolePermissions
@@ -517,12 +442,6 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::create_permission_to_role(&sender, permission_id, role_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::PermissionAssigned(sender, permission_id, role_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::create_permission_to_role(&sender, permission_id, role_id),
                 Event::PermissionAssigned(sender, permission_id, role_id)
@@ -538,16 +457,6 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::revoke_permission_to_role(&sender, permission_id, role_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::PermissionUnassignedToRole(
-            //             sender,
-            //             permission_id,
-            //             role_id,
-            //         ));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::revoke_permission_to_role(&sender, permission_id, role_id),
                 Event::PermissionUnassignedToRole(sender, permission_id, role_id)
@@ -563,12 +472,6 @@ pub mod pallet {
             ensure_signed(origin)?;
             // let group = Self::get_group(&owner, group_id);
 
-            // match group {
-            //     Some(g) => {
-            //         Self::deposit_event(Event::GroupFetched(g));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
             dpatch_dposit!(
                 Self::get_group(&owner, group_id),
                 Event::GroupFetched
@@ -578,9 +481,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::fetch_groups())]
         pub fn fetch_groups(origin: OriginFor<T>, owner: T::AccountId) -> DispatchResult {
             ensure_signed(origin)?;
-            // let groups = Self::get_groups(&owner);
 
-            // Self::deposit_event(Event::AllGroupsFetched(groups));
             dpatch_dposit!(
                 Self::get_groups(&owner),
                 Event::AllGroupsFetched
@@ -599,12 +500,6 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            // match Self::create_group(&sender, group_id, &name) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::GroupAdded(sender, group_id, name));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::create_group(&sender, group_id, &name),
                 Event::GroupAdded(sender, group_id, name)
@@ -623,12 +518,6 @@ pub mod pallet {
             // Verify that the name len is 64 max
             ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
 
-            // match Self::update_existing_group(&sender, group_id, &name) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::GroupUpdated(sender, group_id, name));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::update_existing_group(&sender, group_id, &name),
                 Event::GroupUpdated(sender, group_id, name)
@@ -640,12 +529,6 @@ pub mod pallet {
         pub fn disable_group(origin: OriginFor<T>, group_id: T::EntityId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::disable_existing_group(&sender, group_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::GroupDisabled(sender, group_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::disable_existing_group(&sender, group_id),
                 Event::GroupDisabled(sender, group_id)
@@ -661,12 +544,6 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::create_role_to_group(&sender, role_id, group_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleAssignedToGroup(sender, role_id, group_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::create_role_to_group(&sender, role_id, group_id),
                 Event::RoleAssignedToGroup(sender, role_id, group_id)
@@ -682,12 +559,6 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::revoke_role_to_group(&sender, role_id, group_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::RoleUnassignedToGroup(sender, role_id, group_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::revoke_role_to_group(&sender, role_id, group_id),
                 Event::RoleUnassignedToGroup(sender, role_id, group_id)
@@ -701,14 +572,7 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let role_to_group = Self::get_group_roles(&owner, group_id);
 
-            // match role_to_group {
-            //     Some(r2g) => {
-            //         Self::deposit_event(Event::FetchedGroupRoles(r2g));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
             dpatch_dposit!(
                 Self::get_group_roles(&owner, group_id),
                 Event::FetchedGroupRoles
@@ -724,12 +588,6 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::create_user_to_group(&sender, user_id, group_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::UserAssignedToGroup(sender, user_id, group_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::create_user_to_group(&sender, user_id, group_id),
                 Event::UserAssignedToGroup(sender, user_id, group_id)
@@ -745,12 +603,6 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
-            // match Self::revoke_user_to_group(&sender, user_id, group_id) {
-            //     Ok(()) => {
-            //         Self::deposit_event(Event::UserUnAssignedToGroup(sender, user_id, group_id));
-            //     }
-            //     Err(e) => return Error::<T>::dispatch_error(e),
-            // };
             dpatch_dposit_par!(
                 Self::revoke_user_to_group(&sender, user_id, group_id),
                 Event::UserUnAssignedToGroup(sender, user_id, group_id)
@@ -764,14 +616,7 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let user_to_group = Self::get_user_groups(&owner, user_id);
 
-            // match user_to_group {
-            //     Some(u2g) => {
-            //         Self::deposit_event(Event::FetchedUserGroups(u2g));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
             dpatch_dposit!(
                 Self::get_user_groups(&owner, user_id),
                 Event::FetchedUserGroups
@@ -785,14 +630,7 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let permissions = Self::get_user_permissions(&owner, user_id);
 
-            // match permissions {
-            //     Some(p) => {
-            //         Self::deposit_event(Event::FetchedUserPermissions(p));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
             dpatch_dposit!(
                 Self::get_user_permissions(&owner, user_id),
                 Event::FetchedUserPermissions
@@ -806,14 +644,7 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let permissions = Self::get_group_permissions(&owner, group_id);
 
-            // match permissions {
-            //     Some(p) => {
-            //         Self::deposit_event(Event::FetchedGroupPermissions(p));
-            //     }
-            //     None => return Err(Error::<T>::EntityDoesNotExist.into()),
-            // };
             dpatch_dposit!(
                 Self::get_group_permissions(&owner, group_id),
                 Event::FetchedGroupPermissions
@@ -935,22 +766,10 @@ pub mod pallet {
 
                     let p2r_option = Self::get_role_permissions(&owner, *&r2u.role)?;
 
-                    // match p2r_option {
-                    //     Some(p2r_val) => {
-                            // let p2r_itr = ;
-                            for p2r in p2r_option.iter() {
-                                let perm_option = Self::get_permission(&owner, *&p2r.permission)?;
-
-                                // match perm_option {
-                                //     Some(perm) => {
-                                        permissions.push(perm_option);
-                                //     }
-                                //     _ => {}
-                                // }
-                            }
-                        // }
-                        // _ => {}
-                    // }
+                    for p2r in p2r_option.iter() {
+                        let perm_option = Self::get_permission(&owner, *&p2r.permission)?;
+                        permissions.push(perm_option);
+                    }
                 }
             }
 
@@ -972,23 +791,10 @@ pub mod pallet {
                             if !processed_roles.contains(&r2g.role) {
                                 let p2r_option = Self::get_role_permissions(&owner, *&r2g.role)?;
 
-                                // match p2r_option {
-                                //     Some(p2r_val) => {
-                                //         let p2r_itr = p2r_val.iter();
-                                        for p2r in p2r_option.iter() {
-                                            let perm_option =
-                                                Self::get_permission(&owner, *&p2r.permission)?;
-
-                                            // match perm_option {
-                                            //     Some(perm) => {
-                                                    permissions.push(perm_option);
-                                                // }
-                                                // _ => {}
-                                            // }
-                                        }
-                                //     }
-                                //     _ => {}
-                                // }
+                                for p2r in p2r_option.iter() {
+                                    let perm_option = Self::get_permission(&owner, *&p2r.permission)?;
+                                    permissions.push(perm_option);
+                                }
                             }
                         }
                     }
@@ -1016,22 +822,10 @@ pub mod pallet {
                 for r2g in r2g_itr {
                     let p2r_option = Self::get_role_permissions(&owner, *&r2g.role)?;
 
-                    // match p2r_option {
-                    //     Some(p2r_val) => {
-                    //         let p2r_itr = p2r_val.iter();
-                            for p2r in p2r_option.iter() {
-                                let perm_option = Self::get_permission(&owner, *&p2r.permission)?;
-
-                                // match perm_option {
-                                //     Some(perm) => {
-                                        permissions.push(perm_option);
-                                //     }
-                                //     _ => {}
-                                // }
-                            }
-                    //     }
-                    //     _ => {}
-                    // }
+                    for p2r in p2r_option.iter() {
+                        let perm_option = Self::get_permission(&owner, *&p2r.permission)?;
+                        permissions.push(perm_option);
+                    }
                 }
             }
 

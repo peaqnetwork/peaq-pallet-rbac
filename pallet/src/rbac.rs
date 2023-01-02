@@ -31,10 +31,6 @@ pub trait Rbac<AccountId, EntityId> {
     fn get_entity(
         key: [u8; 32]
     ) -> Result<Entity<EntityId>>;
-    
-    // fn check_entity_exists(
-    //     key: [u8; 32]
-    // ) -> bool;
 
     fn get_user_roles(
         owner: &AccountId,
