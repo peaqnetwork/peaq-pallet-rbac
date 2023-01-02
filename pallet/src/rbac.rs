@@ -1,9 +1,10 @@
 use crate::structs::*;
 use codec::{Decode, Encode};
+#[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_std::vec::Vec;
 
-pub type Result<T> = std::result::Result<T, EntityError>;
+pub type Result<T> = core::result::Result<T, EntityError>;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Debug, Encode, Decode)]
