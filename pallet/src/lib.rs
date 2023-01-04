@@ -34,16 +34,19 @@ pub mod pallet {
     use sp_std::fmt::Debug;
     use sp_std::{vec, vec::Vec};
 
-    use crate::{
-        error::{Result, RbacError, RbacErrorType::{
-            EntityAlreadyExist, EntityDoesNotExist, EntityAuthorizationFailed,
-            EntityDisabled, AssignmentAlreadyExist, AssignmentDoesNotExist, NameExceedMaxChar,
-        }},
-        structs::{Entity, Permission2Role, Role2User, Role2Group, User2Group},
-        rbac::{Group, Permission, Rbac, RbacKeyType, Role, Tag},
-    };
     use super::WeightInfo;
-
+    use crate::{
+        error::{
+            RbacError,
+            RbacErrorType::{
+                AssignmentAlreadyExist, AssignmentDoesNotExist, EntityAlreadyExist,
+                EntityAuthorizationFailed, EntityDisabled, EntityDoesNotExist, NameExceedMaxChar,
+            },
+            Result,
+        },
+        rbac::{Group, Permission, Rbac, RbacKeyType, Role, Tag},
+        structs::{Entity, Permission2Role, Role2Group, Role2User, User2Group},
+    };
 
     macro_rules! dpatch_dposit {
         ($res:expr, $event:expr) => {
@@ -51,8 +54,8 @@ pub mod pallet {
                 Ok(d) => {
                     Self::deposit_event($event(d));
                     Ok(())
-                },
-                Err(e) => Error::<T>::dispatch_error(e)
+                }
+                Err(e) => Error::<T>::dispatch_error(e),
             }
         };
     }
@@ -63,12 +66,11 @@ pub mod pallet {
                 Ok(_d) => {
                     Self::deposit_event($event);
                     Ok(())
-                },
-                Err(e) => Error::<T>::dispatch_error(e)
+                }
+                Err(e) => Error::<T>::dispatch_error(e),
             }
         };
     }
-
 
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
@@ -350,7 +352,7 @@ pub mod pallet {
             permission_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let permission = Self::get_permission(&owner, permission_id);
+            // let permission = Self::get_permission(owner, permission_id);
 
             dpatch_dposit!(
                 Self::get_permission(&owner, permission_id),
@@ -362,10 +364,7 @@ pub mod pallet {
         pub fn fetch_permissions(origin: OriginFor<T>, owner: T::AccountId) -> DispatchResult {
             ensure_signed(origin)?;
 
-            dpatch_dposit!(
-                Self::get_permissions(&owner),
-                Event::AllPermissionsFetched
-            )
+            dpatch_dposit!(Self::get_permissions(&owner), Event::AllPermissionsFetched)
         }
 
         /// create permission call
@@ -471,20 +470,14 @@ pub mod pallet {
             ensure_signed(origin)?;
             // let group = Self::get_group(&owner, group_id);
 
-            dpatch_dposit!(
-                Self::get_group(&owner, group_id),
-                Event::GroupFetched
-            )
+            dpatch_dposit!(Self::get_group(&owner, group_id), Event::GroupFetched)
         }
 
         #[pallet::weight(T::WeightInfo::fetch_groups())]
         pub fn fetch_groups(origin: OriginFor<T>, owner: T::AccountId) -> DispatchResult {
             ensure_signed(origin)?;
 
-            dpatch_dposit!(
-                Self::get_groups(&owner),
-                Event::AllGroupsFetched
-            )
+            dpatch_dposit!(Self::get_groups(&owner), Event::AllGroupsFetched)
         }
 
         /// create group call
@@ -653,23 +646,11 @@ pub mod pallet {
 
     // implement the Rbac trait to satify the methods
     impl<T: Config> Rbac<T::AccountId, T::EntityId> for Pallet<T> {
-        fn get_entity(owner: &T::AccountId, entity_id: &T::EntityId, tag: Tag) -> Result<Entity<T::EntityId>> {
-            let key = Self::generate_key(owner, entity_id, tag);
-
-            if !<KeysLookUpStore<T>>::contains_key(&key) {
-                return RbacError::err(EntityDoesNotExist, entity_id)
-            }
-
-            let entity = <KeysLookUpStore<T>>::get(&key);
-
-            if !entity.enabled {
-                return RbacError::err(EntityDisabled, entity_id)
-            }
-
-            Ok(entity)
-        }
-
-        fn check_entity_get_key(owner: &T::AccountId, entity_id: &T::EntityId, tag: Tag) -> Result<RbacKeyType> {
+        fn get_entity(
+            owner: &T::AccountId,
+            entity_id: &T::EntityId,
+            tag: Tag,
+        ) -> Result<Entity<T::EntityId>> {
             let key = Self::generate_key(owner, entity_id, tag);
 
             if !<KeysLookUpStore<T>>::contains_key(&key) {
@@ -679,7 +660,27 @@ pub mod pallet {
             let entity = <KeysLookUpStore<T>>::get(&key);
 
             if !entity.enabled {
-                return RbacError::err(EntityDisabled, entity_id)
+                return RbacError::err(EntityDisabled, entity_id);
+            }
+
+            Ok(entity)
+        }
+
+        fn check_entity_get_key(
+            owner: &T::AccountId,
+            entity_id: &T::EntityId,
+            tag: Tag,
+        ) -> Result<RbacKeyType> {
+            let key = Self::generate_key(owner, entity_id, tag);
+
+            if !<KeysLookUpStore<T>>::contains_key(&key) {
+                return RbacError::err(EntityDoesNotExist, entity_id);
+            }
+
+            let entity = <KeysLookUpStore<T>>::get(&key);
+
+            if !entity.enabled {
+                return RbacError::err(EntityDisabled, entity_id);
             }
 
             Ok(key)
@@ -690,7 +691,7 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> Result<Vec<Role2User<T::EntityId>>> {
             // Generate key for integrity check
-            let key = Self::generate_key(&owner, &user_id, Tag::Role2User);
+            let key = Self::generate_key(owner, &user_id, Tag::Role2User);
 
             if <Role2UserStore<T>>::contains_key(&key) {
                 Ok(Self::role_to_user_of(&key))
@@ -704,7 +705,7 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> Result<Vec<User2Group<T::EntityId>>> {
             // Generate key for integrity check
-            let key = Self::generate_key(&owner, &user_id, Tag::User2Group);
+            let key = Self::generate_key(owner, &user_id, Tag::User2Group);
 
             if <User2GroupStore<T>>::contains_key(&key) {
                 Ok(Self::user_to_group_of(&key))
@@ -712,13 +713,13 @@ pub mod pallet {
                 RbacError::err(AssignmentDoesNotExist, &user_id)
             }
         }
-        
+
         fn get_group_roles(
             owner: &T::AccountId,
             group_id: T::EntityId,
         ) -> Result<Vec<Role2Group<T::EntityId>>> {
             // Generate key for integrity check
-            let key = Self::generate_key(&owner, &group_id, Tag::Role2Group);
+            let key = Self::generate_key(owner, &group_id, Tag::Role2Group);
 
             if <Role2GroupStore<T>>::contains_key(&key) {
                 Ok(Self::role_to_group_of(&key))
@@ -732,7 +733,7 @@ pub mod pallet {
             role_id: T::EntityId,
         ) -> Result<Vec<Permission2Role<T::EntityId>>> {
             // Generate key for integrity check
-            let key = Self::generate_key(&owner, &role_id, Tag::Permission2Role);
+            let key = Self::generate_key(owner, &role_id, Tag::Permission2Role);
 
             if <Permission2RoleStore<T>>::contains_key(&key) {
                 Ok(Self::permission_to_role_of(&key))
@@ -746,8 +747,8 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> Result<Vec<Entity<T::EntityId>>> {
             // Generate key for integrity check
-            let role_2_user_key = Self::generate_key(&owner, &user_id, Tag::Role2User);
-            let user_2_group_key = Self::generate_key(&owner, &user_id, Tag::User2Group);
+            let role_2_user_key = Self::generate_key(owner, &user_id, Tag::Role2User);
+            let user_2_group_key = Self::generate_key(owner, &user_id, Tag::User2Group);
 
             let mut permissions: Vec<Entity<T::EntityId>> = vec![];
             // use to avoid duplicate transverval
@@ -760,12 +761,12 @@ pub mod pallet {
 
                 for r2u in itr {
                     // use to avoid duplicate transversal
-                    processed_roles.push(*&r2u.role);
+                    processed_roles.push(r2u.role);
 
-                    let p2r_option = Self::get_role_permissions(&owner, *&r2u.role)?;
+                    let p2r_option = Self::get_role_permissions(&owner, r2u.role)?;
 
                     for p2r in p2r_option.iter() {
-                        let perm_option = Self::get_permission(&owner, *&p2r.permission)?;
+                        let perm_option = Self::get_permission(owner, p2r.permission)?;
                         permissions.push(perm_option);
                     }
                 }
@@ -777,7 +778,7 @@ pub mod pallet {
                 let itr = val.iter();
 
                 for u2g in itr {
-                    let key = Self::generate_key(&owner, &u2g.group, Tag::Role2Group);
+                    let key = Self::generate_key(owner, &u2g.group, Tag::Role2Group);
 
                     if <Role2GroupStore<T>>::contains_key(&key) {
                         let val = <Role2GroupStore<T>>::get(&key);
@@ -787,10 +788,11 @@ pub mod pallet {
                         for r2g in r2g_itr {
                             // use to avoid duplicate transversal
                             if !processed_roles.contains(&r2g.role) {
-                                let p2r_option = Self::get_role_permissions(&owner, *&r2g.role)?;
+                                let p2r_option = Self::get_role_permissions(&owner, r2g.role)?;
 
                                 for p2r in p2r_option.iter() {
-                                    let perm_option = Self::get_permission(&owner, *&p2r.permission)?;
+                                    let perm_option =
+                                        Self::get_permission(owner, p2r.permission)?;
                                     permissions.push(perm_option);
                                 }
                             }
@@ -810,7 +812,7 @@ pub mod pallet {
 
             let mut permissions: Vec<Entity<T::EntityId>> = vec![];
 
-            let key = Self::generate_key(&owner, &group_id, Tag::Role2Group);
+            let key = Self::generate_key(owner, &group_id, Tag::Role2Group);
 
             if <Role2GroupStore<T>>::contains_key(&key) {
                 let val = <Role2GroupStore<T>>::get(&key);
@@ -818,10 +820,10 @@ pub mod pallet {
                 let r2g_itr = val.iter();
 
                 for r2g in r2g_itr {
-                    let p2r_option = Self::get_role_permissions(&owner, *&r2g.role)?;
+                    let p2r_option = Self::get_role_permissions(&owner, r2g.role)?;
 
                     for p2r in p2r_option.iter() {
-                        let perm_option = Self::get_permission(&owner, *&p2r.permission)?;
+                        let perm_option = Self::get_permission(owner, p2r.permission)?;
                         permissions.push(perm_option);
                     }
                 }
@@ -836,12 +838,12 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> Result<()> {
             // Generate key for integrity check
-            let role_key = Self::generate_key(&owner, &role_id, Tag::Role);
-            let role_2_user_key = Self::generate_key(&owner, &user_id, Tag::Role2User);
+            let role_key = Self::generate_key(owner, &role_id, Tag::Role);
+            let role_2_user_key = Self::generate_key(owner, &user_id, Tag::Role2User);
 
             // Check if role exists
             if !<KeysLookUpStore<T>>::contains_key(&role_key) {
-                return RbacError::err(EntityDoesNotExist, &role_id)
+                return RbacError::err(EntityDoesNotExist, &role_id);
             }
 
             let mut roles: Vec<Role2User<T::EntityId>> = vec![];
@@ -856,7 +858,7 @@ pub mod pallet {
                 let mut val = <Role2UserStore<T>>::get(&role_2_user_key);
 
                 if val.contains(&new_assign) {
-                    return RbacError::err(AssignmentAlreadyExist, &user_id)
+                    return RbacError::err(AssignmentAlreadyExist, &user_id);
                 }
 
                 roles.append(&mut val);
@@ -874,7 +876,7 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> Result<()> {
             // Generate key for integrity check
-            let role_2_user_key = Self::generate_key(&owner, &user_id, Tag::Role2User);
+            let role_2_user_key = Self::generate_key(owner, &user_id, Tag::Role2User);
 
             // Check if role exists
             if !<Role2UserStore<T>>::contains_key(&role_2_user_key) {
@@ -914,18 +916,18 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> Result<()> {
             // Generate key for integrity check
-            let group_key = Self::generate_key(&owner, &group_id, Tag::Group);
-            let role_key = Self::generate_key(&owner, &role_id, Tag::Role);
-            let role_2_group_key = Self::generate_key(&owner, &group_id, Tag::Role2Group);
+            let group_key = Self::generate_key(owner, &group_id, Tag::Group);
+            let role_key = Self::generate_key(owner, &role_id, Tag::Role);
+            let role_2_group_key = Self::generate_key(owner, &group_id, Tag::Role2Group);
 
             // Check if role exists
             if !<KeysLookUpStore<T>>::contains_key(&role_key) {
-                return RbacError::err(EntityDoesNotExist, &role_id)
+                return RbacError::err(EntityDoesNotExist, &role_id);
             }
 
             // Check if group exists
             if !<KeysLookUpStore<T>>::contains_key(&group_key) {
-                return RbacError::err(EntityDoesNotExist, &group_id)
+                return RbacError::err(EntityDoesNotExist, &group_id);
             }
 
             let mut roles: Vec<Role2Group<T::EntityId>> = vec![];
@@ -940,7 +942,7 @@ pub mod pallet {
                 let mut val = <Role2GroupStore<T>>::get(&role_2_group_key);
 
                 if val.contains(&new_assign) {
-                    return RbacError::err(AssignmentAlreadyExist, &group_id)
+                    return RbacError::err(AssignmentAlreadyExist, &group_id);
                 }
 
                 roles.append(&mut val);
@@ -958,11 +960,11 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> Result<()> {
             // Generate key for integrity check
-            let role_2_group_key = Self::generate_key(&owner, &group_id, Tag::Role2Group);
+            let role_2_group_key = Self::generate_key(owner, &group_id, Tag::Role2Group);
 
             // Check if role exists
             if !<Role2GroupStore<T>>::contains_key(&role_2_group_key) {
-                return RbacError::err(AssignmentDoesNotExist, &group_id)
+                return RbacError::err(AssignmentDoesNotExist, &group_id);
             }
 
             let new_assign = Role2Group {
@@ -973,7 +975,7 @@ pub mod pallet {
             let mut val = <Role2GroupStore<T>>::get(&role_2_group_key);
 
             if !val.contains(&new_assign) {
-                return RbacError::err(AssignmentDoesNotExist, &group_id)
+                return RbacError::err(AssignmentDoesNotExist, &group_id);
             }
 
             match val.binary_search(&new_assign) {
@@ -998,8 +1000,8 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> Result<()> {
             // Generate key for integrity check
-            let group_key = Self::generate_key(&owner, &group_id, Tag::Group);
-            let user_2_group_key = Self::generate_key(&owner, &user_id, Tag::User2Group);
+            let group_key = Self::generate_key(owner, &group_id, Tag::Group);
+            let user_2_group_key = Self::generate_key(owner, &user_id, Tag::User2Group);
 
             // Check if group exists
             if !<KeysLookUpStore<T>>::contains_key(&group_key) {
@@ -1018,7 +1020,7 @@ pub mod pallet {
                 let mut val = <User2GroupStore<T>>::get(&user_2_group_key);
 
                 if val.contains(&new_assign) {
-                    return RbacError::err(AssignmentAlreadyExist, &group_id)
+                    return RbacError::err(AssignmentAlreadyExist, &group_id);
                 }
 
                 groups.append(&mut val);
@@ -1036,7 +1038,7 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> Result<()> {
             // Generate key for integrity check
-            let user_2_group_key = Self::generate_key(&owner, &user_id, Tag::User2Group);
+            let user_2_group_key = Self::generate_key(owner, &user_id, Tag::User2Group);
 
             // Check if user exists
             if !<User2GroupStore<T>>::contains_key(&user_2_group_key) {
@@ -1076,18 +1078,18 @@ pub mod pallet {
             role_id: T::EntityId,
         ) -> Result<()> {
             // Generate key for integrity check
-            let role_key = Self::generate_key(&owner, &role_id, Tag::Role);
-            let permission_key = Self::generate_key(&owner, &permission_id, Tag::Permission);
-            let permission_2_role_key = Self::generate_key(&owner, &role_id, Tag::Permission2Role);
+            let role_key = Self::generate_key(owner, &role_id, Tag::Role);
+            let permission_key = Self::generate_key(owner, &permission_id, Tag::Permission);
+            let permission_2_role_key = Self::generate_key(owner, &role_id, Tag::Permission2Role);
 
             // Check if role exists
             if !<KeysLookUpStore<T>>::contains_key(&role_key) {
-                return RbacError::err(EntityDoesNotExist, &role_id)
+                return RbacError::err(EntityDoesNotExist, &role_id);
             }
 
             // Check if permission exists
             if !<KeysLookUpStore<T>>::contains_key(&permission_key) {
-                return RbacError::err(EntityDoesNotExist, &permission_id)
+                return RbacError::err(EntityDoesNotExist, &permission_id);
             }
 
             let mut permissions: Vec<Permission2Role<T::EntityId>> = vec![];
@@ -1102,7 +1104,7 @@ pub mod pallet {
                 let mut val = <Permission2RoleStore<T>>::get(&permission_2_role_key);
 
                 if val.contains(&new_assign) {
-                    return RbacError::err(AssignmentAlreadyExist, &role_id)
+                    return RbacError::err(AssignmentAlreadyExist, &role_id);
                 }
 
                 permissions.append(&mut val);
@@ -1120,11 +1122,11 @@ pub mod pallet {
             role_id: T::EntityId,
         ) -> Result<()> {
             // Generate key for integrity check
-            let permission_2_role_key = Self::generate_key(&owner, &role_id, Tag::Permission2Role);
+            let permission_2_role_key = Self::generate_key(owner, &role_id, Tag::Permission2Role);
 
             // Check if permission exists
             if !<Permission2RoleStore<T>>::contains_key(&permission_2_role_key) {
-                return RbacError::err(AssignmentDoesNotExist, &role_id)
+                return RbacError::err(AssignmentDoesNotExist, &role_id);
             }
 
             let new_assign = Permission2Role {
@@ -1135,7 +1137,7 @@ pub mod pallet {
             let mut val = <Permission2RoleStore<T>>::get(&permission_2_role_key);
 
             if !val.contains(&new_assign) {
-                return RbacError::err(AssignmentDoesNotExist, &role_id)
+                return RbacError::err(AssignmentDoesNotExist, &role_id);
             }
 
             match val.binary_search(&new_assign) {
@@ -1174,17 +1176,13 @@ pub mod pallet {
             Ok(<RoleStore<T>>::get(&owner))
         }
 
-        fn create_role(
-            owner: &T::AccountId,
-            role_id: T::EntityId,
-            name: &[u8],
-        ) -> Result<()> {
+        fn create_role(owner: &T::AccountId, role_id: T::EntityId, name: &[u8]) -> Result<()> {
             // Generate key for integrity check
-            let key = Self::generate_key(&owner, &role_id, Tag::Role);
+            let key = Self::generate_key(owner, &role_id, Tag::Role);
 
             // Check if role already exists
             if <KeysLookUpStore<T>>::contains_key(&key) {
-                return RbacError::err(EntityAlreadyExist, &role_id)
+                return RbacError::err(EntityAlreadyExist, &role_id);
             }
 
             let mut roles: Vec<Entity<T::EntityId>> = vec![];
@@ -1214,7 +1212,7 @@ pub mod pallet {
             name: &[u8],
         ) -> Result<()> {
             // Check if role exists and it's enabled
-            let key = Self::check_entity_get_key(&owner, &role_id, Tag::Role)?;
+            let key = Self::check_entity_get_key(owner, &role_id, Tag::Role)?;
 
             let mut val = <RoleStore<T>>::get(&owner);
 
@@ -1236,12 +1234,9 @@ pub mod pallet {
             Ok(())
         }
 
-        fn disable_existing_role(
-            owner: &T::AccountId,
-            role_id: T::EntityId,
-        ) -> Result<()> {
+        fn disable_existing_role(owner: &T::AccountId, role_id: T::EntityId) -> Result<()> {
             // Check if role exists and it's enabled and get key for integrity check
-            let key = Self::check_entity_get_key(&owner, &role_id, Tag::Role)?;
+            let key = Self::check_entity_get_key(owner, &role_id, Tag::Role)?;
 
             let mut val = <RoleStore<T>>::get(&owner);
 
@@ -1280,11 +1275,11 @@ pub mod pallet {
             name: &[u8],
         ) -> Result<()> {
             // Generate key for integrity check
-            let key = Self::generate_key(&owner, &permission_id, Tag::Permission);
+            let key = Self::generate_key(owner, &permission_id, Tag::Permission);
 
             // Check if permission already exists
             if <KeysLookUpStore<T>>::contains_key(&key) {
-                return RbacError::err(EntityAlreadyExist, &permission_id)
+                return RbacError::err(EntityAlreadyExist, &permission_id);
             }
 
             let new_permission = Entity {
@@ -1314,7 +1309,7 @@ pub mod pallet {
             name: &[u8],
         ) -> Result<()> {
             // Check if permission exists and it's enabled and get key for integrity check
-            let key = Self::check_entity_get_key(&owner, &permission_id, Tag::Permission)?;
+            let key = Self::check_entity_get_key(owner, &permission_id, Tag::Permission)?;
 
             let mut val = <PermissionStore<T>>::get(&owner);
 
@@ -1329,7 +1324,7 @@ pub mod pallet {
             }
 
             if !val.is_empty() {
-                <PermissionStore<T>>::mutate(&owner, |v| *v = val);
+                <PermissionStore<T>>::mutate(owner, |v| *v = val);
             }
 
             Ok(())
@@ -1340,7 +1335,7 @@ pub mod pallet {
             permission_id: T::EntityId,
         ) -> Result<()> {
             // Check if permission exists and it's enabled and get key for integrity check
-            let key = Self::check_entity_get_key(&owner, &permission_id, Tag::Permission)?;
+            let key = Self::check_entity_get_key(owner, &permission_id, Tag::Permission)?;
 
             let mut val = <PermissionStore<T>>::get(&owner);
 
@@ -1355,7 +1350,7 @@ pub mod pallet {
             }
 
             if !val.is_empty() {
-                <PermissionStore<T>>::mutate(&owner, |v| *v = val);
+                <PermissionStore<T>>::mutate(owner, |v| *v = val);
             }
 
             Ok(())
@@ -1368,20 +1363,16 @@ pub mod pallet {
         }
 
         fn get_groups(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>> {
-            Ok(<GroupStore<T>>::get(&owner))
+            Ok(<GroupStore<T>>::get(owner))
         }
 
-        fn create_group(
-            owner: &T::AccountId,
-            group_id: T::EntityId,
-            name: &[u8],
-        ) -> Result<()> {
+        fn create_group(owner: &T::AccountId, group_id: T::EntityId, name: &[u8]) -> Result<()> {
             // Generate key for integrity check
-            let key = Self::generate_key(&owner, &group_id, Tag::Group);
+            let key = Self::generate_key(owner, &group_id, Tag::Group);
 
             // Check if group already exists
             if <KeysLookUpStore<T>>::contains_key(&key) {
-                return RbacError::err(EntityAlreadyExist, &group_id)
+                return RbacError::err(EntityAlreadyExist, &group_id);
             }
 
             let new_group = Entity {
@@ -1393,13 +1384,13 @@ pub mod pallet {
             let mut groups: Vec<Entity<T::EntityId>> = vec![];
 
             // Check if this account already had groups
-            if <GroupStore<T>>::contains_key(&owner) {
-                let mut val = <GroupStore<T>>::get(&owner);
+            if <GroupStore<T>>::contains_key(owner) {
+                let mut val = <GroupStore<T>>::get(owner);
                 groups.append(&mut val);
             }
             groups.push(new_group.clone());
 
-            <GroupStore<T>>::insert(&owner, groups);
+            <GroupStore<T>>::insert(owner, groups);
             <KeysLookUpStore<T>>::insert(&key, new_group);
 
             Ok(())
@@ -1411,9 +1402,9 @@ pub mod pallet {
             name: &[u8],
         ) -> Result<()> {
             // Check if group exists and it's enabled and get key for integrity check
-            let key = Self::check_entity_get_key(&owner, &group_id, Tag::Group)?;
+            let key = Self::check_entity_get_key(owner, &group_id, Tag::Group)?;
 
-            let mut val = <GroupStore<T>>::get(&owner);
+            let mut val = <GroupStore<T>>::get(owner);
 
             for entity in val.iter_mut() {
                 if entity.id == group_id {
@@ -1424,18 +1415,15 @@ pub mod pallet {
             }
 
             if !val.is_empty() {
-                <GroupStore<T>>::mutate(&owner, |v| *v = val);
+                <GroupStore<T>>::mutate(owner, |v| *v = val);
             }
             Ok(())
         }
 
-        fn disable_existing_group(
-            owner: &T::AccountId,
-            group_id: T::EntityId,
-        ) -> Result<()> {
+        fn disable_existing_group(owner: &T::AccountId, group_id: T::EntityId) -> Result<()> {
             // Check if group exists and it's enabled and get key for integrity check
-            let key = Self::check_entity_get_key(&owner, &group_id, Tag::Group)?;
-            let mut val = <GroupStore<T>>::get(&owner);
+            let key = Self::check_entity_get_key(owner, &group_id, Tag::Group)?;
+            let mut val = <GroupStore<T>>::get(owner);
 
             for entity in val.iter_mut() {
                 if entity.id == group_id {
@@ -1446,7 +1434,7 @@ pub mod pallet {
             }
 
             if !val.is_empty() {
-                <GroupStore<T>>::mutate(&owner, |v| *v = val);
+                <GroupStore<T>>::mutate(owner, |v| *v = val);
             }
             Ok(())
         }

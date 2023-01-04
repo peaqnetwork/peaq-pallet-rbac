@@ -7,7 +7,7 @@
 use codec::Codec;
 use peaq_pallet_rbac::{
     rbac::Result as RbacResult,
-    structs::{Entity, Role2User, Role2Group, Permission2Role, User2Group}
+    structs::{Entity, Permission2Role, Role2Group, Role2User, User2Group},
 };
 use sp_std::vec::Vec;
 
@@ -34,11 +34,11 @@ sp_api::decl_runtime_apis! {
         fn fetch_groups(owner: AccountId) -> RbacResult<Vec<Entity<EntityId>>>;
 
         fn fetch_group_roles(owner: AccountId, group_id: EntityId) -> RbacResult<Vec<Role2Group<EntityId>>>;
-        
+
         fn fetch_user_groups(owner: AccountId, user_id: EntityId) -> RbacResult<Vec<User2Group<EntityId>>>;
 
         fn fetch_user_permissions(owner: AccountId, user_id: EntityId) -> RbacResult<Vec<Entity<EntityId>>>;
-        
+
         fn fetch_group_permissions(owner: AccountId, group_id: EntityId) -> RbacResult<Vec<Entity<EntityId>>>;
     }
 }

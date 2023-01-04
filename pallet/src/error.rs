@@ -1,8 +1,8 @@
-use frame_support::pallet_prelude::*;
-use sp_std::vec::Vec;
 use codec::{Decode, Encode};
+use frame_support::pallet_prelude::*;
 #[cfg(feature = "std")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use sp_std::vec::Vec;
 
 /// Result definition for RBAC pallet with unique error type
 pub type Result<T> = core::result::Result<T, RbacError>;
@@ -28,7 +28,7 @@ pub enum RbacErrorType {
     NameExceedMaxChar,
 }
 
-/// Struct encapsules all informations about occured error: error type and passed 
+/// Struct encapsules all informations about occured error: error type and passed
 /// data which lead to that error. Must be serialize-able when used via RPC.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Debug, Encode, Decode)]
@@ -39,12 +39,11 @@ pub struct RbacError {
     pub param: Vec<u8>,
 }
 
-impl RbacError
-{
-    /// generates a new error including Result
-    pub fn err<T, EntityId: Parameter>(typ: RbacErrorType, data: &EntityId) -> Result<T> 
-    {
+impl RbacError {
+    /// generates a new RbacError including Result
+    pub fn err<T, EntityId: Parameter>(typ: RbacErrorType, data: &EntityId) -> Result<T> {
+        // this transformation makes it possible to use RbacError without generic
         let param = data.encode().as_slice().to_vec();
-        Err(RbacError{typ, param})
+        Err(RbacError { typ, param })
     }
 }
