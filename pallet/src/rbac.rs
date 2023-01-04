@@ -1,27 +1,12 @@
-use crate::structs::*;
-use codec::{Decode, Encode};
-#[cfg(feature = "std")]
-use serde::{Deserialize, Serialize};
 use sp_std::vec::Vec;
-use scale_info::prelude::string::String;
+use crate::{
+    structs::*,
+    error::Result,
+};
 
-pub type Result<T, EntityId> = core::result::Result<T, EntityError<EntityId>>;
+
 pub type RbacKeyType = [u8; 32];
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Debug, Encode, Decode)]
-pub enum EntityError<EntityId> {
-    // Returned if the Entity already exists
-    EntityAlreadyExist(EntityId),
-    // Returned if the Entity does not exists
-    EntityDoesNotExist(EntityId),
-    // Returned if the Entity does not belong to the caller
-    EntityAuthorizationFailed(EntityId),
-    // Returned if the Entity is not enabled
-    EntityDisabled(EntityId),
-    // Exceeds max characters
-    NameExceedMaxChar(String),
-}
 
 pub trait Rbac<AccountId, EntityId> {
     fn generate_key(
@@ -34,175 +19,175 @@ pub trait Rbac<AccountId, EntityId> {
         owner: &AccountId,
         entity: &EntityId,
         tag: Tag
-    ) -> Result<Entity<EntityId>, EntityId>;
+    ) -> Result<Entity<EntityId>>;
 
-    fn get_entity_and_key(
+    fn check_entity_get_key(
         owner: &AccountId,
         entity: &EntityId,
         tag: Tag
-    ) -> Result<(Entity<EntityId>, RbacKeyType), EntityId>;
+    ) -> Result<RbacKeyType>;
 
     fn get_user_roles(
         owner: &AccountId,
         user_id: EntityId
-    ) -> Result<Vec<Role2User<EntityId>>, EntityId>;
+    ) -> Result<Vec<Role2User<EntityId>>>;
     
     fn get_user_groups(
         owner: &AccountId,
         user_id: EntityId
-    ) -> Result<Vec<User2Group<EntityId>>, EntityId>;
+    ) -> Result<Vec<User2Group<EntityId>>>;
     
     fn get_group_roles(
         owner: &AccountId,
         group_id: EntityId
-    ) -> Result<Vec<Role2Group<EntityId>>, EntityId>;
+    ) -> Result<Vec<Role2Group<EntityId>>>;
     
     fn get_role_permissions(
         owner: &AccountId,
         role_id: EntityId,
-    ) -> Result<Vec<Permission2Role<EntityId>>, EntityId>;
+    ) -> Result<Vec<Permission2Role<EntityId>>>;
     
     fn get_user_permissions(
         owner: &AccountId,
         user_id: EntityId
-    ) -> Result<Vec<Entity<EntityId>>, EntityId>;
+    ) -> Result<Vec<Entity<EntityId>>>;
     
     fn get_group_permissions(
         owner: &AccountId,
         group_id: EntityId,
-    ) -> Result<Vec<Entity<EntityId>>, EntityId>;
+    ) -> Result<Vec<Entity<EntityId>>>;
     
     fn create_role_to_user(
         owner: &AccountId,
         role_id: EntityId,
         user_id: EntityId,
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn revoke_role_to_user(
         owner: &AccountId,
         role_id: EntityId,
         user_id: EntityId,
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn create_role_to_group(
         owner: &AccountId,
         role_id: EntityId,
         group_id: EntityId,
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn revoke_role_to_group(
         owner: &AccountId,
         role_id: EntityId,
         group_id: EntityId,
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn create_user_to_group(
         owner: &AccountId,
         user_id: EntityId,
         group_id: EntityId,
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn revoke_user_to_group(
         owner: &AccountId,
         user_id: EntityId,
         group_id: EntityId,
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn create_permission_to_role(
         owner: &AccountId,
         permission_id: EntityId,
         role_id: EntityId,
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn revoke_permission_to_role(
         owner: &AccountId,
         permission_id: EntityId,
         role_id: EntityId,
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
 }
 
 pub trait Role<AccountId, EntityId> {
     fn get_role(
         owner: &AccountId,
         role_id: EntityId
-    ) -> Result<Entity<EntityId>, EntityId>;
+    ) -> Result<Entity<EntityId>>;
     
     fn get_roles(
         owner: &AccountId
-    ) -> Result<Vec<Entity<EntityId>>, EntityId>;
+    ) -> Result<Vec<Entity<EntityId>>>;
     
     fn create_role(
         owner: &AccountId,
         role_id: EntityId,
         name: &[u8]
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn update_existing_role(
         owner: &AccountId,
         role_id: EntityId,
         name: &[u8],
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn disable_existing_role(
         owner: &AccountId,
         role_id: EntityId
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
 }
 
 pub trait Permission<AccountId, EntityId> {
     fn get_permission(
         owner: &AccountId,
         permission_id: EntityId
-    ) -> Result<Entity<EntityId>, EntityId>;
+    ) -> Result<Entity<EntityId>>;
     
     fn get_permissions(
         owner: &AccountId
-    ) -> Result<Vec<Entity<EntityId>>, EntityId>;
+    ) -> Result<Vec<Entity<EntityId>>>;
     
     fn create_permission(
         owner: &AccountId,
         permission_id: EntityId,
         name: &[u8],
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn update_existing_permission(
         owner: &AccountId,
         permission_id: EntityId,
         name: &[u8],
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn disable_existing_permission(
         owner: &AccountId,
         permission_id: EntityId,
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
 }
 
 pub trait Group<AccountId, EntityId> {
     fn get_group(
         owner: &AccountId,
         group_id: EntityId
-    ) -> Result<Entity<EntityId>, EntityId>;
+    ) -> Result<Entity<EntityId>>;
     
     fn get_groups(
         owner: &AccountId
-    ) -> Result<Vec<Entity<EntityId>>, EntityId>;
+    ) -> Result<Vec<Entity<EntityId>>>;
     
     fn create_group(
         owner: &AccountId,
         group_id: EntityId,
         name: &[u8]
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn update_existing_group(
         owner: &AccountId,
         group_id: EntityId,
         name: &[u8],
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
     
     fn disable_existing_group(
         owner: &AccountId,
         group_id: EntityId
-    ) -> Result<(), EntityId>;
+    ) -> Result<()>;
 }
 
 pub enum Tag {
