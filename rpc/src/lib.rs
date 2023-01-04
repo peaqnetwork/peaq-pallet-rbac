@@ -19,7 +19,7 @@ use peaq_pallet_rbac::{
 pub use peaq_pallet_rbac_runtime_api::PeaqRBACRuntimeApi;
 
 
-pub type Result<T, EI> = RpcResult<RbacResult<T, EI>>;
+pub type Result<T> = RpcResult<RbacResult<T>>;
 
 
 
@@ -30,73 +30,73 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
 	#[method(name = "peaqrbac_fetchRole")]
 	fn fetch_role(
 		&self, account: AccountId, entity: EntityId, at: Option<BlockHash>
-	) -> Result<Entity<EntityId>, EntityId>;
+	) -> Result<Entity<EntityId>>;
 
 	/// RPC method for extrinsic call fetchRoles
 	#[method(name = "peaqrbac_fetchRoles")]
 	fn fetch_roles(
 		&self, owner: AccountId, at: Option<BlockHash>
-	) -> Result<Vec<Entity<EntityId>>, EntityId>;
+	) -> Result<Vec<Entity<EntityId>>>;
 
 	/// RPC method for extrinsic call fetchUserRoles
 	#[method(name = "peaqrbac_fetchUserRoles")]
 	fn fetch_user_roles(
 		&self, owner: AccountId, user_id: EntityId, at: Option<BlockHash>
-	) -> Result<Vec<Role2User<EntityId>>, EntityId>;
+	) -> Result<Vec<Role2User<EntityId>>>;
 
 	/// RPC method for extrinsic call fetchPermission
 	#[method(name = "peaqrbac_fetchPermission")]
 	fn fetch_permission(
 		&self, owner: AccountId, permission_id: EntityId, at: Option<BlockHash>
-	) -> Result<Entity<EntityId>, EntityId>;
+	) -> Result<Entity<EntityId>>;
 
 	/// RPC method for extrinsic call fetchPermissions
 	#[method(name = "peaqrbac_fetchPermissions")]
 	fn fetch_permissions(
 		&self, owner: AccountId, at: Option<BlockHash>
-	) -> Result<Vec<Entity<EntityId>>, EntityId>;
+	) -> Result<Vec<Entity<EntityId>>>;
 
 	/// RPC method for extrinsic call fetchRolePermissions
 	#[method(name = "peaqrbac_fetchRolePermissions")]
 	fn fetch_role_permissions(
 		&self, owner: AccountId, role_id: EntityId, at: Option<BlockHash>
-	) -> Result<Vec<Permission2Role<EntityId>>, EntityId>;
+	) -> Result<Vec<Permission2Role<EntityId>>>;
 
 	/// RPC method for extrinsic call fetchGroup
 	#[method(name = "peaqrbac_fetchGroup")]
 	fn fetch_group(
 		&self, owner: AccountId, group_id: EntityId, at: Option<BlockHash>
-	) -> Result<Entity<EntityId>, EntityId>;
+	) -> Result<Entity<EntityId>>;
 
 	/// RPC method for extrinsic call fetchGroups
 	#[method(name = "peaqrbac_fetchGroups")]
 	fn fetch_groups(
 		&self, owner: AccountId, at: Option<BlockHash>
-	) -> Result<Vec<Entity<EntityId>>, EntityId>;
+	) -> Result<Vec<Entity<EntityId>>>;
 
 	/// RPC method for extrinsic call fetchGroupRoles
 	#[method(name = "peaqrbac_fetchGroupRoles")]
 	fn fetch_group_roles(
 		&self, owner: AccountId, group_id: EntityId, at: Option<BlockHash>
-	) -> Result<Vec<Role2Group<EntityId>>, EntityId>;
+	) -> Result<Vec<Role2Group<EntityId>>>;
 	
 	/// RPC method for extrinsic call fetchUserGroups
 	#[method(name = "peaqrbac_fetchUserGroups")]
 	fn fetch_user_groups(
 		&self, owner: AccountId, user_id: EntityId, at: Option<BlockHash>
-	) -> Result<Vec<User2Group<EntityId>>, EntityId>;
+	) -> Result<Vec<User2Group<EntityId>>>;
 
 	/// RPC method for extrinsic call fetchUserPermissions
 	#[method(name = "peaqrbac_fetchUserPermissions")]
 	fn fetch_user_permissions(
 		&self, owner: AccountId, user_id: EntityId, at: Option<BlockHash>
-	) -> Result<Vec<Entity<EntityId>>, EntityId>;
+	) -> Result<Vec<Entity<EntityId>>>;
 	
 	/// RPC method for extrinsic call fetchGroupPermissions
 	#[method(name = "peaqrbac_fetchGroupPermissions")]
 	fn fetch_group_permissions(
 		&self, owner: AccountId, group_id: EntityId, at: Option<BlockHash>
-	) -> Result<Vec<Entity<EntityId>>, EntityId>;
+	) -> Result<Vec<Entity<EntityId>>>;
 }
 
 /// A struct that implements the [`PeaqRBACApi`].
@@ -171,7 +171,7 @@ where
             account: AccountId, 
             entity: EntityId, 
             at: Option<<Block as BlockT>::Hash>) -> 
-		Result<Entity<EntityId>, EntityId>
+		Result<Entity<EntityId>>
     {
 		let (api, at) = dry_api_at!(self, at);
 		api.fetch_role(&at, account, entity).map_err(|e| map_api_err(e))
@@ -180,7 +180,7 @@ where
 	fn fetch_roles(&self,
 			owner: AccountId,
 			at: Option<<Block as BlockT>::Hash>) -> 
-		Result<Vec<Entity<EntityId>>, EntityId>
+		Result<Vec<Entity<EntityId>>>
 	{
 		let (api, at) = dry_api_at!(self, at);
 		api.fetch_roles(&at, owner).map_err(|e| map_api_err(e))
@@ -190,7 +190,7 @@ where
 			owner: AccountId,
 			user_id: EntityId,
 			at: Option<<Block as BlockT>::Hash>) -> 
-		Result<Vec<Role2User<EntityId>>, EntityId>
+		Result<Vec<Role2User<EntityId>>>
 	{
 		let (api, at) = dry_api_at!(self, at);
         api.fetch_user_roles(&at, owner, user_id).map_err(|e| map_api_err(e))
@@ -200,7 +200,7 @@ where
 			owner: AccountId,
 			permission_id: EntityId,
 			at: Option<<Block as BlockT>::Hash>) ->
-		Result<Entity<EntityId>, EntityId>
+		Result<Entity<EntityId>>
 	{
 		let (api, at) = dry_api_at!(self, at);
         api.fetch_permission(&at, owner, permission_id).map_err(|e| map_api_err(e))
@@ -209,7 +209,7 @@ where
 	fn fetch_permissions(&self,
 			owner: AccountId,
 			at: Option<<Block as BlockT>::Hash>) ->
-		Result<Vec<Entity<EntityId>>, EntityId>
+		Result<Vec<Entity<EntityId>>>
 	{
 		let (api, at) = dry_api_at!(self, at);
         api.fetch_permissions(&at, owner).map_err(|e| map_api_err(e))
@@ -219,7 +219,7 @@ where
 			owner: AccountId,
 			role_id: EntityId,
 			at: Option<<Block as BlockT>::Hash>) ->
-		Result<Vec<Permission2Role<EntityId>>, EntityId>
+		Result<Vec<Permission2Role<EntityId>>>
 	{
 		let (api, at) = dry_api_at!(self, at);
         api.fetch_role_permissions(&at, owner, role_id).map_err(|e| map_api_err(e))
@@ -229,7 +229,7 @@ where
 			owner: AccountId,
 			group_id: EntityId,
 			at: Option<<Block as BlockT>::Hash>) ->
-		Result<Entity<EntityId>, EntityId>
+		Result<Entity<EntityId>>
 	{
 		let (api, at) = dry_api_at!(self, at);
         api.fetch_group(&at, owner, group_id).map_err(|e| map_api_err(e))
@@ -238,7 +238,7 @@ where
 	fn fetch_groups(&self,
 			owner: AccountId,
 			at: Option<<Block as BlockT>::Hash>) ->
-		Result<Vec<Entity<EntityId>>, EntityId>
+		Result<Vec<Entity<EntityId>>>
 	{
 		let (api, at) = dry_api_at!(self, at);
         api.fetch_groups(&at, owner).map_err(|e| map_api_err(e))
@@ -248,7 +248,7 @@ where
 			owner: AccountId,
 			group_id: EntityId,
 			at: Option<<Block as BlockT>::Hash>) ->
-		Result<Vec<Role2Group<EntityId>>, EntityId>
+		Result<Vec<Role2Group<EntityId>>>
 	{
 		let (api, at) = dry_api_at!(self, at);
         api.fetch_group_roles(&at, owner, group_id).map_err(|e| map_api_err(e))
@@ -258,7 +258,7 @@ where
 			owner: AccountId,
 			user_id: EntityId,
 			at: Option<<Block as BlockT>::Hash>) ->
-		Result<Vec<User2Group<EntityId>>, EntityId>
+		Result<Vec<User2Group<EntityId>>>
 	{
 		let (api, at) = dry_api_at!(self, at);
         api.fetch_user_groups(&at, owner, user_id).map_err(|e| map_api_err(e))
@@ -268,7 +268,7 @@ where
 			owner: AccountId,
 			user_id: EntityId,
 			at: Option<<Block as BlockT>::Hash>) ->
-		Result<Vec<Entity<EntityId>>, EntityId>
+		Result<Vec<Entity<EntityId>>>
 	{
 		let (api, at) = dry_api_at!(self, at);
         api.fetch_user_permissions(&at, owner, user_id).map_err(|e| map_api_err(e))
@@ -278,7 +278,7 @@ where
 			owner: AccountId,
 			group_id: EntityId,
 			at: Option<<Block as BlockT>::Hash>) ->
-		Result<Vec<Entity<EntityId>>, EntityId>
+		Result<Vec<Entity<EntityId>>>
 	{
 		let (api, at) = dry_api_at!(self, at);
         api.fetch_group_permissions(&at, owner, group_id).map_err(|e| map_api_err(e))

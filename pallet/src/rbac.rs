@@ -1,8 +1,7 @@
 use sp_std::vec::Vec;
-use crate::{
-    structs::*,
-    error::Result,
-};
+use crate::structs::*;
+
+pub use crate::error::Result;
 
 
 pub type RbacKeyType = [u8; 32];
