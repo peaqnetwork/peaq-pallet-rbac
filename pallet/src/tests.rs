@@ -95,7 +95,7 @@ fn disable_role_test() {
         // Test for removal of non-existing role
         assert_noop!(
             PeaqRBAC::disable_role(Origin::signed(origin), role_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::EntityDisabled
         );
     });
 }
@@ -185,7 +185,7 @@ fn assign_role_to_user_test() {
         // Test for duplicate entry
         assert_noop!(
             PeaqRBAC::assign_role_to_user(Origin::signed(origin), role_id, user_id),
-            Error::<Test>::EntityAlreadyExist
+            Error::<Test>::AssignmentAlreadyExist
         );
 
         // Test for assigning non-existing role
@@ -223,7 +223,7 @@ fn unassign_role_to_user_test() {
         // Test for removing role not owned by origin
         assert_noop!(
             PeaqRBAC::unassign_role_to_user(Origin::signed(origin2), role_id, user_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::AssignmentDoesNotExist
         );
 
         assert_ok!(PeaqRBAC::unassign_role_to_user(
@@ -235,7 +235,7 @@ fn unassign_role_to_user_test() {
         // Test for removing non-existing role
         assert_noop!(
             PeaqRBAC::unassign_role_to_user(Origin::signed(origin), role_id, user_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::AssignmentDoesNotExist
         );
     });
 }
@@ -291,7 +291,7 @@ fn assign_role_to_group_test() {
         // Test for duplicate entry
         assert_noop!(
             PeaqRBAC::assign_role_to_group(Origin::signed(origin), role_id, group_id),
-            Error::<Test>::EntityAlreadyExist
+            Error::<Test>::AssignmentAlreadyExist
         );
 
         // Test for assigning non-existing group
@@ -342,7 +342,7 @@ fn unassign_role_to_group_test() {
         // Test for removing role not owned by origin
         assert_noop!(
             PeaqRBAC::unassign_role_to_group(Origin::signed(origin2), role_id, group_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::AssignmentDoesNotExist
         );
 
         assert_ok!(PeaqRBAC::unassign_role_to_group(
@@ -354,7 +354,7 @@ fn unassign_role_to_group_test() {
         // Test for removing non-existing role
         assert_noop!(
             PeaqRBAC::unassign_role_to_group(Origin::signed(origin), role_id, group_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::AssignmentDoesNotExist
         );
     });
 }
@@ -390,7 +390,7 @@ fn fetch_user_roles_test() {
         let user_id = *b"15676474666576474646673646376637";
         assert_noop!(
             PeaqRBAC::fetch_user_roles(Origin::signed(origin), origin, user_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::AssignmentDoesNotExist
         );
     });
 }
@@ -492,7 +492,7 @@ fn disable_permission_test() {
         // Test for removal of non-existing permission
         assert_noop!(
             PeaqRBAC::disable_permission(Origin::signed(origin), permission_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::EntityDisabled
         );
     });
 }
@@ -589,7 +589,7 @@ fn assign_permission_to_role_test() {
         // Test for duplicate entry
         assert_noop!(
             PeaqRBAC::assign_permission_to_role(Origin::signed(origin), permission_id, role_id),
-            Error::<Test>::EntityAlreadyExist
+            Error::<Test>::AssignmentAlreadyExist
         );
 
         // Test for assigning non-existing permission
@@ -634,7 +634,7 @@ fn unassign_permission_to_role_test() {
         // Test for removing permission not owned by origin
         assert_noop!(
             PeaqRBAC::unassign_permission_to_role(Origin::signed(origin2), permission_id, role_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::AssignmentDoesNotExist
         );
 
         assert_ok!(PeaqRBAC::unassign_permission_to_role(
@@ -646,7 +646,7 @@ fn unassign_permission_to_role_test() {
         // Test for removing non-existing permission
         assert_noop!(
             PeaqRBAC::unassign_permission_to_role(Origin::signed(origin), permission_id, role_id,),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::AssignmentDoesNotExist
         );
     });
 }
@@ -689,7 +689,7 @@ fn fetch_role_permissions_test() {
         let role_id = *b"15464667364637663721676474666577";
         assert_noop!(
             PeaqRBAC::fetch_role_permissions(Origin::signed(origin), origin, role_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::AssignmentDoesNotExist
         );
     });
 }
@@ -788,7 +788,7 @@ fn disable_group_test() {
         // Test for removal of non-existing group
         assert_noop!(
             PeaqRBAC::disable_group(Origin::signed(origin), group_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::EntityDisabled
         );
     });
 }
@@ -879,7 +879,7 @@ fn assign_user_to_group_test() {
         // Test for duplicate entry
         assert_noop!(
             PeaqRBAC::assign_user_to_group(Origin::signed(origin), user_id, group_id),
-            Error::<Test>::EntityAlreadyExist
+            Error::<Test>::AssignmentAlreadyExist
         );
 
         // Test for assigning non-existing group relationship
@@ -917,7 +917,7 @@ fn unassign_user_to_group_test() {
         // Test for removing group not owned by origin
         assert_noop!(
             PeaqRBAC::unassign_user_to_group(Origin::signed(origin2), user_id, group_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::AssignmentDoesNotExist
         );
 
         assert_ok!(PeaqRBAC::unassign_user_to_group(
@@ -929,7 +929,7 @@ fn unassign_user_to_group_test() {
         // Test for removing non-existing group relationship
         assert_noop!(
             PeaqRBAC::unassign_user_to_group(Origin::signed(origin), user_id, group_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::AssignmentDoesNotExist
         );
     });
 }
@@ -965,7 +965,7 @@ fn fetch_user_groups_test() {
         let user_id = *b"15676474666576474646673646376637";
         assert_noop!(
             PeaqRBAC::fetch_user_groups(Origin::signed(origin), origin, user_id),
-            Error::<Test>::EntityDoesNotExist
+            Error::<Test>::AssignmentDoesNotExist
         );
     });
 }
