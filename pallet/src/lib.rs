@@ -240,18 +240,21 @@ pub mod pallet {
             // This fn returns an error if the extrinsic is not signed
             // https://docs.substrate.io/v3/runtime/origins
             ensure_signed(origin)?;
-            let role = Self::get_role(&owner, entity);
-
-            dpatch_dposit!(role, Event::RoleFetched)
+            
+            dpatch_dposit!(
+                Self::get_role(&owner, entity), 
+                Event::RoleFetched
+            )
         }
 
         #[pallet::weight(T::WeightInfo::fetch_roles())]
         pub fn fetch_roles(origin: OriginFor<T>, owner: T::AccountId) -> DispatchResult {
             ensure_signed(origin)?;
-            let roles = Self::get_roles(&owner);
 
-            // Self::deposit_event(Event::AllRolesFetched(roles));
-            dpatch_dposit!(roles, Event::AllRolesFetched)
+            dpatch_dposit!(
+                Self::get_roles(&owner), 
+                Event::AllRolesFetched
+            )
         }
 
         /// create role call
@@ -307,7 +310,6 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let role_to_user = Self::get_user_roles(&owner, user_id);
 
             dpatch_dposit!(
                 Self::get_user_roles(&owner, user_id),
@@ -352,8 +354,7 @@ pub mod pallet {
             permission_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let permission = Self::get_permission(owner, permission_id);
-
+            
             dpatch_dposit!(
                 Self::get_permission(&owner, permission_id),
                 Event::PermissionFetched
@@ -423,8 +424,7 @@ pub mod pallet {
             role_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let permission_to_role = Self::get_role_permissions(&owner, role_id);
-
+            
             dpatch_dposit!(
                 Self::get_role_permissions(&owner, role_id),
                 Event::FetchedRolePermissions
@@ -468,16 +468,21 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> DispatchResult {
             ensure_signed(origin)?;
-            // let group = Self::get_group(&owner, group_id);
-
-            dpatch_dposit!(Self::get_group(&owner, group_id), Event::GroupFetched)
+            
+            dpatch_dposit!(
+                Self::get_group(&owner, group_id), 
+                Event::GroupFetched
+            )
         }
 
         #[pallet::weight(T::WeightInfo::fetch_groups())]
         pub fn fetch_groups(origin: OriginFor<T>, owner: T::AccountId) -> DispatchResult {
             ensure_signed(origin)?;
 
-            dpatch_dposit!(Self::get_groups(&owner), Event::AllGroupsFetched)
+            dpatch_dposit!(
+                Self::get_groups(&owner), 
+                Event::AllGroupsFetched
+            )
         }
 
         /// create group call
