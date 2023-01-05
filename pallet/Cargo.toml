@@ -75,6 +75,7 @@ features = ['derive']
 default = ['std']
 std = [
     'codec/std',
+    'serde',
     'scale-info/std',
     'frame-support/std',
     'frame-system/std',
