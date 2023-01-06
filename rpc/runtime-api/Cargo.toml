@@ -29,9 +29,6 @@ branch = "peaq-polkadot-v0.9.29"
 default-features = false
 path = "../../pallet"
 
-[dev-dependencies]
-serde_json = "1.0"
-
 [features]
 default = ["std"]
 std = [
