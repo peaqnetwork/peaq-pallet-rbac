@@ -1,0 +1,39 @@
+[package]
+name = "peaq-pallet-rbac-runtime-api"
+version = "0.0.2"
+edition = "2021"
+description = "A pallet that handles peaq RBAC managment on peaq network."
+authors = ["peaq network <https://github.com/peaqnetwork>"]
+homepage = "https://peaq.network/"
+license = "Apache-2.0"
+publish = false
+repository = "https://github.com/peaqnetwork/peaq-pallet-rbac/"
+
+[dependencies.codec]
+default-features = false
+features = ["derive"]
+package = "parity-scale-codec"
+version = "3.0.0"
+
+[dependencies.sp-api]
+default-features = false
+git = "https://github.com/peaqnetwork/substrate"
+branch = "peaq-polkadot-v0.9.29"
+
+[dependencies.sp-std]
+default-features = false
+git = "https://github.com/peaqnetwork/substrate"
+branch = "peaq-polkadot-v0.9.29"
+
+[dependencies.peaq-pallet-rbac]
+default-features = false
+path = "../../pallet"
+
+[features]
+default = ["std"]
+std = [
+    "codec/std",
+	"sp-api/std",
+	"sp-std/std",
+	"peaq-pallet-rbac/std",
+]
