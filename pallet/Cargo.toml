@@ -70,6 +70,7 @@ branch = 'peaq-polkadot-v0.9.29'  # or the latest monthly
 [dependencies.serde]
 version = '1.0'
 features = ['derive']
+optional = true
 
 [features]
 default = ['std']

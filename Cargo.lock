@@ -1952,7 +1952,6 @@ version = "0.0.2"
 dependencies = [
  "parity-scale-codec",
  "peaq-pallet-rbac",
- "serde_json",
  "sp-api",
  "sp-std",
 ]
