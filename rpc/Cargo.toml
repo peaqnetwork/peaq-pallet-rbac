@@ -19,7 +19,7 @@ sp-std = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polk
 sp-api = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.38" }
 sp-blockchain = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.38" }
 sp-runtime = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.38" }
-jsonrpsee = { git = "https://github.com/peaqnetwork/jsonrpsee", branch = "peaq-v0.15.1", features = ["server", "macros"] }
+jsonrpsee = { version = "0.16.2", features = ["client-core", "server", "macros"] }
 
 peaq-pallet-rbac-runtime-api = { path = "./runtime-api" } 
 peaq-pallet-rbac = { path = "../pallet/" }
