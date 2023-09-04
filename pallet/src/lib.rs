@@ -684,7 +684,7 @@ pub mod pallet {
             owner: &T::AccountId,
             entity_id: &T::EntityId,
             tag: Tag,
-        ) -> Result<Entity<T::EntityId>> {
+        ) -> Result<Entity<T::EntityId>, RbacError> {
             let key = Self::generate_key(owner, entity_id, tag);
 
             if !<KeysLookUpStore<T>>::contains_key(&key) {
@@ -704,7 +704,7 @@ pub mod pallet {
             owner: &T::AccountId,
             entity_id: &T::EntityId,
             tag: Tag,
-        ) -> Result<RbacKeyType> {
+        ) -> Result<RbacKeyType, RbacError> {
             let key = Self::generate_key(owner, entity_id, tag);
 
             if !<KeysLookUpStore<T>>::contains_key(&key) {
@@ -723,7 +723,7 @@ pub mod pallet {
         fn get_user_roles(
             owner: &T::AccountId,
             user_id: T::EntityId,
-        ) -> Result<Vec<Role2User<T::EntityId>>> {
+        ) -> Result<Vec<Role2User<T::EntityId>>, RbacError> {
             // Generate key for integrity check
             let key = Self::generate_key(owner, &user_id, Tag::Role2User);
 
@@ -737,7 +737,7 @@ pub mod pallet {
         fn get_user_groups(
             owner: &T::AccountId,
             user_id: T::EntityId,
-        ) -> Result<Vec<User2Group<T::EntityId>>> {
+        ) -> Result<Vec<User2Group<T::EntityId>>, RbacError> {
             // Generate key for integrity check
             let key = Self::generate_key(owner, &user_id, Tag::User2Group);
 
@@ -751,7 +751,7 @@ pub mod pallet {
         fn get_group_roles(
             owner: &T::AccountId,
             group_id: T::EntityId,
-        ) -> Result<Vec<Role2Group<T::EntityId>>> {
+        ) -> Result<Vec<Role2Group<T::EntityId>>, RbacError> {
             // Generate key for integrity check
             let key = Self::generate_key(owner, &group_id, Tag::Role2Group);
 
@@ -765,7 +765,7 @@ pub mod pallet {
         fn get_role_permissions(
             owner: &T::AccountId,
             role_id: T::EntityId,
-        ) -> Result<Vec<Permission2Role<T::EntityId>>> {
+        ) -> Result<Vec<Permission2Role<T::EntityId>>, RbacError> {
             // Generate key for integrity check
             let key = Self::generate_key(owner, &role_id, Tag::Permission2Role);
 
@@ -779,7 +779,7 @@ pub mod pallet {
         fn get_user_permissions(
             owner: &T::AccountId,
             user_id: T::EntityId,
-        ) -> Result<Vec<Entity<T::EntityId>>> {
+        ) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
             // Generate key for integrity check
             let role_2_user_key = Self::generate_key(owner, &user_id, Tag::Role2User);
             let user_2_group_key = Self::generate_key(owner, &user_id, Tag::User2Group);
@@ -841,7 +841,7 @@ pub mod pallet {
         fn get_group_permissions(
             owner: &T::AccountId,
             group_id: T::EntityId,
-        ) -> Result<Vec<Entity<T::EntityId>>> {
+        ) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
             // Generate key for integrity check
 
             let mut permissions: Vec<Entity<T::EntityId>> = vec![];
@@ -870,7 +870,7 @@ pub mod pallet {
             owner: &T::AccountId,
             role_id: T::EntityId,
             user_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Generate key for integrity check
             let role_key = Self::generate_key(owner, &role_id, Tag::Role);
             let role_2_user_key = Self::generate_key(owner, &user_id, Tag::Role2User);
@@ -908,7 +908,7 @@ pub mod pallet {
             owner: &T::AccountId,
             role_id: T::EntityId,
             user_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Generate key for integrity check
             let role_2_user_key = Self::generate_key(owner, &user_id, Tag::Role2User);
 
@@ -948,7 +948,7 @@ pub mod pallet {
             owner: &T::AccountId,
             role_id: T::EntityId,
             group_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Generate key for integrity check
             let group_key = Self::generate_key(owner, &group_id, Tag::Group);
             let role_key = Self::generate_key(owner, &role_id, Tag::Role);
@@ -992,7 +992,7 @@ pub mod pallet {
             owner: &T::AccountId,
             role_id: T::EntityId,
             group_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Generate key for integrity check
             let role_2_group_key = Self::generate_key(owner, &group_id, Tag::Role2Group);
 
@@ -1032,7 +1032,7 @@ pub mod pallet {
             owner: &T::AccountId,
             user_id: T::EntityId,
             group_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Generate key for integrity check
             let group_key = Self::generate_key(owner, &group_id, Tag::Group);
             let user_2_group_key = Self::generate_key(owner, &user_id, Tag::User2Group);
@@ -1070,7 +1070,7 @@ pub mod pallet {
             owner: &T::AccountId,
             user_id: T::EntityId,
             group_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Generate key for integrity check
             let user_2_group_key = Self::generate_key(owner, &user_id, Tag::User2Group);
 
@@ -1110,7 +1110,7 @@ pub mod pallet {
             owner: &T::AccountId,
             permission_id: T::EntityId,
             role_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Generate key for integrity check
             let role_key = Self::generate_key(owner, &role_id, Tag::Role);
             let permission_key = Self::generate_key(owner, &permission_id, Tag::Permission);
@@ -1154,7 +1154,7 @@ pub mod pallet {
             owner: &T::AccountId,
             permission_id: T::EntityId,
             role_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Generate key for integrity check
             let permission_2_role_key = Self::generate_key(owner, &role_id, Tag::Permission2Role);
 
@@ -1202,15 +1202,15 @@ pub mod pallet {
 
     // implement the role Entity trait to satify the methods
     impl<T: Config> Role<T::AccountId, T::EntityId> for Pallet<T> {
-        fn get_role(owner: &T::AccountId, role_id: T::EntityId) -> Result<Entity<T::EntityId>> {
+        fn get_role(owner: &T::AccountId, role_id: T::EntityId) -> Result<Entity<T::EntityId>, RbacError> {
             Self::get_entity(&owner, &role_id, Tag::Role)
         }
 
-        fn get_roles(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>> {
+        fn get_roles(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
             Ok(<RoleStore<T>>::get(&owner))
         }
 
-        fn create_role(owner: &T::AccountId, role_id: T::EntityId, name: &[u8]) -> Result<()> {
+        fn create_role(owner: &T::AccountId, role_id: T::EntityId, name: &[u8]) -> Result<(), RbacError> {
             // Generate key for integrity check
             let key = Self::generate_key(owner, &role_id, Tag::Role);
 
@@ -1244,7 +1244,7 @@ pub mod pallet {
             owner: &T::AccountId,
             role_id: T::EntityId,
             name: &[u8],
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Check if role exists and it's enabled
             let key = Self::check_entity_get_key(owner, &role_id, Tag::Role)?;
 
@@ -1268,7 +1268,7 @@ pub mod pallet {
             Ok(())
         }
 
-        fn disable_existing_role(owner: &T::AccountId, role_id: T::EntityId) -> Result<()> {
+        fn disable_existing_role(owner: &T::AccountId, role_id: T::EntityId) -> Result<(), RbacError> {
             // Check if role exists and it's enabled and get key for integrity check
             let key = Self::check_entity_get_key(owner, &role_id, Tag::Role)?;
 
@@ -1295,11 +1295,11 @@ pub mod pallet {
         fn get_permission(
             owner: &T::AccountId,
             permission_id: T::EntityId,
-        ) -> Result<Entity<T::EntityId>> {
+        ) -> Result<Entity<T::EntityId>, RbacError> {
             Self::get_entity(&owner, &permission_id, Tag::Permission)
         }
 
-        fn get_permissions(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>> {
+        fn get_permissions(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
             Ok(<PermissionStore<T>>::get(&owner))
         }
 
@@ -1307,7 +1307,7 @@ pub mod pallet {
             owner: &T::AccountId,
             permission_id: T::EntityId,
             name: &[u8],
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Generate key for integrity check
             let key = Self::generate_key(owner, &permission_id, Tag::Permission);
 
@@ -1341,7 +1341,7 @@ pub mod pallet {
             owner: &T::AccountId,
             permission_id: T::EntityId,
             name: &[u8],
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Check if permission exists and it's enabled and get key for integrity check
             let key = Self::check_entity_get_key(owner, &permission_id, Tag::Permission)?;
 
@@ -1367,7 +1367,7 @@ pub mod pallet {
         fn disable_existing_permission(
             owner: &T::AccountId,
             permission_id: T::EntityId,
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Check if permission exists and it's enabled and get key for integrity check
             let key = Self::check_entity_get_key(owner, &permission_id, Tag::Permission)?;
 
@@ -1392,15 +1392,15 @@ pub mod pallet {
     }
 
     impl<T: Config> Group<T::AccountId, T::EntityId> for Pallet<T> {
-        fn get_group(owner: &T::AccountId, group_id: T::EntityId) -> Result<Entity<T::EntityId>> {
+        fn get_group(owner: &T::AccountId, group_id: T::EntityId) -> Result<Entity<T::EntityId>, RbacError> {
             Self::get_entity(&owner, &group_id, Tag::Group)
         }
 
-        fn get_groups(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>> {
+        fn get_groups(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
             Ok(<GroupStore<T>>::get(owner))
         }
 
-        fn create_group(owner: &T::AccountId, group_id: T::EntityId, name: &[u8]) -> Result<()> {
+        fn create_group(owner: &T::AccountId, group_id: T::EntityId, name: &[u8]) -> Result<(), RbacError> {
             // Generate key for integrity check
             let key = Self::generate_key(owner, &group_id, Tag::Group);
 
@@ -1434,7 +1434,7 @@ pub mod pallet {
             owner: &T::AccountId,
             group_id: T::EntityId,
             name: &[u8],
-        ) -> Result<()> {
+        ) -> Result<(), RbacError> {
             // Check if group exists and it's enabled and get key for integrity check
             let key = Self::check_entity_get_key(owner, &group_id, Tag::Group)?;
 
@@ -1454,7 +1454,7 @@ pub mod pallet {
             Ok(())
         }
 
-        fn disable_existing_group(owner: &T::AccountId, group_id: T::EntityId) -> Result<()> {
+        fn disable_existing_group(owner: &T::AccountId, group_id: T::EntityId) -> Result<(), RbacError> {
             // Check if group exists and it's enabled and get key for integrity check
             let key = Self::check_entity_get_key(owner, &group_id, Tag::Group)?;
             let mut val = <GroupStore<T>>::get(owner);
