@@ -1,6 +1,4 @@
-use std::convert::From;
-use std::sync::Arc;
-
+//! RPC of Peaq-pallet-RBAC.
 use codec::Codec;
 use jsonrpsee::{
     core::{async_trait, Error as JsonRpseeError, RpcResult},
@@ -9,11 +7,15 @@ use jsonrpsee::{
 };
 use sp_api::{ApiError, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
-use sp_runtime::{generic::BlockId, traits::Block as BlockT};
-use sp_std::{vec, vec::Vec};
+use sp_runtime::traits::Block as BlockT;
+use sp_std::vec::Vec;
+use std::{
+    convert::From,
+    sync::Arc,
+};
 
 use peaq_pallet_rbac::{
-    rbac::{Result as RbacResult, Rbac},
+    rbac::Result as RbacResult,
     structs::{Entity, Permission2Role, Role2Group, Role2User, User2Group},
     error::RbacError
 };
@@ -30,12 +32,12 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
         &self,
         account: AccountId,
         entity: EntityId,
-        at: Option<BlockHash>,
+        at: BlockHash,
     ) -> Result<Entity<EntityId>>;
 
     /// RPC method for extrinsic call fetchRoles
     #[method(name = "peaqrbac_fetchRoles")]
-    fn fetch_roles(&self, owner: AccountId, at: Option<BlockHash>)
+    fn fetch_roles(&self, owner: AccountId, at: BlockHash)
         -> Result<Vec<Entity<EntityId>>>;
 
     /// RPC method for extrinsic call fetchUserRoles
@@ -44,7 +46,7 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
         &self,
         owner: AccountId,
         user_id: EntityId,
-        at: Option<BlockHash>,
+        at: BlockHash,
     ) -> Result<Vec<Role2User<EntityId>>>;
 
     /// RPC method for extrinsic call fetchPermission
@@ -53,7 +55,7 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
         &self,
         owner: AccountId,
         permission_id: EntityId,
-        at: Option<BlockHash>,
+        at: BlockHash,
     ) -> Result<Entity<EntityId>>;
 
     /// RPC method for extrinsic call fetchPermissions
@@ -61,7 +63,7 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
     fn fetch_permissions(
         &self,
         owner: AccountId,
-        at: Option<BlockHash>,
+        at: BlockHash,
     ) -> Result<Vec<Entity<EntityId>>>;
 
     /// RPC method for extrinsic call fetchRolePermissions
@@ -70,7 +72,7 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
         &self,
         owner: AccountId,
         role_id: EntityId,
-        at: Option<BlockHash>,
+        at: BlockHash,
     ) -> Result<Vec<Permission2Role<EntityId>>>;
 
     /// RPC method for extrinsic call fetchGroup
@@ -79,7 +81,7 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
         &self,
         owner: AccountId,
         group_id: EntityId,
-        at: Option<BlockHash>,
+        at: BlockHash,
     ) -> Result<Entity<EntityId>>;
 
     /// RPC method for extrinsic call fetchGroups
@@ -87,7 +89,7 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
     fn fetch_groups(
         &self,
         owner: AccountId,
-        at: Option<BlockHash>,
+        at: BlockHash,
     ) -> Result<Vec<Entity<EntityId>>>;
 
     /// RPC method for extrinsic call fetchGroupRoles
@@ -96,7 +98,7 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
         &self,
         owner: AccountId,
         group_id: EntityId,
-        at: Option<BlockHash>,
+        at: BlockHash,
     ) -> Result<Vec<Role2Group<EntityId>>>;
 
     /// RPC method for extrinsic call fetchUserGroups
@@ -105,7 +107,7 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
         &self,
         owner: AccountId,
         user_id: EntityId,
-        at: Option<BlockHash>,
+        at: BlockHash,
     ) -> Result<Vec<User2Group<EntityId>>>;
 
     /// RPC method for extrinsic call fetchUserPermissions
@@ -114,7 +116,7 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
         &self,
         owner: AccountId,
         user_id: EntityId,
-        at: Option<BlockHash>,
+        at: BlockHash,
     ) -> Result<Vec<Entity<EntityId>>>;
 
     /// RPC method for extrinsic call fetchGroupPermissions
@@ -123,7 +125,7 @@ pub trait PeaqRBACApi<BlockHash, AccountId, EntityId> {
         &self,
         owner: AccountId,
         group_id: EntityId,
-        at: Option<BlockHash>,
+        at: BlockHash,
     ) -> Result<Vec<Entity<EntityId>>>;
 }
 
@@ -155,18 +157,19 @@ impl From<Error> for i32 {
     }
 }
 
-/// This macro simplifies copy&paste-work in every rpc-method
-macro_rules! dry_api_at {
-    ( $self:expr, $at:expr ) => {
-        (
-            $self.client.runtime_api(),
-            BlockId::hash($at.unwrap_or(
-                // If the block hash is not supplied assume the best block.
-                $self.client.info().best_hash,
-            )),
-        )
-    };
-}
+// /// This macro simplifies copy&paste-work in every rpc-method
+// macro_rules! dry_api_at {
+//     ( $self:expr, $at:expr ) => {
+//         (
+//             $self.client.runtime_api(),
+//             BlockId::hash($at.unwrap_or(
+//                 // If the block hash is not supplied assume the best block.
+//                 $self.client.info().best_hash,
+//             )),
+
+//         )
+//     };
+// }
 
 /// Default error mapping in rpc methods
 #[inline]
@@ -192,30 +195,30 @@ where
         &self,
         account: AccountId,
         entity: EntityId,
-        at: Option<<Block as BlockT>::Hash>,
+        at: <Block as BlockT>::Hash,
     ) -> Result<Entity<EntityId>> {
-        let (api, at) = dry_api_at!(self, at);
-        api.fetch_role(&at, account, entity)
+        let api = self.client.runtime_api();
+        api.fetch_role(at, account, entity)
             .map_err(map_api_err)
     }
 
     fn fetch_roles(
         &self,
         owner: AccountId,
-        at: Option<<Block as BlockT>::Hash>,
+        at: <Block as BlockT>::Hash,
     ) -> Result<Vec<Entity<EntityId>>> {
-        let (api, at) = dry_api_at!(self, at);
-        api.fetch_roles(&at, owner).map_err(map_api_err)
+        let api = self.client.runtime_api();
+        api.fetch_roles(at, owner).map_err(map_api_err)
     }
 
     fn fetch_user_roles(
         &self,
         owner: AccountId,
         user_id: EntityId,
-        at: Option<<Block as BlockT>::Hash>,
+        at: <Block as BlockT>::Hash,
     ) -> Result<Vec<Role2User<EntityId>>> {
-        let (api, at) = dry_api_at!(self, at);
-        api.fetch_user_roles(&at, owner, user_id)
+        let api = self.client.runtime_api();
+        api.fetch_user_roles(at, owner, user_id)
             .map_err(map_api_err)
     }
 
@@ -223,20 +226,20 @@ where
         &self,
         owner: AccountId,
         permission_id: EntityId,
-        at: Option<<Block as BlockT>::Hash>,
+        at: <Block as BlockT>::Hash,
     ) -> Result<Entity<EntityId>> {
-        let (api, at) = dry_api_at!(self, at);
-        api.fetch_permission(&at, owner, permission_id)
+        let api = self.client.runtime_api();
+        api.fetch_permission(at, owner, permission_id)
             .map_err(map_api_err)
     }
 
     fn fetch_permissions(
         &self,
         owner: AccountId,
-        at: Option<<Block as BlockT>::Hash>,
+        at: <Block as BlockT>::Hash,
     ) -> Result<Vec<Entity<EntityId>>> {
-        let (api, at) = dry_api_at!(self, at);
-        api.fetch_permissions(&at, owner)
+        let api = self.client.runtime_api();
+        api.fetch_permissions(at, owner)
             .map_err(map_api_err)
     }
 
@@ -244,10 +247,10 @@ where
         &self,
         owner: AccountId,
         role_id: EntityId,
-        at: Option<<Block as BlockT>::Hash>,
+        at: <Block as BlockT>::Hash,
     ) -> Result<Vec<Permission2Role<EntityId>>> {
-        let (api, at) = dry_api_at!(self, at);
-        api.fetch_role_permissions(&at, owner, role_id)
+        let api = self.client.runtime_api();
+        api.fetch_role_permissions(at, owner, role_id)
             .map_err(map_api_err)
     }
 
@@ -255,30 +258,30 @@ where
         &self,
         owner: AccountId,
         group_id: EntityId,
-        at: Option<<Block as BlockT>::Hash>,
+        at: <Block as BlockT>::Hash,
     ) -> Result<Entity<EntityId>> {
-        let (api, at) = dry_api_at!(self, at);
-        api.fetch_group(&at, owner, group_id)
+        let api = self.client.runtime_api();
+        api.fetch_group(at, owner, group_id)
             .map_err(map_api_err)
     }
 
     fn fetch_groups(
         &self,
         owner: AccountId,
-        at: Option<<Block as BlockT>::Hash>,
+        at: <Block as BlockT>::Hash,
     ) -> Result<Vec<Entity<EntityId>>> {
-        let (api, at) = dry_api_at!(self, at);
-        api.fetch_groups(&at, owner).map_err(map_api_err)
+        let api = self.client.runtime_api();
+        api.fetch_groups(at, owner).map_err(map_api_err)
     }
 
     fn fetch_group_roles(
         &self,
         owner: AccountId,
         group_id: EntityId,
-        at: Option<<Block as BlockT>::Hash>,
+        at: <Block as BlockT>::Hash,
     ) -> Result<Vec<Role2Group<EntityId>>> {
-        let (api, at) = dry_api_at!(self, at);
-        api.fetch_group_roles(&at, owner, group_id)
+        let api = self.client.runtime_api();
+        api.fetch_group_roles(at, owner, group_id)
             .map_err(map_api_err)
     }
 
@@ -286,10 +289,10 @@ where
         &self,
         owner: AccountId,
         user_id: EntityId,
-        at: Option<<Block as BlockT>::Hash>,
+        at: <Block as BlockT>::Hash,
     ) -> Result<Vec<User2Group<EntityId>>> {
-        let (api, at) = dry_api_at!(self, at);
-        api.fetch_user_groups(&at, owner, user_id)
+        let api = self.client.runtime_api();
+        api.fetch_user_groups(at, owner, user_id)
             .map_err(map_api_err)
     }
 
@@ -297,10 +300,10 @@ where
         &self,
         owner: AccountId,
         user_id: EntityId,
-        at: Option<<Block as BlockT>::Hash>,
+        at: <Block as BlockT>::Hash,
     ) -> Result<Vec<Entity<EntityId>>> {
-        let (api, at) = dry_api_at!(self, at);
-        api.fetch_user_permissions(&at, owner, user_id)
+        let api = self.client.runtime_api();
+        api.fetch_user_permissions(at, owner, user_id)
             .map_err(map_api_err)
     }
 
@@ -308,10 +311,10 @@ where
         &self,
         owner: AccountId,
         group_id: EntityId,
-        at: Option<<Block as BlockT>::Hash>,
+        at: <Block as BlockT>::Hash,
     ) -> Result<Vec<Entity<EntityId>>> {
-        let (api, at) = dry_api_at!(self, at);
-        api.fetch_group_permissions(&at, owner, group_id)
+        let api = self.client.runtime_api();
+        api.fetch_group_permissions(at, owner, group_id)
             .map_err(map_api_err)
     }
 }
