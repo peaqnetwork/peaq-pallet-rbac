@@ -41,7 +41,10 @@ pub struct RbacError {
 
 impl RbacError {
     /// generates a new RbacError including Result
-    pub fn err<T, EntityId: Parameter>(typ: RbacErrorType, data: &EntityId) -> Result<T, RbacError> {
+    pub fn err<T, EntityId: Parameter>(
+        typ: RbacErrorType,
+        data: &EntityId,
+    ) -> Result<T, RbacError> {
         // this transformation makes it possible to use RbacError without generic
         let param = data.encode().as_slice().to_vec();
         Err(RbacError { typ, param })

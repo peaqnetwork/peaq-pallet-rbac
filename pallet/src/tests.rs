@@ -90,7 +90,10 @@ fn disable_role_test() {
             Error::<Test>::EntityDoesNotExist
         );
 
-        assert_ok!(PeaqRBAC::disable_role(RuntimeOrigin::signed(origin), role_id,));
+        assert_ok!(PeaqRBAC::disable_role(
+            RuntimeOrigin::signed(origin),
+            role_id,
+        ));
 
         // Test for removal of non-existing role
         assert_noop!(
@@ -443,7 +446,11 @@ fn update_permission_test() {
         // Test for updating permission not owned by origin
         let name = b"CAN_UPDATE";
         assert_noop!(
-            PeaqRBAC::update_permission(RuntimeOrigin::signed(origin2), permission_id, name.to_vec()),
+            PeaqRBAC::update_permission(
+                RuntimeOrigin::signed(origin2),
+                permission_id,
+                name.to_vec()
+            ),
             Error::<Test>::EntityDoesNotExist
         );
 
@@ -456,7 +463,11 @@ fn update_permission_test() {
         // Test for removal of non-existing permission
         let permission_id = *b"42464667364637663721676474666577";
         assert_noop!(
-            PeaqRBAC::update_permission(RuntimeOrigin::signed(origin), permission_id, name.to_vec()),
+            PeaqRBAC::update_permission(
+                RuntimeOrigin::signed(origin),
+                permission_id,
+                name.to_vec()
+            ),
             Error::<Test>::EntityDoesNotExist
         );
     });
@@ -546,7 +557,10 @@ fn fetch_permissions_test() {
             name.to_vec(),
         ));
 
-        assert_ok!(PeaqRBAC::fetch_permissions(RuntimeOrigin::signed(origin), origin));
+        assert_ok!(PeaqRBAC::fetch_permissions(
+            RuntimeOrigin::signed(origin),
+            origin
+        ));
     });
 }
 
@@ -576,7 +590,11 @@ fn assign_permission_to_role_test() {
 
         // Test for assigning permission not owned by origin
         assert_noop!(
-            PeaqRBAC::assign_permission_to_role(RuntimeOrigin::signed(origin2), permission_id, role_id),
+            PeaqRBAC::assign_permission_to_role(
+                RuntimeOrigin::signed(origin2),
+                permission_id,
+                role_id
+            ),
             Error::<Test>::EntityDoesNotExist
         );
 
@@ -588,14 +606,22 @@ fn assign_permission_to_role_test() {
 
         // Test for duplicate entry
         assert_noop!(
-            PeaqRBAC::assign_permission_to_role(RuntimeOrigin::signed(origin), permission_id, role_id),
+            PeaqRBAC::assign_permission_to_role(
+                RuntimeOrigin::signed(origin),
+                permission_id,
+                role_id
+            ),
             Error::<Test>::AssignmentAlreadyExist
         );
 
         // Test for assigning non-existing permission
         let permission_id = *b"45464667364637663721676474666576";
         assert_noop!(
-            PeaqRBAC::assign_permission_to_role(RuntimeOrigin::signed(origin), permission_id, role_id),
+            PeaqRBAC::assign_permission_to_role(
+                RuntimeOrigin::signed(origin),
+                permission_id,
+                role_id
+            ),
             Error::<Test>::EntityDoesNotExist
         );
     });
@@ -633,7 +659,11 @@ fn unassign_permission_to_role_test() {
 
         // Test for removing permission not owned by origin
         assert_noop!(
-            PeaqRBAC::unassign_permission_to_role(RuntimeOrigin::signed(origin2), permission_id, role_id),
+            PeaqRBAC::unassign_permission_to_role(
+                RuntimeOrigin::signed(origin2),
+                permission_id,
+                role_id
+            ),
             Error::<Test>::AssignmentDoesNotExist
         );
 
@@ -645,7 +675,11 @@ fn unassign_permission_to_role_test() {
 
         // Test for removing non-existing permission
         assert_noop!(
-            PeaqRBAC::unassign_permission_to_role(RuntimeOrigin::signed(origin), permission_id, role_id,),
+            PeaqRBAC::unassign_permission_to_role(
+                RuntimeOrigin::signed(origin),
+                permission_id,
+                role_id,
+            ),
             Error::<Test>::AssignmentDoesNotExist
         );
     });
@@ -783,7 +817,10 @@ fn disable_group_test() {
             Error::<Test>::EntityDoesNotExist
         );
 
-        assert_ok!(PeaqRBAC::disable_group(RuntimeOrigin::signed(origin), group_id,));
+        assert_ok!(PeaqRBAC::disable_group(
+            RuntimeOrigin::signed(origin),
+            group_id,
+        ));
 
         // Test for removal of non-existing group
         assert_noop!(
@@ -843,7 +880,10 @@ fn fetch_groups_test() {
             name.to_vec(),
         ));
 
-        assert_ok!(PeaqRBAC::fetch_groups(RuntimeOrigin::signed(origin), origin,));
+        assert_ok!(PeaqRBAC::fetch_groups(
+            RuntimeOrigin::signed(origin),
+            origin,
+        ));
     });
 }
 

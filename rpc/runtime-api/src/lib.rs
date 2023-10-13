@@ -6,9 +6,9 @@
 
 use codec::Codec;
 use peaq_pallet_rbac::{
+    error::RbacError,
     rbac::Result as RbacResult,
     structs::{Entity, Permission2Role, Role2Group, Role2User, User2Group},
-    error::RbacError
 };
 use sp_std::vec::Vec;
 
