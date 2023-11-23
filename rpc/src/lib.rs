@@ -195,8 +195,7 @@ where
         at: Option<<Block as BlockT>::Hash>,
     ) -> Result<Entity<EntityId>> {
         let (api, at) = dry_api_at!(self, at);
-        api.fetch_role(&at, account, entity)
-            .map_err(map_api_err)
+        api.fetch_role(&at, account, entity).map_err(map_api_err)
     }
 
     fn fetch_roles(
@@ -236,8 +235,7 @@ where
         at: Option<<Block as BlockT>::Hash>,
     ) -> Result<Vec<Entity<EntityId>>> {
         let (api, at) = dry_api_at!(self, at);
-        api.fetch_permissions(&at, owner)
-            .map_err(map_api_err)
+        api.fetch_permissions(&at, owner).map_err(map_api_err)
     }
 
     fn fetch_role_permissions(
@@ -258,8 +256,7 @@ where
         at: Option<<Block as BlockT>::Hash>,
     ) -> Result<Entity<EntityId>> {
         let (api, at) = dry_api_at!(self, at);
-        api.fetch_group(&at, owner, group_id)
-            .map_err(map_api_err)
+        api.fetch_group(&at, owner, group_id).map_err(map_api_err)
     }
 
     fn fetch_groups(
