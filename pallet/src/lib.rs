@@ -73,7 +73,6 @@ pub mod pallet {
     }
 
     #[pallet::pallet]
-    #[pallet::generate_store(pub(super) trait Store)]
     #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
@@ -1006,9 +1005,7 @@ pub mod pallet {
 
             if val.is_empty() {
                 <Role2GroupStore<T>>::remove(role_2_group_key);
-            }
-
-            if !val.is_empty() {
+            } else {
                 <Role2GroupStore<T>>::mutate(role_2_group_key, |a| *a = val);
             }
 
@@ -1189,15 +1186,22 @@ pub mod pallet {
 
     // implement the role Entity trait to satify the methods
     impl<T: Config> Role<T::AccountId, T::EntityId> for Pallet<T> {
-        fn get_role(owner: &T::AccountId, role_id: T::EntityId) -> Result<Entity<T::EntityId>, RbacError> {
-            Self::get_entity(&owner, &role_id, Tag::Role)
+        fn get_role(
+            owner: &T::AccountId,
+            role_id: T::EntityId,
+        ) -> Result<Entity<T::EntityId>, RbacError> {
+            Self::get_entity(owner, &role_id, Tag::Role)
         }
 
         fn get_roles(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
-            Ok(<RoleStore<T>>::get(&owner))
+            Ok(<RoleStore<T>>::get(owner))
         }
 
-        fn create_role(owner: &T::AccountId, role_id: T::EntityId, name: &[u8]) -> Result<(), RbacError> {
+        fn create_role(
+            owner: &T::AccountId,
+            role_id: T::EntityId,
+            name: &[u8],
+        ) -> Result<(), RbacError> {
             // Generate key for integrity check
             let key = Self::generate_key(owner, &role_id, Tag::Role);
 
@@ -1255,7 +1259,10 @@ pub mod pallet {
             Ok(())
         }
 
-        fn disable_existing_role(owner: &T::AccountId, role_id: T::EntityId) -> Result<(), RbacError> {
+        fn disable_existing_role(
+            owner: &T::AccountId,
+            role_id: T::EntityId,
+        ) -> Result<(), RbacError> {
             // Check if role exists and it's enabled and get key for integrity check
             let key = Self::check_entity_get_key(owner, &role_id, Tag::Role)?;
 
@@ -1283,11 +1290,11 @@ pub mod pallet {
             owner: &T::AccountId,
             permission_id: T::EntityId,
         ) -> Result<Entity<T::EntityId>, RbacError> {
-            Self::get_entity(&owner, &permission_id, Tag::Permission)
+            Self::get_entity(owner, &permission_id, Tag::Permission)
         }
 
         fn get_permissions(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
-            Ok(<PermissionStore<T>>::get(&owner))
+            Ok(<PermissionStore<T>>::get(owner))
         }
 
         fn create_permission(
@@ -1379,15 +1386,22 @@ pub mod pallet {
     }
 
     impl<T: Config> Group<T::AccountId, T::EntityId> for Pallet<T> {
-        fn get_group(owner: &T::AccountId, group_id: T::EntityId) -> Result<Entity<T::EntityId>, RbacError> {
-            Self::get_entity(&owner, &group_id, Tag::Group)
+        fn get_group(
+            owner: &T::AccountId,
+            group_id: T::EntityId,
+        ) -> Result<Entity<T::EntityId>, RbacError> {
+            Self::get_entity(owner, &group_id, Tag::Group)
         }
 
         fn get_groups(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
             Ok(<GroupStore<T>>::get(owner))
         }
 
-        fn create_group(owner: &T::AccountId, group_id: T::EntityId, name: &[u8]) -> Result<(), RbacError> {
+        fn create_group(
+            owner: &T::AccountId,
+            group_id: T::EntityId,
+            name: &[u8],
+        ) -> Result<(), RbacError> {
             // Generate key for integrity check
             let key = Self::generate_key(owner, &group_id, Tag::Group);
 
@@ -1441,7 +1455,10 @@ pub mod pallet {
             Ok(())
         }
 
-        fn disable_existing_group(owner: &T::AccountId, group_id: T::EntityId) -> Result<(), RbacError> {
+        fn disable_existing_group(
+            owner: &T::AccountId,
+            group_id: T::EntityId,
+        ) -> Result<(), RbacError> {
             // Check if group exists and it's enabled and get key for integrity check
             let key = Self::check_entity_get_key(owner, &group_id, Tag::Group)?;
             let mut val = <GroupStore<T>>::get(owner);
