@@ -1,6 +1,6 @@
 [package]
 name = "peaq-pallet-rbac-runtime-api"
-version = "0.0.2"
+version = "0.1.0"
 edition = "2021"
 description = "A pallet that handles peaq RBAC managment on peaq network."
 authors = ["peaq network <https://github.com/peaqnetwork>"]
