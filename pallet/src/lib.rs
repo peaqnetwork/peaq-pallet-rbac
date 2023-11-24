@@ -22,7 +22,8 @@ pub mod rbac;
 pub mod structs;
 
 pub mod weights;
-pub use weights::WeightInfo;
+pub mod weightinfo;
+pub use weightinfo::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
