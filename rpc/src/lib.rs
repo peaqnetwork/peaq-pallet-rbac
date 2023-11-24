@@ -145,20 +145,6 @@ impl From<Error> for i32 {
     }
 }
 
-// /// This macro simplifies copy&paste-work in every rpc-method
-// macro_rules! dry_api_at {
-//     ( $self:expr, $at:expr ) => {
-//         (
-//             $self.client.runtime_api(),
-//             BlockId::hash($at.unwrap_or(
-//                 // If the block hash is not supplied assume the best block.
-//                 $self.client.info().best_hash,
-//             )),
-
-//         )
-//     };
-// }
-
 /// Default error mapping in rpc methods
 #[inline]
 fn map_api_err(api_err: ApiError) -> JsonRpseeError {
