@@ -4,11 +4,11 @@ use super::*;
 
 #[allow(unused)]
 use crate::Pallet as RBAC;
-use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
+use frame_benchmarking::v1::{account, benchmarks, impl_benchmark_test_suite};
 use frame_system::{Pallet as System, RawOrigin};
 
 /// Assert that the last event equals the provided one.
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     System::<T>::assert_last_event(generic_event.into());
 }
 

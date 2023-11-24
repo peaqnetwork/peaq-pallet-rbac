@@ -13,12 +13,13 @@ use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 use sp_std::{vec, vec::Vec};
 
 use peaq_pallet_rbac::{
-    rbac::Result as RbacResult,
+    rbac::{Result as RbacResult, Rbac},
     structs::{Entity, Permission2Role, Role2Group, Role2User, User2Group},
+    error::RbacError
 };
 pub use peaq_pallet_rbac_runtime_api::PeaqRBACRuntimeApi;
 
-pub type Result<T> = RpcResult<RbacResult<T>>;
+pub type Result<T> = RpcResult<RbacResult<T, RbacError>>;
 
 /// Trait defines RBAC-RPC interface
 #[rpc(client, server)]

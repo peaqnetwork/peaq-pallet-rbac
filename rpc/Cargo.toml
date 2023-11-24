@@ -10,16 +10,16 @@ publish = false
 repository = "https://github.com/peaqnetwork/peaq-pallet-rbac/"
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "3.0.0" }
+codec = { package = "parity-scale-codec", version = "3.2.2" }
 jsonrpc-core = "18.0.0"
 jsonrpc-core-client = "18.0.0"
 jsonrpc-derive = "18.0.0"
 
-sp-std = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
-sp-api = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
-sp-blockchain = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
-sp-runtime = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.29" }
-jsonrpsee = { git = "https://github.com/peaqnetwork/jsonrpsee", branch = "peaq-v0.15.1", features = ["server", "macros"] }
+sp-std = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.38" }
+sp-api = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.38" }
+sp-blockchain = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.38" }
+sp-runtime = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.38" }
+jsonrpsee = { version = "0.16.2", features = ["client-core", "server", "macros"] }
 
 peaq-pallet-rbac-runtime-api = { path = "./runtime-api" } 
 peaq-pallet-rbac = { path = "../pallet/" }

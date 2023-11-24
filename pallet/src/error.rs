@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use sp_std::vec::Vec;
 
 /// Result definition for RBAC pallet with unique error type
-pub type Result<T> = core::result::Result<T, RbacError>;
+pub type Result<T, RbacError> = core::result::Result<T, RbacError>;
 
 /// All possible user error types of the RBAC pallet than can occur, when passing
 /// wrong or invalid parameters. Must be serialize-able when used via RPC.
@@ -41,7 +41,7 @@ pub struct RbacError {
 
 impl RbacError {
     /// generates a new RbacError including Result
-    pub fn err<T, EntityId: Parameter>(typ: RbacErrorType, data: &EntityId) -> Result<T> {
+    pub fn err<T, EntityId: Parameter>(typ: RbacErrorType, data: &EntityId) -> Result<T, RbacError> {
         // this transformation makes it possible to use RbacError without generic
         let param = data.encode().as_slice().to_vec();
         Err(RbacError { typ, param })
