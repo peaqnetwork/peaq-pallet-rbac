@@ -884,7 +884,8 @@ pub mod pallet {
 
                 roles.append(&mut val);
             }
-            roles.push(new_assign);
+            let idx = roles.partition_point(|x| x < &new_assign);
+            roles.insert(idx, new_assign);
 
             <Role2UserStore<T>>::insert(role_2_user_key, roles);
 
@@ -968,7 +969,8 @@ pub mod pallet {
 
                 roles.append(&mut val);
             }
-            roles.push(new_assign);
+            let idx = roles.partition_point(|x| x < &new_assign);
+            roles.insert(idx, new_assign);
 
             <Role2GroupStore<T>>::insert(role_2_group_key, roles);
 
@@ -1044,7 +1046,8 @@ pub mod pallet {
 
                 groups.append(&mut val);
             }
-            groups.push(new_assign);
+            let idx = groups.partition_point(|x| x < &new_assign);
+            groups.insert(idx, new_assign);
 
             <User2GroupStore<T>>::insert(user_2_group_key, groups);
 
@@ -1128,8 +1131,9 @@ pub mod pallet {
 
                 permissions.append(&mut val);
             }
-            permissions.push(new_assign);
-
+            let idx = permissions.partition_point(|x| x < &new_assign);
+            permissions.insert(idx, new_assign);
+            
             <Permission2RoleStore<T>>::insert(permission_2_role_key, permissions);
 
             Ok(())
