@@ -24,6 +24,7 @@ pub mod structs;
 pub mod weights;
 pub mod weightinfo;
 pub use weightinfo::WeightInfo;
+pub mod migrations;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -47,6 +48,7 @@ pub mod pallet {
         },
         rbac::{Group, Permission, Rbac, RbacKeyType, Role, Tag},
         structs::{Entity, Permission2Role, Role2Group, Role2User, User2Group},
+        migrations
     };
 
     macro_rules! dpatch_dposit {
@@ -73,7 +75,8 @@ pub mod pallet {
         };
     }
 
-    const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
+    // current storage version
+    const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -213,6 +216,13 @@ pub mod pallet {
         /// Returned if assignment does not exist
         AssignmentDoesNotExist,
     }
+
+    #[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn on_runtime_upgrade() -> frame_support::weights::Weight {
+			migrations::on_runtime_upgrade::<T>()
+		}
+	}
 
     impl<T: Config> Error<T> {
         fn dispatch_error(err: RbacError) -> DispatchResult {
