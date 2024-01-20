@@ -76,7 +76,7 @@ pub mod pallet {
     }
 
     // current storage version
-    const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+    const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
