@@ -16,7 +16,7 @@ pub mod v0 {
 
     use super::*;
 
-    // This migration sort all values in StorageMaps allowing them to be binary searchable
+    // This migration sort all values in some StorageMaps allowing them to be binary searchable
     // As there was no storage version set before, we set it now to 0
     pub struct MigrateToV0x<T>(sp_std::marker::PhantomData<T>);
 
