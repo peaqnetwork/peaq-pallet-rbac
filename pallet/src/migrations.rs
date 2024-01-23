@@ -4,6 +4,7 @@ use frame_support::{
     dispatch::GetStorageVersion, pallet_prelude::StorageVersion, traits::Get, weights::Weight,
 };
 use structs::*;
+use sp_std::vec::Vec;
 
 pub(crate) fn on_runtime_upgrade<T: Config>() -> Weight {
     v1::MigrateToV1x::<T>::on_runtime_upgrade()
