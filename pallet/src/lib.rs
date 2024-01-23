@@ -21,8 +21,8 @@ pub mod error;
 pub mod rbac;
 pub mod structs;
 
-pub mod weights;
 pub mod weightinfo;
+pub mod weights;
 pub use weightinfo::WeightInfo;
 pub mod migrations;
 
@@ -46,9 +46,9 @@ pub mod pallet {
             },
             Result,
         },
+        migrations,
         rbac::{Group, Permission, Rbac, RbacKeyType, Role, Tag},
         structs::{Entity, Permission2Role, Role2Group, Role2User, User2Group},
-        migrations
     };
 
     macro_rules! dpatch_dposit {
@@ -218,11 +218,11 @@ pub mod pallet {
     }
 
     #[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_runtime_upgrade() -> frame_support::weights::Weight {
-			migrations::on_runtime_upgrade::<T>()
-		}
-	}
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_runtime_upgrade() -> frame_support::weights::Weight {
+            migrations::on_runtime_upgrade::<T>()
+        }
+    }
 
     impl<T: Config> Error<T> {
         fn dispatch_error(err: RbacError) -> DispatchResult {
@@ -1146,7 +1146,7 @@ pub mod pallet {
             }
             let idx = permissions.partition_point(|x| x < &new_assign);
             permissions.insert(idx, new_assign);
-            
+
             <Permission2RoleStore<T>>::insert(permission_2_role_key, permissions);
 
             Ok(())
