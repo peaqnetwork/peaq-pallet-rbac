@@ -10,8 +10,6 @@ pub(crate) fn on_runtime_upgrade<T: Config>() -> Weight {
     v0::MigrateToV0x::<T>::on_runtime_upgrade()
 }
 
-const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
-
 pub mod v0 {
 
     use super::*;
@@ -22,12 +20,14 @@ pub mod v0 {
 
     impl<T: Config> MigrateToV0x<T> {
         pub fn on_runtime_upgrade() -> Weight {
-            let current_storage_version: StorageVersion = Pallet::<T>::current_storage_version();
+            let target_storage_version: StorageVersion = Pallet::<T>::current_storage_version();
+            let on_chain_storage_version: StorageVersion = Pallet::<T>::on_chain_storage_version();
 
-            if current_storage_version.eq(&CURRENT_STORAGE_VERSION) {
+            if on_chain_storage_version < target_storage_version {
                 log::info!(
-                    "Enter and do the migration for version 0 {:?}",
-                    current_storage_version
+                    "Pallet RBAC: Migration from onchain version {:?} to current version {:?}",
+                    on_chain_storage_version,
+                    target_storage_version,
                 );
 
                 // TODO repetitive translation logic with different types, reduce this with a macro
@@ -69,10 +69,10 @@ pub mod v0 {
 
                 // upgrade current_storage_version
                 log::info!(
-                    "Initialize current storage version of migration to {:?}",
-                    current_storage_version
+                    "Pallet RBAC: Setting storage version to {:?}",
+                    target_storage_version
                 );
-                current_storage_version.put::<Pallet<T>>();
+                target_storage_version.put::<Pallet<T>>();
             }
             T::DbWeight::get().reads_writes(0, 0)
         }
