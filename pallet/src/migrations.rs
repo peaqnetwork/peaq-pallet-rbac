@@ -7,18 +7,18 @@ use sp_std::vec::Vec;
 use structs::*;
 
 pub(crate) fn on_runtime_upgrade<T: Config>() -> Weight {
-    v0::MigrateToV0x::<T>::on_runtime_upgrade()
+    migrations::MigrateToV1x::<T>::on_runtime_upgrade()
 }
 
-pub mod v0 {
+pub mod migrations {
 
     use super::*;
 
     // This migration sort all values in some StorageMaps allowing them to be binary searchable
     // As there was no storage version set before, we set it now to 0
-    pub struct MigrateToV0x<T>(sp_std::marker::PhantomData<T>);
+    pub struct MigrateToV1x<T>(sp_std::marker::PhantomData<T>);
 
-    impl<T: Config> MigrateToV0x<T> {
+    impl<T: Config> MigrateToV1x<T> {
         pub fn on_runtime_upgrade() -> Weight {
             let target_storage_version: StorageVersion = Pallet::<T>::current_storage_version();
             let on_chain_storage_version: StorageVersion = Pallet::<T>::on_chain_storage_version();
