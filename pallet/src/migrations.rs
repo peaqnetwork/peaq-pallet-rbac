@@ -23,6 +23,8 @@ pub mod migrations {
             let target_storage_version: StorageVersion = Pallet::<T>::current_storage_version();
             let on_chain_storage_version: StorageVersion = Pallet::<T>::on_chain_storage_version();
 
+
+            let mut weight: u64 = 0;
             if on_chain_storage_version < target_storage_version {
                 log::info!(
                     "Pallet RBAC: Migration from onchain version {:?} to current version {:?}",
@@ -36,6 +38,7 @@ pub mod migrations {
                     |val: Vec<Role2User<T::EntityId>>| {
                         let mut sorted_val = val.clone();
                         sorted_val.sort();
+                        weight +=1;
                         Some(sorted_val)
                     },
                 );
@@ -45,6 +48,7 @@ pub mod migrations {
                     |val: Vec<Role2Group<T::EntityId>>| {
                         let mut sorted_val = val.clone();
                         sorted_val.sort();
+                        weight +=1;
                         Some(sorted_val)
                     },
                 );
@@ -54,6 +58,7 @@ pub mod migrations {
                     |val: Vec<User2Group<T::EntityId>>| {
                         let mut sorted_val = val.clone();
                         sorted_val.sort();
+                        weight +=1;
                         Some(sorted_val)
                     },
                 );
@@ -63,6 +68,7 @@ pub mod migrations {
                     |val: Vec<Permission2Role<T::EntityId>>| {
                         let mut sorted_val = val.clone();
                         sorted_val.sort();
+                        weight +=1;
                         Some(sorted_val)
                     },
                 );
@@ -74,7 +80,8 @@ pub mod migrations {
                 );
                 target_storage_version.put::<Pallet<T>>();
             }
-            T::DbWeight::get().reads_writes(0, 0)
+            log::info!("Weight calculated: {:?}", weight);
+            T::DbWeight::get().reads_writes(weight, weight)
         }
     }
 }
