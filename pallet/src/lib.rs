@@ -91,6 +91,7 @@ pub mod pallet {
             + Copy
             + MaxEncodedLen
             + Default;
+        type BoundedDataLen: Get<u32>;
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -100,7 +101,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn role_of)]
     pub type RoleStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, Vec<Entity<T::EntityId>>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, T::AccountId, BoundedVec<Entity<T::EntityId>, T::BoundedDataLen>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn role_to_user_of)]
@@ -1186,7 +1187,7 @@ pub mod pallet {
     }
 
     // implement the role Entity trait to satify the methods
-    impl<T: Config> Role<T::AccountId, T::EntityId> for Pallet<T> {
+    impl<T: Config> Role<T::AccountId, T::EntityId, T::BoundedDataLen> for Pallet<T> {
         fn get_role(
             owner: &T::AccountId,
             role_id: T::EntityId,
@@ -1194,7 +1195,7 @@ pub mod pallet {
             Self::get_entity(owner, &role_id, Tag::Role)
         }
 
-        fn get_roles(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
+        fn get_roles(owner: &T::AccountId) -> Result<BoundedVec<Entity<T::EntityId>, T::BoundedDataLen>, RbacError> {
             Ok(<RoleStore<T>>::get(owner))
         }
 
