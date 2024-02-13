@@ -1,7 +1,7 @@
 use crate as peaq_rbac;
 use frame_support::parameter_types;
 use frame_system as system;
-use pallet_timestamp;
+
 use sp_core::{sr25519, Pair, H256};
 use sp_runtime::{
     testing::Header,

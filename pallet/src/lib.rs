@@ -21,9 +21,10 @@ pub mod error;
 pub mod rbac;
 pub mod structs;
 
-pub mod weights;
 pub mod weightinfo;
+pub mod weights;
 pub use weightinfo::WeightInfo;
+pub mod migrations;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -45,6 +46,7 @@ pub mod pallet {
             },
             Result,
         },
+        migrations,
         rbac::{Group, Permission, Rbac, RbacKeyType, Role, Tag},
         structs::{Entity, Permission2Role, Role2Group, Role2User, User2Group},
     };
@@ -73,8 +75,12 @@ pub mod pallet {
         };
     }
 
+    // current storage version
+    const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
     #[pallet::pallet]
     #[pallet::without_storage_info]
+    #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
@@ -209,6 +215,13 @@ pub mod pallet {
         AssignmentAlreadyExist,
         /// Returned if assignment does not exist
         AssignmentDoesNotExist,
+    }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_runtime_upgrade() -> frame_support::weights::Weight {
+            migrations::on_runtime_upgrade::<T>()
+        }
     }
 
     impl<T: Config> Error<T> {
@@ -884,7 +897,8 @@ pub mod pallet {
 
                 roles.append(&mut val);
             }
-            roles.push(new_assign);
+            let idx = roles.partition_point(|x| x < &new_assign);
+            roles.insert(idx, new_assign);
 
             <Role2UserStore<T>>::insert(role_2_user_key, roles);
 
@@ -968,7 +982,8 @@ pub mod pallet {
 
                 roles.append(&mut val);
             }
-            roles.push(new_assign);
+            let idx = roles.partition_point(|x| x < &new_assign);
+            roles.insert(idx, new_assign);
 
             <Role2GroupStore<T>>::insert(role_2_group_key, roles);
 
@@ -1044,7 +1059,8 @@ pub mod pallet {
 
                 groups.append(&mut val);
             }
-            groups.push(new_assign);
+            let idx = groups.partition_point(|x| x < &new_assign);
+            groups.insert(idx, new_assign);
 
             <User2GroupStore<T>>::insert(user_2_group_key, groups);
 
@@ -1128,7 +1144,8 @@ pub mod pallet {
 
                 permissions.append(&mut val);
             }
-            permissions.push(new_assign);
+            let idx = permissions.partition_point(|x| x < &new_assign);
+            permissions.insert(idx, new_assign);
 
             <Permission2RoleStore<T>>::insert(permission_2_role_key, permissions);
 

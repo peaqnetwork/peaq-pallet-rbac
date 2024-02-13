@@ -72,6 +72,10 @@ version = "1.0"
 features = ["derive"]
 optional = true
 
+[dependencies.log]
+version = "0.4.17"
+default-features = false
+
 [features]
 default = ["std"]
 std = [
@@ -85,7 +89,8 @@ std = [
     "sp-std/std",
 	"sp-io/std",
     "sp-core/std",
-	"pallet-timestamp/std"
+	"pallet-timestamp/std",
+    "log/std",
 ]
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]
