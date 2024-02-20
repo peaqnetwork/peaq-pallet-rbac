@@ -4,9 +4,7 @@ use frame_system as system;
 use sp_runtime::BuildStorage;
 
 use sp_core::{sr25519, Pair, H256};
-use sp_runtime::{
-    traits::{BlakeTwo256, IdentityLookup},
-};
+use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
 
 type Block = frame_system::mocking::MockBlock<Test>;
 

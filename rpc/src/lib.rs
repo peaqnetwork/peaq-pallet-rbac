@@ -1,10 +1,10 @@
 //! RPC of Peaq-pallet-RBAC.
-use parity_scale_codec::Codec;
 use jsonrpsee::{
     core::{async_trait, Error as JsonRpseeError, RpcResult},
     proc_macros::rpc,
     types::error::{CallError, ErrorObject},
 };
+use parity_scale_codec::Codec;
 use sp_api::{ApiError, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use sp_runtime::traits::Block as BlockT;

@@ -29,9 +29,9 @@ pub mod migrations;
 #[frame_support::pallet]
 pub mod pallet {
 
-    use parity_scale_codec::{Encode, MaxEncodedLen};
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
+    use parity_scale_codec::{Encode, MaxEncodedLen};
     use sp_io::hashing::blake2_256;
     use sp_std::fmt::Debug;
     use sp_std::{vec, vec::Vec};
