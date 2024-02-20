@@ -29,7 +29,7 @@ pub mod migrations;
 #[frame_support::pallet]
 pub mod pallet {
 
-    use codec::{Encode, MaxEncodedLen};
+    use parity_scale_codec::{Encode, MaxEncodedLen};
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
     use sp_io::hashing::blake2_256;

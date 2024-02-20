@@ -1,4 +1,4 @@
-use codec::{Decode, Encode};
+use parity_scale_codec::{Decode, Encode};
 use frame_support::pallet_prelude::*;
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]

@@ -1,5 +1,5 @@
 //! RPC of Peaq-pallet-RBAC.
-use codec::Codec;
+use parity_scale_codec::Codec;
 use jsonrpsee::{
     core::{async_trait, Error as JsonRpseeError, RpcResult},
     proc_macros::rpc,

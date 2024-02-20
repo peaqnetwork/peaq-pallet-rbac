@@ -13,73 +13,26 @@ authors = { workspace = true }
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
-hex-literal = "0.3.3"
+hex-literal = { workspace = true }
 
-[dependencies.codec]
-default-features = false
-features = ["derive"]
-package = "parity-scale-codec"
-version = "3.2.2"
-
-[dependencies.frame-benchmarking]
-default-features = false
-git = "https://github.com/peaqnetwork/substrate"
-optional = true
-branch = "peaq-polkadot-v0.9.43"
-
-[dependencies.frame-support]
-default-features = false
-git = "https://github.com/peaqnetwork/substrate"
-branch = "peaq-polkadot-v0.9.43"
-
-[dependencies.frame-system]
-default-features = false
-git = "https://github.com/peaqnetwork/substrate"
-branch = "peaq-polkadot-v0.9.43"
-
-[dependencies.scale-info]
-default-features = false
-features = ["derive"]
-version = "2.0.1"
-
-[dependencies.sp-runtime]
-default-features = false
-git = "https://github.com/peaqnetwork/substrate"
-branch = "peaq-polkadot-v0.9.43"
-
-[dependencies.sp-core]
-default-features = false
-git = "https://github.com/peaqnetwork/substrate"
-branch = "peaq-polkadot-v0.9.43"
-
-[dependencies.sp-io]
-default-features = false
-git = "https://github.com/peaqnetwork/substrate"
-branch = "peaq-polkadot-v0.9.43"
-
-[dependencies.sp-std]
-default-features = false
-git = "https://github.com/peaqnetwork/substrate"
-branch = "peaq-polkadot-v0.9.43"  # or the latest monthly
-
-[dependencies.pallet-timestamp]
-default-features = false
-git = "https://github.com/peaqnetwork/substrate"
-branch = "peaq-polkadot-v0.9.43"  # or the latest monthly
-
-[dependencies.serde]
-version = "1.0"
-features = ["derive"]
-optional = true
-
-[dependencies.log]
-version = "0.4.17"
-default-features = false
+[dependencies]
+parity-scale-codec = { workspace = true, features = ["derive"], default-features = false }
+frame-benchmarking = { workspace = true, default-features = false, optional = true }
+frame-support = { workspace = true, default-features = false }
+frame-system = { workspace = true, default-features = false }
+scale-info = { workspace = true, default-features = false, features = ["derive"] }
+sp-runtime = { workspace = true, default-features = false }
+sp-core = { workspace = true, default-features = false }
+sp-io = { workspace = true, default-features = false }
+sp-std = { workspace = true, default-features = false }
+pallet-timestamp = { workspace = true, default-features = false }
+serde = { workspace = true, optional = true, features = ["derive"] }
+log = { workspace = true, default-features = false }
 
 [features]
 default = ["std"]
 std = [
-    "codec/std",
+    "parity-scale-codec/std",
     "serde",
     "scale-info/std",
     "frame-support/std",
