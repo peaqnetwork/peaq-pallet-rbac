@@ -18,17 +18,17 @@ hex-literal = "0.3.3"
 log = { version = "0.4.17", default-features = false }
 serde = { version = "1.0", default-features = false }
 parity-scale-codec = { version = "3.2.2", default-features = false }
-frame-benchmarking = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.43", default-features = false }
-frame-support = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.43", default-features = false }
-frame-system = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.43", default-features = false }
+frame-benchmarking = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
+frame-support = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
+frame-system = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
 scale-info = { version = "2.0.1", default-features = false }
-sp-runtime = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.43", default-features = false }
-sp-core = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.43", default-features = false }
-sp-io = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.43", default-features = false }
-sp-std = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.43", default-features = false }
-sp-api = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.43", default-features = false }
-sp-blockchain = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.43", default-features = false }
-pallet-timestamp = { git = "https://github.com/peaqnetwork/substrate", branch = "peaq-polkadot-v0.9.43", default-features = false }
+sp-runtime = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
+sp-core = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
+sp-io = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
+sp-std = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
+sp-api = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
+sp-blockchain = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
+pallet-timestamp = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
 
 [workspace]
 members = [
