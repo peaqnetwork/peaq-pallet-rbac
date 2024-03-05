@@ -33,4 +33,3 @@ pub trait WeightInfo {
     fn fetch_user_permissions() -> Weight;
     fn fetch_group_permissions() -> Weight;
 }
-
