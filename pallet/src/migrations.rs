@@ -1,7 +1,8 @@
 use super::*;
 
 use frame_support::{
-    dispatch::GetStorageVersion, pallet_prelude::StorageVersion, traits::Get, weights::Weight, BoundedVec
+    dispatch::GetStorageVersion, pallet_prelude::StorageVersion, traits::Get, weights::Weight,
+    BoundedVec,
 };
 use sp_std::vec::Vec;
 use structs::*;

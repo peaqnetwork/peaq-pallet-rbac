@@ -111,8 +111,13 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn role_to_user_of)]
-    pub type Role2UserStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, RbacKeyType, BoundedVec<Role2User<T::EntityId>, T::BoundedDataLen>, ValueQuery>;
+    pub type Role2UserStore<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        RbacKeyType,
+        BoundedVec<Role2User<T::EntityId>, T::BoundedDataLen>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn permission_of)]
@@ -893,18 +898,19 @@ pub mod pallet {
 
             // Check if role has already been assigned to user
             if <Role2UserStore<T>>::contains_key(role_2_user_key) {
-                let mut val = <Role2UserStore<T>>::get(role_2_user_key);
+                roles = <Role2UserStore<T>>::get(role_2_user_key);
 
-                if val.contains(&new_assign) {
+                if roles.contains(&new_assign) {
                     return RbacError::err(AssignmentAlreadyExist, &user_id);
                 }
-
-                roles.append(&mut val);
             }
-            let idx = roles.partition_point(|x| x < &new_assign);
-            roles.insert(idx, new_assign);
 
-            <Role2UserStore<T>>::insert(role_2_user_key, roles);
+            let idx = roles.partition_point(|x| x < &new_assign);
+
+            match roles.try_insert(idx, new_assign.clone()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(()) => <Role2UserStore<T>>::insert(role_2_user_key, roles),
+            }
 
             Ok(())
         }
