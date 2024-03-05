@@ -32,6 +32,7 @@ pub mod pallet {
     use codec::{Encode, MaxEncodedLen};
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
+    use sp_core::bounded_vec;
     use sp_io::hashing::blake2_256;
     use sp_std::fmt::Debug;
     use sp_std::{vec, vec::Vec};
@@ -40,10 +41,7 @@ pub mod pallet {
     use crate::{
         error::{
             RbacError,
-            RbacErrorType::{
-                AssignmentAlreadyExist, AssignmentDoesNotExist, EntityAlreadyExist,
-                EntityAuthorizationFailed, EntityDisabled, EntityDoesNotExist, NameExceedMaxChar,
-            },
+            RbacErrorType::*,
             Result,
         },
         migrations,
@@ -97,6 +95,7 @@ pub mod pallet {
             + Copy
             + MaxEncodedLen
             + Default;
+		#[pallet::constant]
         type BoundedDataLen: Get<u32>;
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
@@ -156,7 +155,7 @@ pub mod pallet {
         /// Event emitted when a role has been added. [who, roleId]
         RoleRemoved(T::AccountId, T::EntityId),
         RoleFetched(Entity<T::EntityId>),
-        AllRolesFetched(Vec<Entity<T::EntityId>>),
+        AllRolesFetched(BoundedVec<Entity<T::EntityId>, T::BoundedDataLen>),
         /// Event emitted when a role has been assigned to user. [who, roleId, userId]
         RoleAssignedToUser(T::AccountId, T::EntityId, T::EntityId),
         /// Event emitted when a role has been unassigned to user. [who, roleId, userId]
@@ -216,6 +215,8 @@ pub mod pallet {
         AssignmentAlreadyExist,
         /// Returned if assignment does not exist
         AssignmentDoesNotExist,
+        /// Exceeds BoundedLen bounds
+        StorageExceedsMaxBounds
     }
 
     #[pallet::hooks]
@@ -235,6 +236,7 @@ pub mod pallet {
                 EntityDisabled => Err(Error::<T>::EntityDisabled.into()),
                 AssignmentAlreadyExist => Err(Error::<T>::AssignmentAlreadyExist.into()),
                 AssignmentDoesNotExist => Err(Error::<T>::AssignmentDoesNotExist.into()),
+                StorageExceedsMaxBounds => Err(Error::<T>::StorageExceedsMaxBounds.into())
             }
         }
     }
@@ -1229,7 +1231,7 @@ pub mod pallet {
                 return RbacError::err(EntityAlreadyExist, &role_id);
             }
 
-            let mut roles: Vec<Entity<T::EntityId>> = vec![];
+            let mut roles: BoundedVec<Entity<T::EntityId>, T::BoundedDataLen> = bounded_vec![];
 
             let new_role = Entity {
                 id: role_id,
@@ -1239,13 +1241,16 @@ pub mod pallet {
 
             // Check if this account already had roles
             if <RoleStore<T>>::contains_key(owner) {
-                let mut val = <RoleStore<T>>::get(owner);
-                roles.append(&mut val);
+                roles = <RoleStore<T>>::get(owner);
             }
-            roles.push(new_role.clone());
-
-            <RoleStore<T>>::insert(owner, roles);
-            <KeysLookUpStore<T>>::insert(key, new_role);
+            
+            match roles.try_push(new_role.clone()){
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(()) => {
+                    <RoleStore<T>>::insert(owner, roles);
+                    <KeysLookUpStore<T>>::insert(key, new_role);
+                }
+            }
 
             Ok(())
         }
