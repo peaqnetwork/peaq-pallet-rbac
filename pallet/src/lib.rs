@@ -39,11 +39,7 @@ pub mod pallet {
 
     use super::WeightInfo;
     use crate::{
-        error::{
-            RbacError,
-            RbacErrorType::*,
-            Result,
-        },
+        error::{RbacError, RbacErrorType::*, Result},
         migrations,
         rbac::{Group, Permission, Rbac, RbacKeyType, Role, Tag},
         structs::{Entity, Permission2Role, Role2Group, Role2User, User2Group},
@@ -95,7 +91,7 @@ pub mod pallet {
             + Copy
             + MaxEncodedLen
             + Default;
-		#[pallet::constant]
+        #[pallet::constant]
         type BoundedDataLen: Get<u32>;
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
@@ -105,8 +101,13 @@ pub mod pallet {
     // https://docs.substrate.io/main-docs/build/runtime-storage/
     #[pallet::storage]
     #[pallet::getter(fn role_of)]
-    pub type RoleStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, BoundedVec<Entity<T::EntityId>, T::BoundedDataLen>, ValueQuery>;
+    pub type RoleStore<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        T::AccountId,
+        BoundedVec<Entity<T::EntityId>, T::BoundedDataLen>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn role_to_user_of)]
@@ -216,7 +217,7 @@ pub mod pallet {
         /// Returned if assignment does not exist
         AssignmentDoesNotExist,
         /// Exceeds BoundedLen bounds
-        StorageExceedsMaxBounds
+        StorageExceedsMaxBounds,
     }
 
     #[pallet::hooks]
@@ -236,7 +237,7 @@ pub mod pallet {
                 EntityDisabled => Err(Error::<T>::EntityDisabled.into()),
                 AssignmentAlreadyExist => Err(Error::<T>::AssignmentAlreadyExist.into()),
                 AssignmentDoesNotExist => Err(Error::<T>::AssignmentDoesNotExist.into()),
-                StorageExceedsMaxBounds => Err(Error::<T>::StorageExceedsMaxBounds.into())
+                StorageExceedsMaxBounds => Err(Error::<T>::StorageExceedsMaxBounds.into()),
             }
         }
     }
@@ -1214,7 +1215,9 @@ pub mod pallet {
             Self::get_entity(owner, &role_id, Tag::Role)
         }
 
-        fn get_roles(owner: &T::AccountId) -> Result<BoundedVec<Entity<T::EntityId>, T::BoundedDataLen>, RbacError> {
+        fn get_roles(
+            owner: &T::AccountId,
+        ) -> Result<BoundedVec<Entity<T::EntityId>, T::BoundedDataLen>, RbacError> {
             Ok(<RoleStore<T>>::get(owner))
         }
 
@@ -1243,8 +1246,8 @@ pub mod pallet {
             if <RoleStore<T>>::contains_key(owner) {
                 roles = <RoleStore<T>>::get(owner);
             }
-            
-            match roles.try_push(new_role.clone()){
+
+            match roles.try_push(new_role.clone()) {
                 Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
                 Ok(()) => {
                     <RoleStore<T>>::insert(owner, roles);
