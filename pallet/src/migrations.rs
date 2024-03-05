@@ -1,7 +1,7 @@
 use super::*;
 
 use frame_support::{
-    dispatch::GetStorageVersion, pallet_prelude::StorageVersion, traits::Get, weights::Weight,
+    dispatch::GetStorageVersion, pallet_prelude::StorageVersion, traits::Get, weights::Weight, BoundedVec
 };
 use sp_std::vec::Vec;
 use structs::*;
@@ -27,46 +27,46 @@ impl<T: Config> MigrateToV1x<T> {
                 target_storage_version,
             );
 
-            // TODO repetitive translation logic with different types, reduce this with a macro
-            // translate all vec to sorted vec
-            Role2UserStore::<T>::translate_values::<Vec<Role2User<T::EntityId>>, _>(
-                |val: Vec<Role2User<T::EntityId>>| {
-                    let mut sorted_val = val.clone();
-                    sorted_val.sort();
-                    weight += 1;
-                    Some(sorted_val)
-                },
-            );
+            // // TODO repetitive translation logic with different types, reduce this with a macro
+            // // translate all vec to sorted vec
+            // Role2UserStore::<T>::translate_values::<Vec<Role2User<T::EntityId>>, _>(
+            //     |val: Vec<Role2User<T::EntityId>>| {
+            //         let mut sorted_val = val.clone();
+            //         sorted_val.sort();
+            //         weight += 1;
+            //         Some(sorted_val)
+            //     },
+            // );
 
-            // translate all vec to sorted vec
-            Role2GroupStore::<T>::translate_values::<Vec<Role2Group<T::EntityId>>, _>(
-                |val: Vec<Role2Group<T::EntityId>>| {
-                    let mut sorted_val = val.clone();
-                    sorted_val.sort();
-                    weight += 1;
-                    Some(sorted_val)
-                },
-            );
+            // // translate all vec to sorted vec
+            // Role2GroupStore::<T>::translate_values::<Vec<Role2Group<T::EntityId>>, _>(
+            //     |val: Vec<Role2Group<T::EntityId>>| {
+            //         let mut sorted_val = val.clone();
+            //         sorted_val.sort();
+            //         weight += 1;
+            //         Some(sorted_val)
+            //     },
+            // );
 
-            // translate all vec to sorted vec
-            User2GroupStore::<T>::translate_values::<Vec<User2Group<T::EntityId>>, _>(
-                |val: Vec<User2Group<T::EntityId>>| {
-                    let mut sorted_val = val.clone();
-                    sorted_val.sort();
-                    weight += 1;
-                    Some(sorted_val)
-                },
-            );
+            // // translate all vec to sorted vec
+            // User2GroupStore::<T>::translate_values::<Vec<User2Group<T::EntityId>>, _>(
+            //     |val: Vec<User2Group<T::EntityId>>| {
+            //         let mut sorted_val = val.clone();
+            //         sorted_val.sort();
+            //         weight += 1;
+            //         Some(sorted_val)
+            //     },
+            // );
 
-            // translate all vec to sorted vec
-            Permission2RoleStore::<T>::translate_values::<Vec<Permission2Role<T::EntityId>>, _>(
-                |val: Vec<Permission2Role<T::EntityId>>| {
-                    let mut sorted_val = val.clone();
-                    sorted_val.sort();
-                    weight += 1;
-                    Some(sorted_val)
-                },
-            );
+            // // translate all vec to sorted vec
+            // Permission2RoleStore::<T>::translate_values::<Vec<Permission2Role<T::EntityId>>, _>(
+            //     |val: Vec<Permission2Role<T::EntityId>>| {
+            //         let mut sorted_val = val.clone();
+            //         sorted_val.sort();
+            //         weight += 1;
+            //         Some(sorted_val)
+            //     },
+            // );
 
             // upgrade current_storage_version
             log::info!(

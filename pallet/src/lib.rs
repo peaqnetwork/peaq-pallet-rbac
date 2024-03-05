@@ -112,7 +112,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn role_to_user_of)]
     pub type Role2UserStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, RbacKeyType, Vec<Role2User<T::EntityId>>, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, RbacKeyType, BoundedVec<Role2User<T::EntityId>, T::BoundedDataLen>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn permission_of)]
@@ -733,7 +733,7 @@ pub mod pallet {
             let key = Self::generate_key(owner, &user_id, Tag::Role2User);
 
             if <Role2UserStore<T>>::contains_key(key) {
-                Ok(Self::role_to_user_of(key))
+                Ok(Self::role_to_user_of(key).into())
             } else {
                 RbacError::err(AssignmentDoesNotExist, &user_id)
             }
@@ -884,7 +884,7 @@ pub mod pallet {
                 return RbacError::err(EntityDoesNotExist, &role_id);
             }
 
-            let mut roles: Vec<Role2User<T::EntityId>> = vec![];
+            let mut roles: BoundedVec<Role2User<T::EntityId>, T::BoundedDataLen> = bounded_vec![];
 
             let new_assign = Role2User {
                 role: role_id,
