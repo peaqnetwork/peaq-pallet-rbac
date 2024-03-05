@@ -186,7 +186,7 @@ pub mod pallet {
         /// Event emitted when a role has been added. [who, roleId]
         RoleRemoved(T::AccountId, T::EntityId),
         RoleFetched(Entity<T::EntityId>),
-        AllRolesFetched(BoundedVec<Entity<T::EntityId>, T::BoundedDataLen>),
+        AllRolesFetched(Vec<Entity<T::EntityId>>),
         /// Event emitted when a role has been assigned to user. [who, roleId, userId]
         RoleAssignedToUser(T::AccountId, T::EntityId, T::EntityId),
         /// Event emitted when a role has been unassigned to user. [who, roleId, userId]
@@ -1250,10 +1250,8 @@ pub mod pallet {
             Self::get_entity(owner, &role_id, Tag::Role)
         }
 
-        fn get_roles(
-            owner: &T::AccountId,
-        ) -> Result<BoundedVec<Entity<T::EntityId>, T::BoundedDataLen>, RbacError> {
-            Ok(<RoleStore<T>>::get(owner))
+        fn get_roles(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
+            Ok(<RoleStore<T>>::get(owner).into())
         }
 
         fn create_role(

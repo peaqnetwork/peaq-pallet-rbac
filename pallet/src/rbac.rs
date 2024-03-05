@@ -1,5 +1,4 @@
 use crate::structs::*;
-use sp_runtime::BoundedVec;
 use sp_std::vec::Vec;
 
 use crate::error::RbacError;
@@ -104,9 +103,7 @@ pub trait Rbac<AccountId, EntityId> {
 pub trait Role<AccountId, EntityId, BoundedDataLen> {
     fn get_role(owner: &AccountId, role_id: EntityId) -> Result<Entity<EntityId>, RbacError>;
 
-    fn get_roles(
-        owner: &AccountId,
-    ) -> Result<BoundedVec<Entity<EntityId>, BoundedDataLen>, RbacError>;
+    fn get_roles(owner: &AccountId) -> Result<Vec<Entity<EntityId>>, RbacError>;
 
     fn create_role(owner: &AccountId, role_id: EntityId, name: &[u8]) -> Result<(), RbacError>;
 
