@@ -32,7 +32,6 @@ pub mod pallet {
     use codec::{Encode, MaxEncodedLen};
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use sp_core::bounded_vec;
     use sp_io::hashing::blake2_256;
     use sp_std::fmt::Debug;
     use sp_std::{vec, vec::Vec};
@@ -914,7 +913,8 @@ pub mod pallet {
                 return RbacError::err(EntityDoesNotExist, &role_id);
             }
 
-            let mut roles: BoundedVec<Role2User<T::EntityId>, T::BoundedDataLen> = bounded_vec![];
+            let mut roles: BoundedVec<Role2User<T::EntityId>, T::BoundedDataLen> =
+                BoundedVec::new();
 
             let new_assign = Role2User {
                 role: role_id,
@@ -1000,7 +1000,8 @@ pub mod pallet {
                 return RbacError::err(EntityDoesNotExist, &group_id);
             }
 
-            let mut roles: BoundedVec<Role2Group<T::EntityId>, T::BoundedDataLen> = bounded_vec![];
+            let mut roles: BoundedVec<Role2Group<T::EntityId>, T::BoundedDataLen> =
+                BoundedVec::new();
 
             let new_assign = Role2Group {
                 role: role_id,
@@ -1078,7 +1079,8 @@ pub mod pallet {
                 return RbacError::err(EntityDoesNotExist, &group_id);
             }
 
-            let mut groups: BoundedVec<User2Group<T::EntityId>, T::BoundedDataLen> = bounded_vec![];
+            let mut groups: BoundedVec<User2Group<T::EntityId>, T::BoundedDataLen> =
+                BoundedVec::new();
 
             let new_assign = User2Group {
                 user: user_id,
@@ -1165,7 +1167,7 @@ pub mod pallet {
             }
 
             let mut permissions: BoundedVec<Permission2Role<T::EntityId>, T::BoundedDataLen> =
-                bounded_vec![];
+                BoundedVec::new();
 
             let new_assign = Permission2Role {
                 permission: permission_id,
@@ -1267,7 +1269,7 @@ pub mod pallet {
                 return RbacError::err(EntityAlreadyExist, &role_id);
             }
 
-            let mut roles: BoundedVec<Entity<T::EntityId>, T::BoundedDataLen> = bounded_vec![];
+            let mut roles: BoundedVec<Entity<T::EntityId>, T::BoundedDataLen> = BoundedVec::new();
 
             let new_role = Entity {
                 id: role_id,
@@ -1377,7 +1379,7 @@ pub mod pallet {
             };
 
             let mut permissions: BoundedVec<Entity<T::EntityId>, T::BoundedDataLen> =
-                bounded_vec![];
+                BoundedVec::new();
 
             // Check if this account already had permissions
             if <PermissionStore<T>>::contains_key(owner) {
@@ -1480,7 +1482,7 @@ pub mod pallet {
                 enabled: true,
             };
 
-            let mut groups: BoundedVec<Entity<T::EntityId>, T::BoundedDataLen> = bounded_vec![];
+            let mut groups: BoundedVec<Entity<T::EntityId>, T::BoundedDataLen> = BoundedVec::new();
 
             // Check if this account already had groups
             if <GroupStore<T>>::contains_key(owner) {
