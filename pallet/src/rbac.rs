@@ -100,7 +100,7 @@ pub trait Rbac<AccountId, EntityId> {
     ) -> Result<(), RbacError>;
 }
 
-pub trait Role<AccountId, EntityId> {
+pub trait Role<AccountId, EntityId, BoundedDataLen> {
     fn get_role(owner: &AccountId, role_id: EntityId) -> Result<Entity<EntityId>, RbacError>;
 
     fn get_roles(owner: &AccountId) -> Result<Vec<Entity<EntityId>>, RbacError>;

@@ -2,8 +2,9 @@ use super::*;
 
 use frame_support::{
     dispatch::GetStorageVersion, pallet_prelude::StorageVersion, traits::Get, weights::Weight,
+    BoundedVec,
 };
-use sp_std::vec::Vec;
+
 use structs::*;
 
 pub(crate) fn on_runtime_upgrade<T: Config>() -> Weight {
@@ -29,8 +30,11 @@ impl<T: Config> MigrateToV1x<T> {
 
             // TODO repetitive translation logic with different types, reduce this with a macro
             // translate all vec to sorted vec
-            Role2UserStore::<T>::translate_values::<Vec<Role2User<T::EntityId>>, _>(
-                |val: Vec<Role2User<T::EntityId>>| {
+            Role2UserStore::<T>::translate_values::<
+                BoundedVec<Role2User<T::EntityId>, T::BoundedDataLen>,
+                _,
+            >(
+                |val: BoundedVec<Role2User<T::EntityId>, T::BoundedDataLen>| {
                     let mut sorted_val = val.clone();
                     sorted_val.sort();
                     weight += 1;
@@ -39,8 +43,11 @@ impl<T: Config> MigrateToV1x<T> {
             );
 
             // translate all vec to sorted vec
-            Role2GroupStore::<T>::translate_values::<Vec<Role2Group<T::EntityId>>, _>(
-                |val: Vec<Role2Group<T::EntityId>>| {
+            Role2GroupStore::<T>::translate_values::<
+                BoundedVec<Role2Group<T::EntityId>, T::BoundedDataLen>,
+                _,
+            >(
+                |val: BoundedVec<Role2Group<T::EntityId>, T::BoundedDataLen>| {
                     let mut sorted_val = val.clone();
                     sorted_val.sort();
                     weight += 1;
@@ -49,8 +56,11 @@ impl<T: Config> MigrateToV1x<T> {
             );
 
             // translate all vec to sorted vec
-            User2GroupStore::<T>::translate_values::<Vec<User2Group<T::EntityId>>, _>(
-                |val: Vec<User2Group<T::EntityId>>| {
+            User2GroupStore::<T>::translate_values::<
+                BoundedVec<User2Group<T::EntityId>, T::BoundedDataLen>,
+                _,
+            >(
+                |val: BoundedVec<User2Group<T::EntityId>, T::BoundedDataLen>| {
                     let mut sorted_val = val.clone();
                     sorted_val.sort();
                     weight += 1;
@@ -59,8 +69,11 @@ impl<T: Config> MigrateToV1x<T> {
             );
 
             // translate all vec to sorted vec
-            Permission2RoleStore::<T>::translate_values::<Vec<Permission2Role<T::EntityId>>, _>(
-                |val: Vec<Permission2Role<T::EntityId>>| {
+            Permission2RoleStore::<T>::translate_values::<
+                BoundedVec<Permission2Role<T::EntityId>, T::BoundedDataLen>,
+                _,
+            >(
+                |val: BoundedVec<Permission2Role<T::EntityId>, T::BoundedDataLen>| {
                     let mut sorted_val = val.clone();
                     sorted_val.sort();
                     weight += 1;

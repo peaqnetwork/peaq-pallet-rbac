@@ -38,14 +38,7 @@ pub mod pallet {
 
     use super::WeightInfo;
     use crate::{
-        error::{
-            RbacError,
-            RbacErrorType::{
-                AssignmentAlreadyExist, AssignmentDoesNotExist, EntityAlreadyExist,
-                EntityAuthorizationFailed, EntityDisabled, EntityDoesNotExist, NameExceedMaxChar,
-            },
-            Result,
-        },
+        error::{RbacError, RbacErrorType::*, Result},
         migrations,
         rbac::{Group, Permission, Rbac, RbacKeyType, Role, Tag},
         structs::{Entity, Permission2Role, Role2Group, Role2User, User2Group},
@@ -97,6 +90,8 @@ pub mod pallet {
             + Copy
             + MaxEncodedLen
             + Default;
+        #[pallet::constant]
+        type BoundedDataLen: Get<u32>;
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -105,38 +100,73 @@ pub mod pallet {
     // https://docs.substrate.io/main-docs/build/runtime-storage/
     #[pallet::storage]
     #[pallet::getter(fn role_of)]
-    pub type RoleStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, Vec<Entity<T::EntityId>>, ValueQuery>;
+    pub type RoleStore<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        T::AccountId,
+        BoundedVec<Entity<T::EntityId>, T::BoundedDataLen>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn role_to_user_of)]
-    pub type Role2UserStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, RbacKeyType, Vec<Role2User<T::EntityId>>, ValueQuery>;
+    pub type Role2UserStore<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        RbacKeyType,
+        BoundedVec<Role2User<T::EntityId>, T::BoundedDataLen>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn permission_of)]
-    pub type PermissionStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, Vec<Entity<T::EntityId>>, ValueQuery>;
+    pub type PermissionStore<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        T::AccountId,
+        BoundedVec<Entity<T::EntityId>, T::BoundedDataLen>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn permission_to_role_of)]
-    pub type Permission2RoleStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, RbacKeyType, Vec<Permission2Role<T::EntityId>>, ValueQuery>;
+    pub type Permission2RoleStore<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        RbacKeyType,
+        BoundedVec<Permission2Role<T::EntityId>, T::BoundedDataLen>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn group_of)]
-    pub type GroupStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, Vec<Entity<T::EntityId>>, ValueQuery>;
+    pub type GroupStore<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        T::AccountId,
+        BoundedVec<Entity<T::EntityId>, T::BoundedDataLen>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn role_to_group_of)]
-    pub type Role2GroupStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, RbacKeyType, Vec<Role2Group<T::EntityId>>, ValueQuery>;
+    pub type Role2GroupStore<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        RbacKeyType,
+        BoundedVec<Role2Group<T::EntityId>, T::BoundedDataLen>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn user_to_group_of)]
-    pub type User2GroupStore<T: Config> =
-        StorageMap<_, Blake2_128Concat, RbacKeyType, Vec<User2Group<T::EntityId>>, ValueQuery>;
+    pub type User2GroupStore<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        RbacKeyType,
+        BoundedVec<User2Group<T::EntityId>, T::BoundedDataLen>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn keys_lookup_of)]
@@ -215,6 +245,8 @@ pub mod pallet {
         AssignmentAlreadyExist,
         /// Returned if assignment does not exist
         AssignmentDoesNotExist,
+        /// Exceeds BoundedLen bounds
+        StorageExceedsMaxBounds,
     }
 
     #[pallet::hooks]
@@ -234,6 +266,7 @@ pub mod pallet {
                 EntityDisabled => Err(Error::<T>::EntityDisabled.into()),
                 AssignmentAlreadyExist => Err(Error::<T>::AssignmentAlreadyExist.into()),
                 AssignmentDoesNotExist => Err(Error::<T>::AssignmentDoesNotExist.into()),
+                StorageExceedsMaxBounds => Err(Error::<T>::StorageExceedsMaxBounds.into()),
             }
         }
     }
@@ -729,7 +762,7 @@ pub mod pallet {
             let key = Self::generate_key(owner, &user_id, Tag::Role2User);
 
             if <Role2UserStore<T>>::contains_key(key) {
-                Ok(Self::role_to_user_of(key))
+                Ok(Self::role_to_user_of(key).into())
             } else {
                 RbacError::err(AssignmentDoesNotExist, &user_id)
             }
@@ -743,7 +776,7 @@ pub mod pallet {
             let key = Self::generate_key(owner, &user_id, Tag::User2Group);
 
             if <User2GroupStore<T>>::contains_key(key) {
-                Ok(Self::user_to_group_of(key))
+                Ok(Self::user_to_group_of(key).into())
             } else {
                 RbacError::err(AssignmentDoesNotExist, &user_id)
             }
@@ -757,7 +790,7 @@ pub mod pallet {
             let key = Self::generate_key(owner, &group_id, Tag::Role2Group);
 
             if <Role2GroupStore<T>>::contains_key(key) {
-                Ok(Self::role_to_group_of(key))
+                Ok(Self::role_to_group_of(key).into())
             } else {
                 RbacError::err(AssignmentDoesNotExist, &group_id)
             }
@@ -771,7 +804,7 @@ pub mod pallet {
             let key = Self::generate_key(owner, &role_id, Tag::Permission2Role);
 
             if <Permission2RoleStore<T>>::contains_key(key) {
-                Ok(Self::permission_to_role_of(key))
+                Ok(Self::permission_to_role_of(key).into())
             } else {
                 RbacError::err(AssignmentDoesNotExist, &role_id)
             }
@@ -880,7 +913,8 @@ pub mod pallet {
                 return RbacError::err(EntityDoesNotExist, &role_id);
             }
 
-            let mut roles: Vec<Role2User<T::EntityId>> = vec![];
+            let mut roles: BoundedVec<Role2User<T::EntityId>, T::BoundedDataLen> =
+                BoundedVec::new();
 
             let new_assign = Role2User {
                 role: role_id,
@@ -889,18 +923,19 @@ pub mod pallet {
 
             // Check if role has already been assigned to user
             if <Role2UserStore<T>>::contains_key(role_2_user_key) {
-                let mut val = <Role2UserStore<T>>::get(role_2_user_key);
+                roles = <Role2UserStore<T>>::get(role_2_user_key);
 
-                if val.contains(&new_assign) {
+                if roles.contains(&new_assign) {
                     return RbacError::err(AssignmentAlreadyExist, &user_id);
                 }
-
-                roles.append(&mut val);
             }
-            let idx = roles.partition_point(|x| x < &new_assign);
-            roles.insert(idx, new_assign);
 
-            <Role2UserStore<T>>::insert(role_2_user_key, roles);
+            let idx = roles.partition_point(|x| x < &new_assign);
+
+            match roles.try_insert(idx, new_assign.clone()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(()) => <Role2UserStore<T>>::insert(role_2_user_key, roles),
+            }
 
             Ok(())
         }
@@ -965,7 +1000,8 @@ pub mod pallet {
                 return RbacError::err(EntityDoesNotExist, &group_id);
             }
 
-            let mut roles: Vec<Role2Group<T::EntityId>> = vec![];
+            let mut roles: BoundedVec<Role2Group<T::EntityId>, T::BoundedDataLen> =
+                BoundedVec::new();
 
             let new_assign = Role2Group {
                 role: role_id,
@@ -974,18 +1010,19 @@ pub mod pallet {
 
             // Check if role has already been assigned to group
             if <Role2GroupStore<T>>::contains_key(role_2_group_key) {
-                let mut val = <Role2GroupStore<T>>::get(role_2_group_key);
+                roles = <Role2GroupStore<T>>::get(role_2_group_key);
 
-                if val.contains(&new_assign) {
+                if roles.contains(&new_assign) {
                     return RbacError::err(AssignmentAlreadyExist, &group_id);
                 }
-
-                roles.append(&mut val);
             }
-            let idx = roles.partition_point(|x| x < &new_assign);
-            roles.insert(idx, new_assign);
 
-            <Role2GroupStore<T>>::insert(role_2_group_key, roles);
+            let idx = roles.partition_point(|x| x < &new_assign);
+
+            match roles.try_insert(idx, new_assign.clone()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(()) => <Role2GroupStore<T>>::insert(role_2_group_key, roles),
+            }
 
             Ok(())
         }
@@ -1042,7 +1079,8 @@ pub mod pallet {
                 return RbacError::err(EntityDoesNotExist, &group_id);
             }
 
-            let mut groups: Vec<User2Group<T::EntityId>> = vec![];
+            let mut groups: BoundedVec<User2Group<T::EntityId>, T::BoundedDataLen> =
+                BoundedVec::new();
 
             let new_assign = User2Group {
                 user: user_id,
@@ -1051,18 +1089,19 @@ pub mod pallet {
 
             // Check if role has already been assigned to group
             if <User2GroupStore<T>>::contains_key(user_2_group_key) {
-                let mut val = <User2GroupStore<T>>::get(user_2_group_key);
+                groups = <User2GroupStore<T>>::get(user_2_group_key);
 
-                if val.contains(&new_assign) {
+                if groups.contains(&new_assign) {
                     return RbacError::err(AssignmentAlreadyExist, &group_id);
                 }
-
-                groups.append(&mut val);
             }
-            let idx = groups.partition_point(|x| x < &new_assign);
-            groups.insert(idx, new_assign);
 
-            <User2GroupStore<T>>::insert(user_2_group_key, groups);
+            let idx = groups.partition_point(|x| x < &new_assign);
+
+            match groups.try_insert(idx, new_assign) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(()) => <User2GroupStore<T>>::insert(user_2_group_key, groups),
+            }
 
             Ok(())
         }
@@ -1127,7 +1166,8 @@ pub mod pallet {
                 return RbacError::err(EntityDoesNotExist, &permission_id);
             }
 
-            let mut permissions: Vec<Permission2Role<T::EntityId>> = vec![];
+            let mut permissions: BoundedVec<Permission2Role<T::EntityId>, T::BoundedDataLen> =
+                BoundedVec::new();
 
             let new_assign = Permission2Role {
                 permission: permission_id,
@@ -1136,18 +1176,19 @@ pub mod pallet {
 
             // Check if permission has already been assigned to role
             if <Permission2RoleStore<T>>::contains_key(permission_2_role_key) {
-                let mut val = <Permission2RoleStore<T>>::get(permission_2_role_key);
+                permissions = <Permission2RoleStore<T>>::get(permission_2_role_key);
 
-                if val.contains(&new_assign) {
+                if permissions.contains(&new_assign) {
                     return RbacError::err(AssignmentAlreadyExist, &role_id);
                 }
-
-                permissions.append(&mut val);
             }
-            let idx = permissions.partition_point(|x| x < &new_assign);
-            permissions.insert(idx, new_assign);
 
-            <Permission2RoleStore<T>>::insert(permission_2_role_key, permissions);
+            let idx = permissions.partition_point(|x| x < &new_assign);
+
+            match permissions.try_insert(idx, new_assign.clone()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(()) => <Permission2RoleStore<T>>::insert(permission_2_role_key, permissions),
+            }
 
             Ok(())
         }
@@ -1203,7 +1244,7 @@ pub mod pallet {
     }
 
     // implement the role Entity trait to satify the methods
-    impl<T: Config> Role<T::AccountId, T::EntityId> for Pallet<T> {
+    impl<T: Config> Role<T::AccountId, T::EntityId, T::BoundedDataLen> for Pallet<T> {
         fn get_role(
             owner: &T::AccountId,
             role_id: T::EntityId,
@@ -1212,7 +1253,7 @@ pub mod pallet {
         }
 
         fn get_roles(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
-            Ok(<RoleStore<T>>::get(owner))
+            Ok(<RoleStore<T>>::get(owner).into())
         }
 
         fn create_role(
@@ -1228,7 +1269,7 @@ pub mod pallet {
                 return RbacError::err(EntityAlreadyExist, &role_id);
             }
 
-            let mut roles: Vec<Entity<T::EntityId>> = vec![];
+            let mut roles: BoundedVec<Entity<T::EntityId>, T::BoundedDataLen> = BoundedVec::new();
 
             let new_role = Entity {
                 id: role_id,
@@ -1238,13 +1279,16 @@ pub mod pallet {
 
             // Check if this account already had roles
             if <RoleStore<T>>::contains_key(owner) {
-                let mut val = <RoleStore<T>>::get(owner);
-                roles.append(&mut val);
+                roles = <RoleStore<T>>::get(owner);
             }
-            roles.push(new_role.clone());
 
-            <RoleStore<T>>::insert(owner, roles);
-            <KeysLookUpStore<T>>::insert(key, new_role);
+            match roles.try_push(new_role.clone()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(()) => {
+                    <RoleStore<T>>::insert(owner, roles);
+                    <KeysLookUpStore<T>>::insert(key, new_role);
+                }
+            }
 
             Ok(())
         }
@@ -1312,7 +1356,7 @@ pub mod pallet {
         }
 
         fn get_permissions(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
-            Ok(<PermissionStore<T>>::get(owner))
+            Ok(<PermissionStore<T>>::get(owner).into())
         }
 
         fn create_permission(
@@ -1334,17 +1378,21 @@ pub mod pallet {
                 enabled: true,
             };
 
-            let mut permissions: Vec<Entity<T::EntityId>> = vec![];
+            let mut permissions: BoundedVec<Entity<T::EntityId>, T::BoundedDataLen> =
+                BoundedVec::new();
 
             // Check if this account already had permissions
             if <PermissionStore<T>>::contains_key(owner) {
-                let mut val = <PermissionStore<T>>::get(owner);
-                permissions.append(&mut val);
+                permissions = <PermissionStore<T>>::get(owner);
             }
-            permissions.push(new_permission.clone());
 
-            <PermissionStore<T>>::insert(owner, permissions);
-            <KeysLookUpStore<T>>::insert(key, new_permission);
+            match permissions.try_push(new_permission.clone()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(()) => {
+                    <PermissionStore<T>>::insert(owner, permissions);
+                    <KeysLookUpStore<T>>::insert(key, new_permission);
+                }
+            }
 
             Ok(())
         }
@@ -1412,7 +1460,7 @@ pub mod pallet {
         }
 
         fn get_groups(owner: &T::AccountId) -> Result<Vec<Entity<T::EntityId>>, RbacError> {
-            Ok(<GroupStore<T>>::get(owner))
+            Ok(<GroupStore<T>>::get(owner).into())
         }
 
         fn create_group(
@@ -1434,17 +1482,20 @@ pub mod pallet {
                 enabled: true,
             };
 
-            let mut groups: Vec<Entity<T::EntityId>> = vec![];
+            let mut groups: BoundedVec<Entity<T::EntityId>, T::BoundedDataLen> = BoundedVec::new();
 
             // Check if this account already had groups
             if <GroupStore<T>>::contains_key(owner) {
-                let mut val = <GroupStore<T>>::get(owner);
-                groups.append(&mut val);
+                groups = <GroupStore<T>>::get(owner);
             }
-            groups.push(new_group.clone());
 
-            <GroupStore<T>>::insert(owner, groups);
-            <KeysLookUpStore<T>>::insert(key, new_group);
+            match groups.try_push(new_group.clone()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(()) => {
+                    <GroupStore<T>>::insert(owner, groups);
+                    <KeysLookUpStore<T>>::insert(key, new_group);
+                }
+            }
 
             Ok(())
         }

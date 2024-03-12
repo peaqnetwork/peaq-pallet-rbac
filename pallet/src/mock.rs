@@ -58,6 +58,7 @@ impl system::Config for Test {
 
 parameter_types! {
     pub const MinimumPeriod: u64 = 5;
+    pub const BoundedDataLen: u32 = 256;
 }
 
 impl pallet_timestamp::Config for Test {
@@ -70,6 +71,7 @@ impl pallet_timestamp::Config for Test {
 impl peaq_rbac::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type EntityId = [u8; 32];
+    type BoundedDataLen = BoundedDataLen;
     type WeightInfo = peaq_rbac::weights::WeightInfo<Test>;
 }
 
