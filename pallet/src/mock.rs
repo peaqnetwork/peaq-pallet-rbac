@@ -10,7 +10,7 @@ use sp_runtime::{
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
-
+pub(crate) type Balance = u128;
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
     pub enum Test where
@@ -20,6 +20,7 @@ frame_support::construct_runtime!(
     {
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
         Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
         PeaqRBAC: peaq_rbac::{Pallet, Call, Storage, Event<T>},
     }
 );
@@ -47,13 +48,34 @@ impl system::Config for Test {
     type BlockHashCount = BlockHashCount;
     type Version = ();
     type PalletInfo = PalletInfo;
-    type AccountData = ();
+    type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
     type SS58Prefix = SS58Prefix;
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+}
+
+parameter_types! {
+    pub const MaxLocks: u32 = 4;
+    pub const ExistentialDeposit: Balance = 1;
+}
+
+impl pallet_balances::Config for Test {
+    type MaxLocks = MaxLocks;
+    type MaxReserves = ();
+    type ReserveIdentifier = [u8; 8];
+    type Balance = Balance;
+    type RuntimeEvent = RuntimeEvent;
+    type DustRemoval = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type WeightInfo = ();
+    type FreezeIdentifier = ();
+    type MaxHolds = ();
+    type HoldIdentifier = ();
+    type MaxFreezes = ();
 }
 
 parameter_types! {
@@ -68,11 +90,17 @@ impl pallet_timestamp::Config for Test {
     type WeightInfo = ();
 }
 
+parameter_types! {
+    pub const StorageDeposit: Balance = 1;
+
+}
 impl peaq_rbac::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type EntityId = [u8; 32];
     type BoundedDataLen = BoundedDataLen;
     type WeightInfo = peaq_rbac::weights::WeightInfo<Test>;
+    type StorageDeposit = StorageDeposit;
+    type Currency = Balances;
 }
 
 // Build genesis storage according to the mock runtime.

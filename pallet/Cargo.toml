@@ -76,6 +76,12 @@ optional = true
 version = "0.4.17"
 default-features = false
 
+[dependencies.pallet-balances]
+default-features = false
+git = "https://github.com/peaqnetwork/substrate"
+branch = "peaq-polkadot-v0.9.43"  # or the latest monthly
+
+
 [features]
 default = ["std"]
 std = [
@@ -91,6 +97,7 @@ std = [
     "sp-core/std",
 	"pallet-timestamp/std",
     "log/std",
+    "pallet-balances/std",
 ]
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]

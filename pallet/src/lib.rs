@@ -30,7 +30,10 @@ pub mod migrations;
 pub mod pallet {
 
     use codec::{Encode, MaxEncodedLen};
-    use frame_support::pallet_prelude::*;
+    use frame_support::{
+        pallet_prelude::*,
+        traits::{Currency, ReservableCurrency},
+    };
     use frame_system::pallet_prelude::*;
     use sp_io::hashing::blake2_256;
     use sp_std::fmt::Debug;
@@ -43,6 +46,9 @@ pub mod pallet {
         rbac::{Group, Permission, Rbac, RbacKeyType, Role, Tag},
         structs::{Entity, Permission2Role, Role2Group, Role2User, User2Group},
     };
+
+    pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+    pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 
     macro_rules! dpatch_dposit {
         ($res:expr, $event:expr) => {
@@ -94,6 +100,11 @@ pub mod pallet {
         type BoundedDataLen: Get<u32>;
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
+        /// Currency type for this pallet.
+        type Currency: ReservableCurrency<Self::AccountId>;
+        /// Storage deposit amount
+        #[pallet::constant]
+        type StorageDeposit: Get<BalanceOf<Self>>;
     }
 
     // The pallet's runtime storage items.
