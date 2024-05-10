@@ -179,9 +179,9 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// Event emitted when a role has been added. [who, roleId, roleName]
-        RoleAdded(T::AccountId, T::EntityId, Vec<u8>),
+        RoleAdded(T::AccountId, T::EntityId, BoundedVec<u8, T::BoundedDataLen>),
         /// Event emitted when a role has been updated. [who, roleId, roleName]
-        RoleUpdated(T::AccountId, T::EntityId, Vec<u8>),
+        RoleUpdated(T::AccountId, T::EntityId, BoundedVec<u8, T::BoundedDataLen>),
         /// Event emitted when a role has been added. [who, roleId]
         RoleRemoved(T::AccountId, T::EntityId),
         RoleFetched(Entity<T::EntityId>),
@@ -201,9 +201,9 @@ pub mod pallet {
         FetchedGroupPermissions(Vec<Entity<T::EntityId>>),
 
         /// Event emitted when a permission has been added. [who, permissionId, permissionName]
-        PermissionAdded(T::AccountId, T::EntityId, Vec<u8>),
+        PermissionAdded(T::AccountId, T::EntityId, BoundedVec<u8, T::BoundedDataLen>),
         /// Event emitted when a permission has been updated. [who, permissionId, permissionName]
-        PermissionUpdated(T::AccountId, T::EntityId, Vec<u8>),
+        PermissionUpdated(T::AccountId, T::EntityId, BoundedVec<u8, T::BoundedDataLen>),
         /// Event emitted when a permission has been disabled. [who, permissionId]
         PermissionDisabled(T::AccountId, T::EntityId),
         /// Event emitted when a permission has been assigned to role. [who, permissionId, roleId]
@@ -217,9 +217,9 @@ pub mod pallet {
         GroupFetched(Entity<T::EntityId>),
         AllGroupsFetched(Vec<Entity<T::EntityId>>),
         /// Event emitted when a group has been added. [who, groupId, roleName]
-        GroupAdded(T::AccountId, T::EntityId, Vec<u8>),
+        GroupAdded(T::AccountId, T::EntityId, BoundedVec<u8, T::BoundedDataLen>),
         /// Event emitted when a group has been updated. [who, groupId, roleName]
-        GroupUpdated(T::AccountId, T::EntityId, Vec<u8>),
+        GroupUpdated(T::AccountId, T::EntityId, BoundedVec<u8, T::BoundedDataLen>),
         /// Event emitted when a group has been disabled. [who, groupId]
         GroupDisabled(T::AccountId, T::EntityId),
         /// Event emitted when a user to group relationship has been added. [who, userId, groupId]
@@ -305,7 +305,7 @@ pub mod pallet {
         pub fn add_role(
             origin: OriginFor<T>,
             role_id: T::EntityId,
-            name: Vec<u8>,
+            name: BoundedVec<u8, T::BoundedDataLen>,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -324,7 +324,7 @@ pub mod pallet {
         pub fn update_role(
             origin: OriginFor<T>,
             role_id: T::EntityId,
-            name: Vec<u8>,
+            name: BoundedVec<u8, T::BoundedDataLen>,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -424,7 +424,7 @@ pub mod pallet {
         pub fn add_permission(
             origin: OriginFor<T>,
             permission_id: T::EntityId,
-            name: Vec<u8>,
+            name: BoundedVec<u8, T::BoundedDataLen>,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -443,7 +443,7 @@ pub mod pallet {
         pub fn update_permission(
             origin: OriginFor<T>,
             permission_id: T::EntityId,
-            name: Vec<u8>,
+            name: BoundedVec<u8, T::BoundedDataLen>,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -543,7 +543,7 @@ pub mod pallet {
         pub fn add_group(
             origin: OriginFor<T>,
             group_id: T::EntityId,
-            name: Vec<u8>,
+            name: BoundedVec<u8, T::BoundedDataLen>,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -562,7 +562,7 @@ pub mod pallet {
         pub fn update_group(
             origin: OriginFor<T>,
             group_id: T::EntityId,
-            name: Vec<u8>,
+            name: BoundedVec<u8, T::BoundedDataLen>,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
