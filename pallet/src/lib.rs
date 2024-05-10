@@ -104,7 +104,10 @@ pub mod pallet {
         type Currency: ReservableCurrency<Self::AccountId>;
         /// Storage deposit amount
         #[pallet::constant]
-        type StorageDeposit: Get<BalanceOf<Self>>;
+        type StorageDepositBase: Get<BalanceOf<Self>>;
+        /// Storage deposit amount
+        #[pallet::constant]
+        type StorageDepositPerByte: Get<BalanceOf<Self>>;
     }
 
     // The pallet's runtime storage items.

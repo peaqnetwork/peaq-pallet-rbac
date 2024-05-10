@@ -91,15 +91,16 @@ impl pallet_timestamp::Config for Test {
 }
 
 parameter_types! {
-    pub const StorageDeposit: Balance = 1;
-
+    pub const StorageDepositBase: Balance = 1000;
+    pub const StorageDepositPerByte: Balance = 1;
 }
 impl peaq_rbac::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type EntityId = [u8; 32];
     type BoundedDataLen = BoundedDataLen;
     type WeightInfo = peaq_rbac::weights::WeightInfo<Test>;
-    type StorageDeposit = StorageDeposit;
+    type StorageDepositBase = StorageDepositBase;
+    type StorageDepositPerByte = StorageDepositPerByte;
     type Currency = Balances;
 }
 
