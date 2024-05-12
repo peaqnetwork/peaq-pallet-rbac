@@ -29,6 +29,8 @@ pub mod migrations;
 #[frame_support::pallet]
 pub mod pallet {
 
+    pub(super) const MAX_NAME_SIZE: usize = 64;
+
     use codec::{Encode, MaxEncodedLen};
     use frame_support::{
         pallet_prelude::*,
@@ -36,6 +38,7 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
     use sp_io::hashing::blake2_256;
+    use sp_runtime::traits::Saturating;
     use sp_std::fmt::Debug;
     use sp_std::{vec, vec::Vec};
 
@@ -76,6 +79,12 @@ pub mod pallet {
 
     // current storage version
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
+    // Type of deposit user can be charged for
+    pub enum DepositType {
+        EntityCreation = 0,
+        Assignment = 1,
+    }
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -324,7 +333,10 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
-            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+            ensure!(
+                name.len() <= MAX_NAME_SIZE,
+                Error::<T>::EntityNameExceedMax64
+            );
 
             dpatch_dposit_par!(
                 Self::create_role(&sender, role_id, &name),
@@ -343,7 +355,10 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
-            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+            ensure!(
+                name.len() <= MAX_NAME_SIZE,
+                Error::<T>::EntityNameExceedMax64
+            );
 
             dpatch_dposit_par!(
                 Self::update_existing_role(&sender, role_id, &name),
@@ -443,7 +458,10 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
-            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+            ensure!(
+                name.len() <= MAX_NAME_SIZE,
+                Error::<T>::EntityNameExceedMax64
+            );
 
             dpatch_dposit_par!(
                 Self::create_permission(&sender, permission_id, &name),
@@ -462,7 +480,10 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
-            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+            ensure!(
+                name.len() <= MAX_NAME_SIZE,
+                Error::<T>::EntityNameExceedMax64
+            );
 
             dpatch_dposit_par!(
                 Self::update_existing_permission(&sender, permission_id, &name),
@@ -562,7 +583,10 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
-            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+            ensure!(
+                name.len() <= MAX_NAME_SIZE,
+                Error::<T>::EntityNameExceedMax64
+            );
 
             dpatch_dposit_par!(
                 Self::create_group(&sender, group_id, &name),
@@ -581,7 +605,10 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
-            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+            ensure!(
+                name.len() <= MAX_NAME_SIZE,
+                Error::<T>::EntityNameExceedMax64
+            );
 
             dpatch_dposit_par!(
                 Self::update_existing_group(&sender, group_id, &name),
@@ -1557,6 +1584,32 @@ pub mod pallet {
             if !val.is_empty() {
                 <GroupStore<T>>::mutate(owner, |v| *v = val);
             }
+            Ok(())
+        }
+    }
+    impl<T: Config> Pallet<T> {
+        pub fn entity_creation_deposit_amount() -> BalanceOf<T> {
+            let size = T::EntityId::max_encoded_len() + MAX_NAME_SIZE + 1;
+            let mut deposit =
+                T::StorageDepositPerByte::get().saturating_mul(BalanceOf::<T>::from(size as u32));
+            deposit.saturating_accrue(T::StorageDepositBase::get());
+            deposit
+        }
+
+        pub fn assignment_deposit_amount() -> BalanceOf<T> {
+            let size = T::EntityId::max_encoded_len();
+            let mut deposit =
+                T::StorageDepositPerByte::get().saturating_mul(BalanceOf::<T>::from(size as u32));
+            deposit.saturating_accrue(T::StorageDepositBase::get());
+            deposit
+        }
+
+        pub fn take_deposit(origin: &T::AccountId, deposit_type: &DepositType) -> DispatchResult {
+            let amount = match deposit_type {
+                DepositType::EntityCreation => Self::entity_creation_deposit_amount(),
+                DepositType::Assignment => Self::assignment_deposit_amount(),
+            };
+            T::Currency::reserve(origin, amount)?;
             Ok(())
         }
     }
