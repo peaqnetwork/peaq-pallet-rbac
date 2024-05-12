@@ -264,6 +264,9 @@ fn unassign_role_to_user_test() {
             user_id
         ));
 
+        let mut total_expected_deposit = expected_deposit(DepositType::EntityCreation)
+            + expected_deposit(DepositType::Assignment);
+
         // Test for removing role not owned by origin
         assert_noop!(
             PeaqRBAC::unassign_role_to_user(RuntimeOrigin::signed(origin2), role_id, user_id),
@@ -275,12 +278,15 @@ fn unassign_role_to_user_test() {
             role_id,
             user_id
         ));
+        total_expected_deposit -= expected_deposit(DepositType::Assignment);
 
         // Test for removing non-existing role
         assert_noop!(
             PeaqRBAC::unassign_role_to_user(RuntimeOrigin::signed(origin), role_id, user_id),
             Error::<Test>::AssignmentDoesNotExist
         );
+
+        verify_deposit(&origin, total_expected_deposit);
     });
 }
 
@@ -387,6 +393,8 @@ fn unassign_role_to_group_test() {
             role_id,
             group_id
         ));
+        let mut total_expected_deposit = expected_deposit(DepositType::EntityCreation) * 2
+            + expected_deposit(DepositType::Assignment);
 
         // Test for removing role not owned by origin
         assert_noop!(
@@ -399,12 +407,15 @@ fn unassign_role_to_group_test() {
             role_id,
             group_id
         ));
+        total_expected_deposit -= expected_deposit(DepositType::Assignment);
 
         // Test for removing non-existing role
         assert_noop!(
             PeaqRBAC::unassign_role_to_group(RuntimeOrigin::signed(origin), role_id, group_id),
             Error::<Test>::AssignmentDoesNotExist
         );
+
+        verify_deposit(&origin, total_expected_deposit);
     });
 }
 
@@ -710,6 +721,8 @@ fn unassign_permission_to_role_test() {
             permission_id,
             role_id
         ));
+        let mut total_expected_deposit = expected_deposit(DepositType::EntityCreation) * 2
+            + expected_deposit(DepositType::Assignment);
 
         // Test for removing permission not owned by origin
         assert_noop!(
@@ -726,6 +739,7 @@ fn unassign_permission_to_role_test() {
             permission_id,
             role_id,
         ));
+        total_expected_deposit -= expected_deposit(DepositType::Assignment);
 
         // Test for removing non-existing permission
         assert_noop!(
@@ -736,6 +750,8 @@ fn unassign_permission_to_role_test() {
             ),
             Error::<Test>::AssignmentDoesNotExist
         );
+
+        verify_deposit(&origin, total_expected_deposit);
     });
 }
 
@@ -1023,6 +1039,9 @@ fn unassign_user_to_group_test() {
             group_id
         ));
 
+        let mut total_expected_deposit = expected_deposit(DepositType::EntityCreation)
+            + expected_deposit(DepositType::Assignment);
+
         // Test for removing group not owned by origin
         assert_noop!(
             PeaqRBAC::unassign_user_to_group(RuntimeOrigin::signed(origin2), user_id, group_id),
@@ -1034,12 +1053,15 @@ fn unassign_user_to_group_test() {
             user_id,
             group_id
         ));
+        total_expected_deposit -= expected_deposit(DepositType::Assignment);
 
         // Test for removing non-existing group relationship
         assert_noop!(
             PeaqRBAC::unassign_user_to_group(RuntimeOrigin::signed(origin), user_id, group_id),
             Error::<Test>::AssignmentDoesNotExist
         );
+
+        verify_deposit(&origin, total_expected_deposit);
     });
 }
 

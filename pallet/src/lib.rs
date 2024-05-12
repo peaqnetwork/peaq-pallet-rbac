@@ -81,6 +81,7 @@ pub mod pallet {
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
     // Type of deposit user can be charged for
+    #[repr(u8)]
     pub enum DepositType {
         // For add_* extrinsics
         EntityCreation = 0,
@@ -424,6 +425,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
+            Self::return_deposit(&sender, &DepositType::Assignment);
+
             dpatch_dposit_par!(
                 Self::revoke_role_to_user(&sender, role_id, user_id),
                 Event::RoleUnassignedToUser(sender, role_id, user_id)
@@ -556,6 +559,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
+            Self::return_deposit(&sender, &DepositType::Assignment);
+
             dpatch_dposit_par!(
                 Self::revoke_permission_to_role(&sender, permission_id, role_id),
                 Event::PermissionUnassignedToRole(sender, permission_id, role_id)
@@ -668,6 +673,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
+            Self::return_deposit(&sender, &DepositType::Assignment);
+
             dpatch_dposit_par!(
                 Self::revoke_role_to_group(&sender, role_id, group_id),
                 Event::RoleUnassignedToGroup(sender, role_id, group_id)
@@ -716,6 +723,8 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
+
+            Self::return_deposit(&sender, &DepositType::Assignment);
 
             dpatch_dposit_par!(
                 Self::revoke_user_to_group(&sender, user_id, group_id),
