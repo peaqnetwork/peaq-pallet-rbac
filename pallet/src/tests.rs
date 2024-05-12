@@ -1,6 +1,30 @@
-use crate::{mock::*, Error};
+use crate::{mock::*, pallet::MAX_NAME_SIZE, Config, DepositType, Error};
 use frame_support::{assert_noop, assert_ok};
 use sp_runtime::BoundedVec;
+
+pub const ENTITY_SIZE: usize = 32 + MAX_NAME_SIZE + 1; // 32 bytes for type EntityId, 1 byte for entity type
+pub const ASSIGNMENT_SIZE: usize = 32 + 32; // 32 bytes for role id, 32 bytes for user id
+
+// calculate the exact expected deposit for a given deposit type
+fn expected_deposit(deposit_type: DepositType) -> Balance {
+    let mut deposit = match deposit_type {
+        DepositType::EntityCreation => {
+            DEPOSIT_PER_BYTE.saturating_mul(Balance::from(ENTITY_SIZE as u32))
+        }
+        DepositType::Assignment => {
+            DEPOSIT_PER_BYTE.saturating_mul(Balance::from(ASSIGNMENT_SIZE as u32))
+        }
+    };
+    deposit = deposit.saturating_add(DEPOSIT_BASE);
+    deposit
+}
+
+fn verify_deposit(sender: &AccountId, expected: Balance) {
+    assert_eq!(
+        <Test as Config>::Currency::reserved_balance(sender),
+        expected
+    );
+}
 
 #[test]
 fn add_role_test() {
@@ -28,6 +52,8 @@ fn add_role_test() {
             PeaqRBAC::add_role(RuntimeOrigin::signed(origin), role_id, BoundedVec::try_from(name.to_vec()).unwrap(),),
             Error::<Test>::EntityNameExceedMax64
         );
+
+        verify_deposit(&origin, expected_deposit(DepositType::EntityCreation));
     });
 }
 
@@ -206,6 +232,12 @@ fn assign_role_to_user_test() {
             PeaqRBAC::assign_role_to_user(RuntimeOrigin::signed(origin), role_id, user_id),
             Error::<Test>::EntityDoesNotExist
         );
+
+        verify_deposit(
+            &origin,
+            expected_deposit(DepositType::EntityCreation)
+                + expected_deposit(DepositType::Assignment),
+        );
     });
 }
 
@@ -263,7 +295,6 @@ fn assign_role_to_group_test() {
         let origin = account_key(acct);
         let origin2 = account_key(acct2);
         let name = b"ADMIN";
-
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
@@ -282,6 +313,9 @@ fn assign_role_to_group_test() {
             BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
+        let mut total_expected_deposit_origin = expected_deposit(DepositType::EntityCreation) * 2;
+        let total_expected_deposit_origin2 = expected_deposit(DepositType::EntityCreation);
+
         // Test for assigning role not owned by origin
         assert_noop!(
             PeaqRBAC::assign_role_to_group(RuntimeOrigin::signed(origin2), role_id, group_id),
@@ -299,6 +333,7 @@ fn assign_role_to_group_test() {
             role_id,
             group_id
         ));
+        total_expected_deposit_origin += expected_deposit(DepositType::Assignment);
 
         // Test for duplicate entry
         assert_noop!(
@@ -319,6 +354,8 @@ fn assign_role_to_group_test() {
             PeaqRBAC::assign_role_to_group(RuntimeOrigin::signed(origin), role_id, group_id),
             Error::<Test>::EntityDoesNotExist
         );
+        verify_deposit(&origin, total_expected_deposit_origin);
+        verify_deposit(&origin2, total_expected_deposit_origin2);
     });
 }
 
@@ -433,6 +470,9 @@ fn add_permission_test() {
             PeaqRBAC::add_permission(RuntimeOrigin::signed(origin), permission_id, BoundedVec::try_from(name.to_vec()).unwrap(),),
             Error::<Test>::EntityNameExceedMax64
         );
+
+        verify_deposit(&origin, expected_deposit(DepositType::EntityCreation));
+
     });
 }
 
@@ -597,6 +637,8 @@ fn assign_permission_to_role_test() {
             BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
+        let mut total_expected_deposit = expected_deposit(DepositType::EntityCreation) * 2;
+
         // Test for assigning permission not owned by origin
         assert_noop!(
             PeaqRBAC::assign_permission_to_role(
@@ -612,6 +654,7 @@ fn assign_permission_to_role_test() {
             permission_id,
             role_id
         ));
+        total_expected_deposit += expected_deposit(DepositType::Assignment);
 
         // Test for duplicate entry
         assert_noop!(
@@ -633,6 +676,8 @@ fn assign_permission_to_role_test() {
             ),
             Error::<Test>::EntityDoesNotExist
         );
+
+        verify_deposit(&origin, total_expected_deposit);
     });
 }
 
@@ -763,6 +808,9 @@ fn add_group_test() {
             PeaqRBAC::add_group(RuntimeOrigin::signed(origin), group_id, BoundedVec::try_from(name.to_vec()).unwrap(),),
             Error::<Test>::EntityNameExceedMax64
         );
+
+        verify_deposit(&origin, expected_deposit(DepositType::EntityCreation));
+
     });
 }
 
@@ -920,6 +968,7 @@ fn assign_user_to_group_test() {
             group_id,
             BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
+        let mut total_expected_deposit = expected_deposit(DepositType::EntityCreation);
 
         // Test for assigning group not owned by origin
         assert_noop!(
@@ -932,6 +981,7 @@ fn assign_user_to_group_test() {
             user_id,
             group_id
         ));
+        total_expected_deposit += expected_deposit(DepositType::Assignment);
 
         // Test for duplicate entry
         assert_noop!(
@@ -945,6 +995,8 @@ fn assign_user_to_group_test() {
             PeaqRBAC::assign_user_to_group(RuntimeOrigin::signed(origin), user_id, group_id),
             Error::<Test>::EntityDoesNotExist
         );
+
+        verify_deposit(&origin, total_expected_deposit);
     });
 }
 

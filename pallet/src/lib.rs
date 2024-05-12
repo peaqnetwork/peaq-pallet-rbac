@@ -82,7 +82,9 @@ pub mod pallet {
 
     // Type of deposit user can be charged for
     pub enum DepositType {
+        // For add_* extrinsics
         EntityCreation = 0,
+        // for assign_* extrinsics
         Assignment = 1,
     }
 
@@ -338,6 +340,8 @@ pub mod pallet {
                 Error::<T>::EntityNameExceedMax64
             );
 
+            Self::take_deposit(&sender, &DepositType::EntityCreation)?;
+
             dpatch_dposit_par!(
                 Self::create_role(&sender, role_id, &name),
                 Event::RoleAdded(sender, role_id, name)
@@ -402,6 +406,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
+            Self::take_deposit(&sender, &DepositType::Assignment)?;
+
             dpatch_dposit_par!(
                 Self::create_role_to_user(&sender, role_id, user_id),
                 Event::RoleAssignedToUser(sender, role_id, user_id)
@@ -462,6 +468,8 @@ pub mod pallet {
                 name.len() <= MAX_NAME_SIZE,
                 Error::<T>::EntityNameExceedMax64
             );
+
+            Self::take_deposit(&sender, &DepositType::EntityCreation)?;
 
             dpatch_dposit_par!(
                 Self::create_permission(&sender, permission_id, &name),
@@ -530,6 +538,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
+            Self::take_deposit(&sender, &DepositType::Assignment)?;
+
             dpatch_dposit_par!(
                 Self::create_permission_to_role(&sender, permission_id, role_id),
                 Event::PermissionAssigned(sender, permission_id, role_id)
@@ -588,6 +598,8 @@ pub mod pallet {
                 Error::<T>::EntityNameExceedMax64
             );
 
+            Self::take_deposit(&sender, &DepositType::EntityCreation)?;
+
             dpatch_dposit_par!(
                 Self::create_group(&sender, group_id, &name),
                 Event::GroupAdded(sender, group_id, name)
@@ -638,6 +650,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
+            Self::take_deposit(&sender, &DepositType::Assignment)?;
+
             dpatch_dposit_par!(
                 Self::create_role_to_group(&sender, role_id, group_id),
                 Event::RoleAssignedToGroup(sender, role_id, group_id)
@@ -684,6 +698,8 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
+
+            Self::take_deposit(&sender, &DepositType::Assignment)?;
 
             dpatch_dposit_par!(
                 Self::create_user_to_group(&sender, user_id, group_id),
@@ -1611,6 +1627,14 @@ pub mod pallet {
             };
             T::Currency::reserve(origin, amount)?;
             Ok(())
+        }
+
+        pub fn return_deposit(origin: &T::AccountId, deposit_type: &DepositType) {
+            let amount = match deposit_type {
+                DepositType::EntityCreation => Self::entity_creation_deposit_amount(),
+                DepositType::Assignment => Self::assignment_deposit_amount(),
+            };
+            T::Currency::unreserve(origin, amount);
         }
     }
 }

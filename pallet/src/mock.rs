@@ -11,6 +11,12 @@ use sp_runtime::{
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Balance = u128;
+pub(crate) type EntityId = [u8; 32];
+pub(crate) type AccountId = sr25519::Public;
+
+pub(crate) const DEPOSIT_BASE: Balance = 100;
+pub(crate) const DEPOSIT_PER_BYTE: Balance = 2;
+
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
     pub enum Test where
@@ -41,7 +47,7 @@ impl system::Config for Test {
     type BlockNumber = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
-    type AccountId = sr25519::Public;
+    type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type RuntimeEvent = RuntimeEvent;
@@ -91,12 +97,12 @@ impl pallet_timestamp::Config for Test {
 }
 
 parameter_types! {
-    pub const StorageDepositBase: Balance = 1000;
-    pub const StorageDepositPerByte: Balance = 1;
+    pub const StorageDepositBase: Balance = DEPOSIT_BASE;
+    pub const StorageDepositPerByte: Balance = DEPOSIT_PER_BYTE;
 }
 impl peaq_rbac::Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type EntityId = [u8; 32];
+    type EntityId = EntityId;
     type BoundedDataLen = BoundedDataLen;
     type WeightInfo = peaq_rbac::weights::WeightInfo<Test>;
     type StorageDepositBase = StorageDepositBase;
@@ -106,10 +112,24 @@ impl peaq_rbac::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    system::GenesisConfig::default()
+    let mut storage = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
-        .unwrap()
-        .into()
+        .unwrap();
+
+    // This will cause some initial issuance
+    pallet_balances::GenesisConfig::<Test> {
+        balances: vec![
+            (account_key("Iredia"), 1400000000000000000000000000),
+            (account_key("Iredia2"), 1400000000000000000000000000),
+            (account_key("FakeOrigin"), 1400000000000000000000000000),
+        ],
+    }
+    .assimilate_storage(&mut storage)
+    .ok();
+
+    let mut ext = sp_io::TestExternalities::from(storage);
+    ext.execute_with(|| System::set_block_number(1));
+    ext
 }
 
 pub fn account_key(s: &str) -> sr25519::Public {
