@@ -5,9 +5,9 @@ use super::*;
 #[allow(unused)]
 use crate::Pallet as RBAC;
 use frame_benchmarking::v1::{account, benchmarks, impl_benchmark_test_suite};
-use frame_support::BoundedVec;
+use frame_support::{BoundedVec, traits::Currency};
 use frame_system::{Pallet as System, RawOrigin};
-
+use sp_runtime::traits::Bounded;
 /// Assert that the last event equals the provided one.
 fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     System::<T>::assert_last_event(generic_event.into());
@@ -32,6 +32,7 @@ benchmarks! {
 
     add_role {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
     }: _(RawOrigin::Signed(caller.clone()), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())
     verify {
         assert_last_event::<T>(Event::<T>::RoleAdded(
@@ -43,6 +44,7 @@ benchmarks! {
 
     update_role {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
     }: _(RawOrigin::Signed(caller.clone()), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())
     verify {
@@ -55,6 +57,7 @@ benchmarks! {
 
     disable_role {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
     }: _(RawOrigin::Signed(caller.clone()), ROLE_ID.clone())
     verify {
@@ -66,17 +69,20 @@ benchmarks! {
 
     fetch_role {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
     }: _(RawOrigin::Signed(caller.clone()), caller.clone(), ROLE_ID.clone())
 
     fetch_roles {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID2.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
     }: _(RawOrigin::Signed(caller.clone()), caller.clone())
 
     assign_role_to_user {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
     }: _(RawOrigin::Signed(caller.clone()), ROLE_ID.clone(), USER_ID.clone())
     verify {
@@ -89,6 +95,7 @@ benchmarks! {
 
     unassign_role_to_user {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::assign_role_to_user(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), USER_ID.clone())?;
     }: _(RawOrigin::Signed(caller.clone()), ROLE_ID.clone(), USER_ID.clone())
@@ -102,6 +109,7 @@ benchmarks! {
 
     assign_role_to_group {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_group(RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
 
@@ -116,6 +124,7 @@ benchmarks! {
 
     unassign_role_to_group {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_group(RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::assign_role_to_group(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), GROUP_ID.clone())?;
@@ -131,11 +140,13 @@ benchmarks! {
     fetch_user_roles {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::assign_role_to_user(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), USER_ID.clone())?;
     }: _(RawOrigin::Signed(caller.clone()), caller.clone(), USER_ID.clone())
 
     add_permission {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
     }: _(RawOrigin::Signed(caller.clone()), PERMISSION_ID.clone(), BoundedVec::try_from(PERM_STR.to_vec()).unwrap())
     verify {
         assert_last_event::<T>(Event::<T>::PermissionAdded(
@@ -147,6 +158,7 @@ benchmarks! {
 
     update_permission {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_permission(
             RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone(), BoundedVec::try_from(PERM_STR.to_vec()).unwrap())?;
     }: _(RawOrigin::Signed(caller.clone()), PERMISSION_ID.clone(), BoundedVec::try_from(PERM_STR.to_vec()).unwrap())
@@ -160,6 +172,7 @@ benchmarks! {
 
     disable_permission {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_permission(
             RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone(), BoundedVec::try_from(PERM_STR.to_vec()).unwrap())?;
     }: _(RawOrigin::Signed(caller.clone()), PERMISSION_ID.clone())
@@ -172,12 +185,14 @@ benchmarks! {
 
     fetch_permission {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_permission(
             RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone(), BoundedVec::try_from(PERM_STR.to_vec()).unwrap())?;
     }: _(RawOrigin::Signed(caller.clone()), caller.clone(), PERMISSION_ID.clone())
 
     fetch_permissions {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_permission(
             RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone(), BoundedVec::try_from(PERM_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_permission(
@@ -186,6 +201,7 @@ benchmarks! {
 
     assign_permission_to_role {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_permission(
             RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
@@ -200,6 +216,7 @@ benchmarks! {
 
     unassign_permission_to_role {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_permission(
             RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
@@ -216,6 +233,7 @@ benchmarks! {
 
     fetch_role_permissions {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_permission(
             RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
@@ -225,6 +243,7 @@ benchmarks! {
 
     add_group {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
     }: _(RawOrigin::Signed(caller.clone()), GROUP_ID.clone(), BoundedVec::try_from(GROUP_STR.to_vec()).unwrap())
     verify {
         assert_last_event::<T>(Event::<T>::GroupAdded(
@@ -236,6 +255,7 @@ benchmarks! {
 
     update_group {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_group(
             RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(GROUP_STR.to_vec()).unwrap())?;
     }: _(RawOrigin::Signed(caller.clone()), GROUP_ID.clone(), BoundedVec::try_from(GROUP_STR.to_vec()).unwrap())
@@ -249,6 +269,7 @@ benchmarks! {
 
     disable_group {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_group(
             RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(GROUP_STR.to_vec()).unwrap())?;
     }: _(RawOrigin::Signed(caller.clone()), GROUP_ID.clone())
@@ -261,12 +282,14 @@ benchmarks! {
 
     fetch_group {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_group(
             RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(GROUP_STR.to_vec()).unwrap())?;
     }: _(RawOrigin::Signed(caller.clone()), caller.clone(), GROUP_ID.clone())
 
     fetch_groups {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_group(
             RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(GROUP_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_group(
@@ -275,6 +298,7 @@ benchmarks! {
 
     assign_user_to_group {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_group(RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(GROUP_STR.to_vec()).unwrap())?;
 
     }: _(RawOrigin::Signed(caller.clone()), USER_ID.clone(), GROUP_ID.clone())
@@ -288,6 +312,7 @@ benchmarks! {
 
     unassign_user_to_group {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_group(RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::assign_user_to_group(RawOrigin::Signed(caller.clone()).into(), USER_ID.clone(), GROUP_ID.clone())?;
     }: _(RawOrigin::Signed(caller.clone()), USER_ID.clone(), GROUP_ID.clone())
@@ -301,12 +326,14 @@ benchmarks! {
 
     fetch_user_groups {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_group(RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::assign_user_to_group(RawOrigin::Signed(caller.clone()).into(), USER_ID.clone(), GROUP_ID.clone())?;
     }: _(RawOrigin::Signed(caller.clone()), caller.clone(), USER_ID.clone())
 
     fetch_user_permissions {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_permission(RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_group(RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
@@ -318,6 +345,7 @@ benchmarks! {
 
     fetch_group_permissions {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_permission(RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_group(RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
@@ -328,6 +356,7 @@ benchmarks! {
 
     fetch_group_roles {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::add_group(RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::assign_role_to_group(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), GROUP_ID.clone())?;
@@ -335,8 +364,8 @@ benchmarks! {
 
     delete_role {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
-        RBAC::<T>::delete_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone())?;
     }: _(RawOrigin::Signed(caller.clone()), ROLE_ID.clone())
     verify {
         assert_last_event::<T>(Event::<T>::EntityDeleted(
@@ -347,9 +376,9 @@ benchmarks! {
 
     delete_permission {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_permission(
             RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone(), BoundedVec::try_from(PERM_STR.to_vec()).unwrap())?;
-        RBAC::<T>::delete_permission(RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone())?;
     }: _(RawOrigin::Signed(caller.clone()), PERMISSION_ID.clone())
     verify {
         assert_last_event::<T>(Event::<T>::EntityDeleted(
@@ -360,9 +389,9 @@ benchmarks! {
 
     delete_group {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
         RBAC::<T>::add_group(
             RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(GROUP_STR.to_vec()).unwrap())?;
-        RBAC::<T>::delete_group(RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone())?;
     }: _(RawOrigin::Signed(caller.clone()), GROUP_ID.clone())
     verify {
         assert_last_event::<T>(Event::<T>::EntityDeleted(
