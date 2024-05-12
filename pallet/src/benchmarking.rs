@@ -5,7 +5,7 @@ use super::*;
 #[allow(unused)]
 use crate::Pallet as RBAC;
 use frame_benchmarking::v1::{account, benchmarks, impl_benchmark_test_suite};
-use frame_support::{BoundedVec, traits::Currency};
+use frame_support::{traits::Currency, BoundedVec};
 use frame_system::{Pallet as System, RawOrigin};
 use sp_runtime::traits::Bounded;
 /// Assert that the last event equals the provided one.
