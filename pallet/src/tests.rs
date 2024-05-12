@@ -1,5 +1,6 @@
 use crate::{mock::*, Error};
 use frame_support::{assert_noop, assert_ok};
+use sp_runtime::BoundedVec;
 
 #[test]
 fn add_role_test() {
@@ -12,19 +13,19 @@ fn add_role_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for duplicate entry
         assert_noop!(
-            PeaqRBAC::add_role(RuntimeOrigin::signed(origin), role_id, name.to_vec(),),
+            PeaqRBAC::add_role(RuntimeOrigin::signed(origin), role_id, BoundedVec::try_from(name.to_vec()).unwrap(),),
             Error::<Test>::EntityAlreadyExist
         );
 
         // Test name more than 64 chars
         let name = b"ADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMINADMIN";
         assert_noop!(
-            PeaqRBAC::add_role(RuntimeOrigin::signed(origin), role_id, name.to_vec(),),
+            PeaqRBAC::add_role(RuntimeOrigin::signed(origin), role_id, BoundedVec::try_from(name.to_vec()).unwrap(),),
             Error::<Test>::EntityNameExceedMax64
         );
     });
@@ -43,26 +44,34 @@ fn update_role_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for updating role not owned by origin
         let name = b"CAN_UPDATE";
         assert_noop!(
-            PeaqRBAC::update_role(RuntimeOrigin::signed(origin2), role_id, name.to_vec()),
+            PeaqRBAC::update_role(
+                RuntimeOrigin::signed(origin2),
+                role_id,
+                BoundedVec::try_from(name.to_vec()).unwrap()
+            ),
             Error::<Test>::EntityDoesNotExist
         );
 
         assert_ok!(PeaqRBAC::update_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec()
+            BoundedVec::try_from(name.to_vec()).unwrap()
         ));
 
         // Test for removal of non-existing role
         let role_id = *b"22676474666576474646673646376638";
         assert_noop!(
-            PeaqRBAC::update_role(RuntimeOrigin::signed(origin), role_id, name.to_vec()),
+            PeaqRBAC::update_role(
+                RuntimeOrigin::signed(origin),
+                role_id,
+                BoundedVec::try_from(name.to_vec()).unwrap()
+            ),
             Error::<Test>::EntityDoesNotExist
         );
     });
@@ -81,7 +90,7 @@ fn disable_role_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for removal of role not owned by origin
@@ -114,7 +123,7 @@ fn fetch_role_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::fetch_role(
@@ -144,12 +153,12 @@ fn fetch_roles_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id2,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::fetch_roles(RuntimeOrigin::signed(origin), origin));
@@ -170,7 +179,7 @@ fn assign_role_to_user_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for assigning role not owned by origin
@@ -214,7 +223,7 @@ fn unassign_role_to_user_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::assign_role_to_user(
@@ -258,19 +267,19 @@ fn assign_role_to_group_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin2),
             group_id2,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for assigning role not owned by origin
@@ -327,13 +336,13 @@ fn unassign_role_to_group_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::assign_role_to_group(
@@ -374,7 +383,7 @@ fn fetch_user_roles_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::assign_role_to_user(
@@ -409,19 +418,19 @@ fn add_permission_test() {
         assert_ok!(PeaqRBAC::add_permission(
             RuntimeOrigin::signed(origin),
             permission_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for duplicate entry
         assert_noop!(
-            PeaqRBAC::add_permission(RuntimeOrigin::signed(origin), permission_id, name.to_vec(),),
+            PeaqRBAC::add_permission(RuntimeOrigin::signed(origin), permission_id, BoundedVec::try_from(name.to_vec()).unwrap(),),
             Error::<Test>::EntityAlreadyExist
         );
 
         // Test name more than 64 chars
         let name = b"CAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETECAN_DELETE";
         assert_noop!(
-            PeaqRBAC::add_permission(RuntimeOrigin::signed(origin), permission_id, name.to_vec(),),
+            PeaqRBAC::add_permission(RuntimeOrigin::signed(origin), permission_id, BoundedVec::try_from(name.to_vec()).unwrap(),),
             Error::<Test>::EntityNameExceedMax64
         );
     });
@@ -440,7 +449,7 @@ fn update_permission_test() {
         assert_ok!(PeaqRBAC::add_permission(
             RuntimeOrigin::signed(origin),
             permission_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for updating permission not owned by origin
@@ -449,7 +458,7 @@ fn update_permission_test() {
             PeaqRBAC::update_permission(
                 RuntimeOrigin::signed(origin2),
                 permission_id,
-                name.to_vec()
+                BoundedVec::try_from(name.to_vec()).unwrap()
             ),
             Error::<Test>::EntityDoesNotExist
         );
@@ -457,7 +466,7 @@ fn update_permission_test() {
         assert_ok!(PeaqRBAC::update_permission(
             RuntimeOrigin::signed(origin),
             permission_id,
-            name.to_vec()
+            BoundedVec::try_from(name.to_vec()).unwrap()
         ));
 
         // Test for removal of non-existing permission
@@ -466,7 +475,7 @@ fn update_permission_test() {
             PeaqRBAC::update_permission(
                 RuntimeOrigin::signed(origin),
                 permission_id,
-                name.to_vec()
+                BoundedVec::try_from(name.to_vec()).unwrap()
             ),
             Error::<Test>::EntityDoesNotExist
         );
@@ -486,7 +495,7 @@ fn disable_permission_test() {
         assert_ok!(PeaqRBAC::add_permission(
             RuntimeOrigin::signed(origin),
             permission_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for removal of permission not owned by origin
@@ -519,7 +528,7 @@ fn fetch_permission_test() {
         assert_ok!(PeaqRBAC::add_permission(
             RuntimeOrigin::signed(origin),
             permission_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::fetch_permission(
@@ -549,12 +558,12 @@ fn fetch_permissions_test() {
         assert_ok!(PeaqRBAC::add_permission(
             RuntimeOrigin::signed(origin),
             permission_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
         assert_ok!(PeaqRBAC::add_permission(
             RuntimeOrigin::signed(origin),
             permission_id2,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::fetch_permissions(
@@ -579,13 +588,13 @@ fn assign_permission_to_role_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            role_name.to_vec(),
+            BoundedVec::try_from(role_name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::add_permission(
             RuntimeOrigin::signed(origin),
             permission_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for assigning permission not owned by origin
@@ -642,13 +651,13 @@ fn unassign_permission_to_role_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            role_name.to_vec(),
+            BoundedVec::try_from(role_name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::add_permission(
             RuntimeOrigin::signed(origin),
             permission_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::assign_permission_to_role(
@@ -698,13 +707,13 @@ fn fetch_role_permissions_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            role_name.to_vec(),
+            BoundedVec::try_from(role_name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::add_permission(
             RuntimeOrigin::signed(origin),
             permission_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::assign_permission_to_role(
@@ -739,19 +748,19 @@ fn add_group_test() {
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for duplicate entry
         assert_noop!(
-            PeaqRBAC::add_group(RuntimeOrigin::signed(origin), group_id, name.to_vec(),),
+            PeaqRBAC::add_group(RuntimeOrigin::signed(origin), group_id, BoundedVec::try_from(name.to_vec()).unwrap(),),
             Error::<Test>::EntityAlreadyExist
         );
 
         // Test name more than 64 chars
         let name = b"UsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsersUsers";
         assert_noop!(
-            PeaqRBAC::add_group(RuntimeOrigin::signed(origin), group_id, name.to_vec(),),
+            PeaqRBAC::add_group(RuntimeOrigin::signed(origin), group_id, BoundedVec::try_from(name.to_vec()).unwrap(),),
             Error::<Test>::EntityNameExceedMax64
         );
     });
@@ -770,26 +779,34 @@ fn update_group_test() {
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for updating group not owned by origin
         let name = b"Admins";
         assert_noop!(
-            PeaqRBAC::update_group(RuntimeOrigin::signed(origin2), group_id, name.to_vec()),
+            PeaqRBAC::update_group(
+                RuntimeOrigin::signed(origin2),
+                group_id,
+                BoundedVec::try_from(name.to_vec()).unwrap()
+            ),
             Error::<Test>::EntityDoesNotExist
         );
 
         assert_ok!(PeaqRBAC::update_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec()
+            BoundedVec::try_from(name.to_vec()).unwrap()
         ));
 
         // Test for removal of non-existing group
         let group_id = *b"12663776474646673646665421676477";
         assert_noop!(
-            PeaqRBAC::update_group(RuntimeOrigin::signed(origin), group_id, name.to_vec()),
+            PeaqRBAC::update_group(
+                RuntimeOrigin::signed(origin),
+                group_id,
+                BoundedVec::try_from(name.to_vec()).unwrap()
+            ),
             Error::<Test>::EntityDoesNotExist
         );
     });
@@ -808,7 +825,7 @@ fn disable_group_test() {
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for removal of group not owned by origin
@@ -841,7 +858,7 @@ fn fetch_group_test() {
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::fetch_group(
@@ -871,13 +888,13 @@ fn fetch_groups_test() {
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id2,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::fetch_groups(
@@ -901,7 +918,7 @@ fn assign_user_to_group_test() {
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         // Test for assigning group not owned by origin
@@ -945,7 +962,7 @@ fn unassign_user_to_group_test() {
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::assign_user_to_group(
@@ -986,7 +1003,7 @@ fn fetch_user_groups_test() {
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::assign_user_to_group(
@@ -1024,19 +1041,19 @@ fn fetch_user_permissions_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::add_permission(
             RuntimeOrigin::signed(origin),
             permission_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::assign_user_to_group(
@@ -1078,19 +1095,19 @@ fn fetch_group_permissions_test() {
         assert_ok!(PeaqRBAC::add_role(
             RuntimeOrigin::signed(origin),
             role_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::add_permission(
             RuntimeOrigin::signed(origin),
             permission_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::add_group(
             RuntimeOrigin::signed(origin),
             group_id,
-            name.to_vec(),
+            BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
         assert_ok!(PeaqRBAC::assign_role_to_group(
