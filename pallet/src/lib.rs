@@ -782,6 +782,9 @@ pub mod pallet {
             )
         }
 
+        /// The following extrinsics are used to delete entities
+        /// This deletes the role and refunds its deposit
+        /// This however, doesnt delete assignments under that role or refund their deposits
         #[pallet::call_index(29)]
         #[pallet::weight(T::WeightInfo::delete_role())]
         pub fn delete_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
@@ -795,6 +798,8 @@ pub mod pallet {
             )
         }
 
+        /// This deletes the permission and refunds its deposit
+        /// This however, doesnt delete assignments under that permission or refund their deposits
         #[pallet::call_index(30)]
         #[pallet::weight(T::WeightInfo::delete_permission())]
         pub fn delete_permission(
@@ -811,6 +816,8 @@ pub mod pallet {
             )
         }
 
+        /// This deletes the group and refunds its deposit
+        /// This however, doesnt delete assignments under that group or refund their deposits
         #[pallet::call_index(31)]
         #[pallet::weight(T::WeightInfo::delete_group())]
         pub fn delete_group(origin: OriginFor<T>, group_id: T::EntityId) -> DispatchResult {

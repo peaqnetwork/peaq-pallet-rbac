@@ -1218,8 +1218,25 @@ fn delete_role_test() {
             BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
-        let expected_deposit = expected_deposit(DepositType::EntityCreation);
-        verify_deposit(&origin, expected_deposit);
+        // add group
+        let group_id = *b"46454667364666186637764721676477";
+        let name = b"Admin";
+        assert_ok!(PeaqRBAC::add_group(
+            RuntimeOrigin::signed(origin),
+            group_id,
+            BoundedVec::try_from(name.to_vec()).unwrap(),
+        ));
+
+        // assign role to group
+        assert_ok!(PeaqRBAC::assign_role_to_group(
+            RuntimeOrigin::signed(origin),
+            role_id,
+            group_id
+        ));
+
+        let mut total_expected_deposit = expected_deposit(DepositType::EntityCreation) * 2
+            + expected_deposit(DepositType::Assignment);
+        verify_deposit(&origin, total_expected_deposit);
 
         // delete nonexisting role
         let role_id2 = *b"46454667364666186637764721676477";
@@ -1241,6 +1258,7 @@ fn delete_role_test() {
             RuntimeOrigin::signed(origin),
             role_id
         ));
+        total_expected_deposit -= expected_deposit(DepositType::EntityCreation);
 
         // feth deleted role
         assert_noop!(
@@ -1254,7 +1272,15 @@ fn delete_role_test() {
             Error::<Test>::EntityDoesNotExist
         );
 
-        verify_deposit(&origin, 0);
+        // unassign role from group is ok
+        assert_ok!(PeaqRBAC::unassign_role_to_group(
+            RuntimeOrigin::signed(origin),
+            role_id,
+            group_id
+        ));
+        total_expected_deposit -= expected_deposit(DepositType::Assignment);
+
+        verify_deposit(&origin, total_expected_deposit);
     });
 }
 
@@ -1272,8 +1298,26 @@ fn delete_permission_test() {
             BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
-        let expected_deposit = expected_deposit(DepositType::EntityCreation);
-        verify_deposit(&origin, expected_deposit);
+        // add role
+        let role_id = *b"46454667364666186637764721676477";
+        let name = b"Admin";
+        assert_ok!(PeaqRBAC::add_role(
+            RuntimeOrigin::signed(origin),
+            role_id,
+            BoundedVec::try_from(name.to_vec()).unwrap(),
+        ));
+
+        // assign permission to role
+        assert_ok!(PeaqRBAC::assign_permission_to_role(
+            RuntimeOrigin::signed(origin),
+            permission_id,
+            role_id
+        ));
+
+        let mut total_expected_deposit = expected_deposit(DepositType::EntityCreation) * 2
+            + expected_deposit(DepositType::Assignment);
+
+        verify_deposit(&origin, total_expected_deposit);
 
         // delete nonexisting permission
         let permission_id2 = *b"46454667364666186637764721676477";
@@ -1295,6 +1339,7 @@ fn delete_permission_test() {
             RuntimeOrigin::signed(origin),
             permission_id
         ));
+        total_expected_deposit -= expected_deposit(DepositType::EntityCreation);
 
         // feth deleted permission
         assert_noop!(
@@ -1308,7 +1353,15 @@ fn delete_permission_test() {
             Error::<Test>::EntityDoesNotExist
         );
 
-        verify_deposit(&origin, 0);
+        // unassign permission from role is ok
+        assert_ok!(PeaqRBAC::unassign_permission_to_role(
+            RuntimeOrigin::signed(origin),
+            permission_id,
+            role_id
+        ));
+        total_expected_deposit -= expected_deposit(DepositType::Assignment);
+
+        verify_deposit(&origin, total_expected_deposit);
     });
 }
 
@@ -1326,8 +1379,25 @@ fn delete_group_test() {
             BoundedVec::try_from(name.to_vec()).unwrap(),
         ));
 
-        let expected_deposit = expected_deposit(DepositType::EntityCreation);
-        verify_deposit(&origin, expected_deposit);
+        // add role
+        let role_id = *b"46454667364666186637764721676477";
+        let name = b"Admin";
+        assert_ok!(PeaqRBAC::add_role(
+            RuntimeOrigin::signed(origin),
+            role_id,
+            BoundedVec::try_from(name.to_vec()).unwrap(),
+        ));
+
+        // assign role to group
+        assert_ok!(PeaqRBAC::assign_role_to_group(
+            RuntimeOrigin::signed(origin),
+            role_id,
+            group_id
+        ));
+
+        let mut total_expected_deposit = expected_deposit(DepositType::EntityCreation) * 2
+            + expected_deposit(DepositType::Assignment);
+        verify_deposit(&origin, total_expected_deposit);
 
         // delete nonexisting group
         let group_id2 = *b"46454667364666186637764721676477";
@@ -1355,6 +1425,7 @@ fn delete_group_test() {
             PeaqRBAC::fetch_group(RuntimeOrigin::signed(origin), origin, group_id),
             Error::<Test>::EntityDoesNotExist
         );
+        total_expected_deposit -= expected_deposit(DepositType::EntityCreation);
 
         // delete group that was previously deleted
         assert_noop!(
@@ -1362,6 +1433,14 @@ fn delete_group_test() {
             Error::<Test>::EntityDoesNotExist
         );
 
-        verify_deposit(&origin, 0);
+        // unassign role from group is ok
+        assert_ok!(PeaqRBAC::unassign_role_to_group(
+            RuntimeOrigin::signed(origin),
+            role_id,
+            group_id
+        ));
+        total_expected_deposit -= expected_deposit(DepositType::Assignment);
+
+        verify_deposit(&origin, total_expected_deposit);
     });
 }
