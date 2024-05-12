@@ -787,6 +787,8 @@ pub mod pallet {
         pub fn delete_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
+            Self::return_deposit(&sender, &DepositType::EntityCreation);
+
             dpatch_dposit_par!(
                 Self::delete_existing_role(&sender, role_id),
                 Event::EntityDeleted(sender, role_id)
@@ -801,6 +803,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
+            Self::return_deposit(&sender, &DepositType::EntityCreation);
+
             dpatch_dposit_par!(
                 Self::delete_existing_permission(&sender, permission_id),
                 Event::EntityDeleted(sender, permission_id)
@@ -811,6 +815,8 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::delete_group())]
         pub fn delete_group(origin: OriginFor<T>, group_id: T::EntityId) -> DispatchResult {
             let sender = ensure_signed(origin)?;
+
+            Self::return_deposit(&sender, &DepositType::EntityCreation);
 
             dpatch_dposit_par!(
                 Self::delete_existing_group(&sender, group_id),

@@ -1203,3 +1203,165 @@ fn fetch_group_permissions_test() {
         ));
     });
 }
+
+#[test]
+fn delete_role_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let origin = account_key(acct);
+        let role_id = *b"46454667364666186637764721676476";
+        let name = b"Admin";
+
+        assert_ok!(PeaqRBAC::add_role(
+            RuntimeOrigin::signed(origin),
+            role_id,
+            BoundedVec::try_from(name.to_vec()).unwrap(),
+        ));
+
+        let expected_deposit = expected_deposit(DepositType::EntityCreation);
+        verify_deposit(&origin, expected_deposit);
+
+        // delete nonexisting role
+        let role_id2 = *b"46454667364666186637764721676477";
+        assert_noop!(
+            PeaqRBAC::delete_role(RuntimeOrigin::signed(origin), role_id2),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        // delete role with incorrect owner
+        let acct2 = "Iredia2";
+        let origin2 = account_key(acct2);
+        assert_noop!(
+            PeaqRBAC::delete_role(RuntimeOrigin::signed(origin2), role_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        // correct deletion
+        assert_ok!(PeaqRBAC::delete_role(
+            RuntimeOrigin::signed(origin),
+            role_id
+        ));
+
+        // feth deleted role
+        assert_noop!(
+            PeaqRBAC::fetch_role(RuntimeOrigin::signed(origin), origin, role_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        // delete role that was previously deleted
+        assert_noop!(
+            PeaqRBAC::delete_role(RuntimeOrigin::signed(origin), role_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        verify_deposit(&origin, 0);
+    });
+}
+
+#[test]
+fn delete_permission_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let origin = account_key(acct);
+        let permission_id = *b"46454667364666186637764721676476";
+        let name = b"Admin";
+
+        assert_ok!(PeaqRBAC::add_permission(
+            RuntimeOrigin::signed(origin),
+            permission_id,
+            BoundedVec::try_from(name.to_vec()).unwrap(),
+        ));
+
+        let expected_deposit = expected_deposit(DepositType::EntityCreation);
+        verify_deposit(&origin, expected_deposit);
+
+        // delete nonexisting permission
+        let permission_id2 = *b"46454667364666186637764721676477";
+        assert_noop!(
+            PeaqRBAC::delete_permission(RuntimeOrigin::signed(origin), permission_id2),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        // delete permission with incorrect owner
+        let acct2 = "Iredia2";
+        let origin2 = account_key(acct2);
+        assert_noop!(
+            PeaqRBAC::delete_permission(RuntimeOrigin::signed(origin2), permission_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        // correct deletion
+        assert_ok!(PeaqRBAC::delete_permission(
+            RuntimeOrigin::signed(origin),
+            permission_id
+        ));
+
+        // feth deleted permission
+        assert_noop!(
+            PeaqRBAC::fetch_permission(RuntimeOrigin::signed(origin), origin, permission_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        // delete permission that was previously deleted
+        assert_noop!(
+            PeaqRBAC::delete_permission(RuntimeOrigin::signed(origin), permission_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        verify_deposit(&origin, 0);
+    });
+}
+
+#[test]
+fn delete_group_test() {
+    new_test_ext().execute_with(|| {
+        let acct = "Iredia";
+        let origin = account_key(acct);
+        let group_id = *b"46454667364666186637764721676476";
+        let name = b"Admin";
+
+        assert_ok!(PeaqRBAC::add_group(
+            RuntimeOrigin::signed(origin),
+            group_id,
+            BoundedVec::try_from(name.to_vec()).unwrap(),
+        ));
+
+        let expected_deposit = expected_deposit(DepositType::EntityCreation);
+        verify_deposit(&origin, expected_deposit);
+
+        // delete nonexisting group
+        let group_id2 = *b"46454667364666186637764721676477";
+        assert_noop!(
+            PeaqRBAC::delete_group(RuntimeOrigin::signed(origin), group_id2),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        // delete group with incorrect owner
+        let acct2 = "Iredia2";
+        let origin2 = account_key(acct2);
+        assert_noop!(
+            PeaqRBAC::delete_group(RuntimeOrigin::signed(origin2), group_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        // correct deletion
+        assert_ok!(PeaqRBAC::delete_group(
+            RuntimeOrigin::signed(origin),
+            group_id
+        ));
+
+        // feth deleted group
+        assert_noop!(
+            PeaqRBAC::fetch_group(RuntimeOrigin::signed(origin), origin, group_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        // delete group that was previously deleted
+        assert_noop!(
+            PeaqRBAC::delete_group(RuntimeOrigin::signed(origin), group_id),
+            Error::<Test>::EntityDoesNotExist
+        );
+
+        verify_deposit(&origin, 0);
+    });
+}
