@@ -1597,7 +1597,7 @@ pub mod pallet {
         }
 
         pub fn assignment_deposit_amount() -> BalanceOf<T> {
-            let size = T::EntityId::max_encoded_len();
+            let size = T::EntityId::max_encoded_len() * 2;
             let mut deposit =
                 T::StorageDepositPerByte::get().saturating_mul(BalanceOf::<T>::from(size as u32));
             deposit.saturating_accrue(T::StorageDepositBase::get());
