@@ -252,6 +252,8 @@ pub mod pallet {
         UserAssignedToGroup(T::AccountId, T::EntityId, T::EntityId),
         /// Event emitted when a user to group relationship has been removed. [who, userId, groupId]
         UserUnAssignedToGroup(T::AccountId, T::EntityId, T::EntityId),
+        /// Entity Deleted
+        EntityDeleted(T::AccountId, T::EntityId),
     }
 
     // Errors inform users that something went wrong.
@@ -273,6 +275,8 @@ pub mod pallet {
         AssignmentDoesNotExist,
         /// Exceeds BoundedLen bounds
         StorageExceedsMaxBounds,
+        /// Enity Deleted
+        EntityDeleted,
     }
 
     #[pallet::hooks]
@@ -293,6 +297,7 @@ pub mod pallet {
                 AssignmentAlreadyExist => Err(Error::<T>::AssignmentAlreadyExist.into()),
                 AssignmentDoesNotExist => Err(Error::<T>::AssignmentDoesNotExist.into()),
                 StorageExceedsMaxBounds => Err(Error::<T>::StorageExceedsMaxBounds.into()),
+                EntityDeleted => Err(Error::<T>::EntityDeleted.into()),
             }
         }
     }
@@ -774,6 +779,42 @@ pub mod pallet {
             dpatch_dposit!(
                 Self::get_group_permissions(&owner, group_id),
                 Event::FetchedGroupPermissions
+            )
+        }
+
+        #[pallet::call_index(29)]
+        #[pallet::weight(T::WeightInfo::delete_role())]
+        pub fn delete_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            dpatch_dposit_par!(
+                Self::delete_existing_role(&sender, role_id),
+                Event::EntityDeleted(sender, role_id)
+            )
+        }
+
+        #[pallet::call_index(30)]
+        #[pallet::weight(T::WeightInfo::delete_permission())]
+        pub fn delete_permission(
+            origin: OriginFor<T>,
+            permission_id: T::EntityId,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            dpatch_dposit_par!(
+                Self::delete_existing_permission(&sender, permission_id),
+                Event::EntityDeleted(sender, permission_id)
+            )
+        }
+
+        #[pallet::call_index(31)]
+        #[pallet::weight(T::WeightInfo::delete_group())]
+        pub fn delete_group(origin: OriginFor<T>, group_id: T::EntityId) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            dpatch_dposit_par!(
+                Self::delete_existing_group(&sender, group_id),
+                Event::EntityDeleted(sender, group_id)
             )
         }
     }
@@ -1411,6 +1452,32 @@ pub mod pallet {
             }
             Ok(())
         }
+
+        fn delete_existing_role(
+            owner: &T::AccountId,
+            role_id: T::EntityId,
+        ) -> Result<(), RbacError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(owner, &role_id, Tag::Role);
+
+            // Check if role exists
+            if !<KeysLookUpStore<T>>::contains_key(key) {
+                return RbacError::err(EntityDoesNotExist, &role_id);
+            }
+
+            let mut val = <RoleStore<T>>::get(owner);
+
+            match val.iter().position(|r| r.id == role_id) {
+                Some(p) => {
+                    val.remove(p);
+                    <KeysLookUpStore<T>>::remove(key);
+                    <RoleStore<T>>::mutate(owner, |v| *v = val);
+                }
+                None => return RbacError::err(EntityDoesNotExist, &role_id),
+            }
+
+            Ok(())
+        }
     }
 
     impl<T: Config> Permission<T::AccountId, T::EntityId> for Pallet<T> {
@@ -1515,6 +1582,32 @@ pub mod pallet {
 
             Ok(())
         }
+
+        fn delete_existing_permission(
+            owner: &T::AccountId,
+            permission_id: T::EntityId,
+        ) -> Result<(), RbacError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(owner, &permission_id, Tag::Permission);
+
+            // Check if permission exists
+            if !<KeysLookUpStore<T>>::contains_key(key) {
+                return RbacError::err(EntityDoesNotExist, &permission_id);
+            }
+
+            let mut val = <PermissionStore<T>>::get(owner);
+
+            match val.iter().position(|r| r.id == permission_id) {
+                Some(p) => {
+                    val.remove(p);
+                    <KeysLookUpStore<T>>::remove(key);
+                    <PermissionStore<T>>::mutate(owner, |v| *v = val);
+                }
+                None => return RbacError::err(EntityDoesNotExist, &permission_id),
+            }
+
+            Ok(())
+        }
     }
 
     impl<T: Config> Group<T::AccountId, T::EntityId> for Pallet<T> {
@@ -1609,6 +1702,32 @@ pub mod pallet {
             if !val.is_empty() {
                 <GroupStore<T>>::mutate(owner, |v| *v = val);
             }
+            Ok(())
+        }
+
+        fn delete_existing_group(
+            owner: &T::AccountId,
+            group_id: T::EntityId,
+        ) -> Result<(), RbacError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(owner, &group_id, Tag::Group);
+
+            // Check if group exists
+            if !<KeysLookUpStore<T>>::contains_key(key) {
+                return RbacError::err(EntityDoesNotExist, &group_id);
+            }
+
+            let mut val = <GroupStore<T>>::get(owner);
+
+            match val.iter().position(|r| r.id == group_id) {
+                Some(p) => {
+                    val.remove(p);
+                    <KeysLookUpStore<T>>::remove(key);
+                    <GroupStore<T>>::mutate(owner, |v| *v = val);
+                }
+                None => return RbacError::err(EntityDoesNotExist, &group_id),
+            }
+
             Ok(())
         }
     }

@@ -405,4 +405,17 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 			.saturating_add(Weight::from_parts(0, 3783))
 			.saturating_add(T::DbWeight::get().reads(1))
 	}
+
+	// TODO benchmark these
+	fn delete_role() -> Weight {
+		Default::default()
+	}
+
+	fn delete_permission() -> Weight {
+		Default::default()
+	}
+
+	fn delete_group() -> Weight {
+		Default::default()
+	}
 }

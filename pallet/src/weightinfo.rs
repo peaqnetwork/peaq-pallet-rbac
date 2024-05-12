@@ -32,4 +32,7 @@ pub trait WeightInfo {
     fn fetch_user_groups() -> Weight;
     fn fetch_user_permissions() -> Weight;
     fn fetch_group_permissions() -> Weight;
+    fn delete_role() -> Weight;
+    fn delete_permission() -> Weight;
+    fn delete_group() -> Weight;
 }
