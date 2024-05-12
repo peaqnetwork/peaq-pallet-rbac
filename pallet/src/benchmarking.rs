@@ -332,6 +332,44 @@ benchmarks! {
         RBAC::<T>::add_group(RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::assign_role_to_group(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), GROUP_ID.clone())?;
     }: _(RawOrigin::Signed(caller.clone()), caller.clone(), GROUP_ID.clone())
+
+    delete_role {
+        let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
+        RBAC::<T>::delete_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone())?;
+    }: _(RawOrigin::Signed(caller.clone()), ROLE_ID.clone())
+    verify {
+        assert_last_event::<T>(Event::<T>::EntityDeleted(
+            caller.clone(),
+            ROLE_ID.clone(),
+        ).into());
+    }
+
+    delete_permission {
+        let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        RBAC::<T>::add_permission(
+            RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone(), BoundedVec::try_from(PERM_STR.to_vec()).unwrap())?;
+        RBAC::<T>::delete_permission(RawOrigin::Signed(caller.clone()).into(), PERMISSION_ID.clone())?;
+    }: _(RawOrigin::Signed(caller.clone()), PERMISSION_ID.clone())
+    verify {
+        assert_last_event::<T>(Event::<T>::EntityDeleted(
+            caller.clone(),
+            PERMISSION_ID.clone(),
+        ).into());
+    }
+
+    delete_group {
+        let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
+        RBAC::<T>::add_group(
+            RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone(), BoundedVec::try_from(GROUP_STR.to_vec()).unwrap())?;
+        RBAC::<T>::delete_group(RawOrigin::Signed(caller.clone()).into(), GROUP_ID.clone())?;
+    }: _(RawOrigin::Signed(caller.clone()), GROUP_ID.clone())
+    verify {
+        assert_last_event::<T>(Event::<T>::EntityDeleted(
+            caller.clone(),
+            GROUP_ID.clone(),
+        ).into());
+    }
 }
 
 impl_benchmark_test_suite!(RBAC, crate::mock::new_test_ext(), crate::mock::Test);
