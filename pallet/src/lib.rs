@@ -29,10 +29,16 @@ pub mod migrations;
 #[frame_support::pallet]
 pub mod pallet {
 
+    pub(super) const MAX_NAME_SIZE: usize = 64;
+
     use codec::{Encode, MaxEncodedLen};
-    use frame_support::pallet_prelude::*;
+    use frame_support::{
+        pallet_prelude::*,
+        traits::{Currency, ReservableCurrency},
+    };
     use frame_system::pallet_prelude::*;
     use sp_io::hashing::blake2_256;
+    use sp_runtime::traits::Saturating;
     use sp_std::fmt::Debug;
     use sp_std::{vec, vec::Vec};
 
@@ -43,6 +49,9 @@ pub mod pallet {
         rbac::{Group, Permission, Rbac, RbacKeyType, Role, Tag},
         structs::{Entity, Permission2Role, Role2Group, Role2User, User2Group},
     };
+
+    pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+    pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
 
     macro_rules! dpatch_dposit {
         ($res:expr, $event:expr) => {
@@ -71,6 +80,15 @@ pub mod pallet {
     // current storage version
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
+    // Type of deposit user can be charged for
+    #[repr(u8)]
+    pub enum DepositType {
+        // For add_* extrinsics
+        EntityCreation = 0,
+        // for assign_* extrinsics
+        Assignment = 1,
+    }
+
     #[pallet::pallet]
     #[pallet::without_storage_info]
     #[pallet::storage_version(STORAGE_VERSION)]
@@ -94,6 +112,14 @@ pub mod pallet {
         type BoundedDataLen: Get<u32>;
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
+        /// Currency type for this pallet.
+        type Currency: ReservableCurrency<Self::AccountId>;
+        /// Storage deposit amount
+        #[pallet::constant]
+        type StorageDepositBase: Get<BalanceOf<Self>>;
+        /// Storage deposit amount
+        #[pallet::constant]
+        type StorageDepositPerByte: Get<BalanceOf<Self>>;
     }
 
     // The pallet's runtime storage items.
@@ -226,6 +252,8 @@ pub mod pallet {
         UserAssignedToGroup(T::AccountId, T::EntityId, T::EntityId),
         /// Event emitted when a user to group relationship has been removed. [who, userId, groupId]
         UserUnAssignedToGroup(T::AccountId, T::EntityId, T::EntityId),
+        /// Entity Deleted
+        EntityDeleted(T::AccountId, T::EntityId),
     }
 
     // Errors inform users that something went wrong.
@@ -247,6 +275,8 @@ pub mod pallet {
         AssignmentDoesNotExist,
         /// Exceeds BoundedLen bounds
         StorageExceedsMaxBounds,
+        /// Enity Deleted
+        EntityDeleted,
     }
 
     #[pallet::hooks]
@@ -267,6 +297,7 @@ pub mod pallet {
                 AssignmentAlreadyExist => Err(Error::<T>::AssignmentAlreadyExist.into()),
                 AssignmentDoesNotExist => Err(Error::<T>::AssignmentDoesNotExist.into()),
                 StorageExceedsMaxBounds => Err(Error::<T>::StorageExceedsMaxBounds.into()),
+                EntityDeleted => Err(Error::<T>::EntityDeleted.into()),
             }
         }
     }
@@ -310,7 +341,12 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
-            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+            ensure!(
+                name.len() <= MAX_NAME_SIZE,
+                Error::<T>::EntityNameExceedMax64
+            );
+
+            Self::take_deposit(&sender, &DepositType::EntityCreation)?;
 
             dpatch_dposit_par!(
                 Self::create_role(&sender, role_id, &name),
@@ -329,7 +365,10 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
-            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+            ensure!(
+                name.len() <= MAX_NAME_SIZE,
+                Error::<T>::EntityNameExceedMax64
+            );
 
             dpatch_dposit_par!(
                 Self::update_existing_role(&sender, role_id, &name),
@@ -373,6 +412,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
+            Self::take_deposit(&sender, &DepositType::Assignment)?;
+
             dpatch_dposit_par!(
                 Self::create_role_to_user(&sender, role_id, user_id),
                 Event::RoleAssignedToUser(sender, role_id, user_id)
@@ -388,6 +429,8 @@ pub mod pallet {
             user_id: T::EntityId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
+
+            Self::return_deposit(&sender, &DepositType::Assignment);
 
             dpatch_dposit_par!(
                 Self::revoke_role_to_user(&sender, role_id, user_id),
@@ -429,7 +472,12 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
-            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+            ensure!(
+                name.len() <= MAX_NAME_SIZE,
+                Error::<T>::EntityNameExceedMax64
+            );
+
+            Self::take_deposit(&sender, &DepositType::EntityCreation)?;
 
             dpatch_dposit_par!(
                 Self::create_permission(&sender, permission_id, &name),
@@ -448,7 +496,10 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
-            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+            ensure!(
+                name.len() <= MAX_NAME_SIZE,
+                Error::<T>::EntityNameExceedMax64
+            );
 
             dpatch_dposit_par!(
                 Self::update_existing_permission(&sender, permission_id, &name),
@@ -495,6 +546,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
+            Self::take_deposit(&sender, &DepositType::Assignment)?;
+
             dpatch_dposit_par!(
                 Self::create_permission_to_role(&sender, permission_id, role_id),
                 Event::PermissionAssigned(sender, permission_id, role_id)
@@ -510,6 +563,8 @@ pub mod pallet {
             role_id: T::EntityId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
+
+            Self::return_deposit(&sender, &DepositType::Assignment);
 
             dpatch_dposit_par!(
                 Self::revoke_permission_to_role(&sender, permission_id, role_id),
@@ -548,7 +603,12 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
-            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+            ensure!(
+                name.len() <= MAX_NAME_SIZE,
+                Error::<T>::EntityNameExceedMax64
+            );
+
+            Self::take_deposit(&sender, &DepositType::EntityCreation)?;
 
             dpatch_dposit_par!(
                 Self::create_group(&sender, group_id, &name),
@@ -567,7 +627,10 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             // Verify that the name len is 64 max
-            ensure!(name.len() <= 64, Error::<T>::EntityNameExceedMax64);
+            ensure!(
+                name.len() <= MAX_NAME_SIZE,
+                Error::<T>::EntityNameExceedMax64
+            );
 
             dpatch_dposit_par!(
                 Self::update_existing_group(&sender, group_id, &name),
@@ -597,6 +660,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
+            Self::take_deposit(&sender, &DepositType::Assignment)?;
+
             dpatch_dposit_par!(
                 Self::create_role_to_group(&sender, role_id, group_id),
                 Event::RoleAssignedToGroup(sender, role_id, group_id)
@@ -612,6 +677,8 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
+
+            Self::return_deposit(&sender, &DepositType::Assignment);
 
             dpatch_dposit_par!(
                 Self::revoke_role_to_group(&sender, role_id, group_id),
@@ -644,6 +711,8 @@ pub mod pallet {
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
+            Self::take_deposit(&sender, &DepositType::Assignment)?;
+
             dpatch_dposit_par!(
                 Self::create_user_to_group(&sender, user_id, group_id),
                 Event::UserAssignedToGroup(sender, user_id, group_id)
@@ -659,6 +728,8 @@ pub mod pallet {
             group_id: T::EntityId,
         ) -> DispatchResult {
             let sender = ensure_signed(origin)?;
+
+            Self::return_deposit(&sender, &DepositType::Assignment);
 
             dpatch_dposit_par!(
                 Self::revoke_user_to_group(&sender, user_id, group_id),
@@ -708,6 +779,55 @@ pub mod pallet {
             dpatch_dposit!(
                 Self::get_group_permissions(&owner, group_id),
                 Event::FetchedGroupPermissions
+            )
+        }
+
+        /// The following extrinsics are used to delete entities
+        /// This deletes the role and refunds its deposit
+        /// This however, doesnt delete assignments under that role or refund their deposits
+        #[pallet::call_index(29)]
+        #[pallet::weight(T::WeightInfo::delete_role())]
+        pub fn delete_role(origin: OriginFor<T>, role_id: T::EntityId) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            Self::return_deposit(&sender, &DepositType::EntityCreation);
+
+            dpatch_dposit_par!(
+                Self::delete_existing_role(&sender, role_id),
+                Event::EntityDeleted(sender, role_id)
+            )
+        }
+
+        /// This deletes the permission and refunds its deposit
+        /// This however, doesnt delete assignments under that permission or refund their deposits
+        #[pallet::call_index(30)]
+        #[pallet::weight(T::WeightInfo::delete_permission())]
+        pub fn delete_permission(
+            origin: OriginFor<T>,
+            permission_id: T::EntityId,
+        ) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            Self::return_deposit(&sender, &DepositType::EntityCreation);
+
+            dpatch_dposit_par!(
+                Self::delete_existing_permission(&sender, permission_id),
+                Event::EntityDeleted(sender, permission_id)
+            )
+        }
+
+        /// This deletes the group and refunds its deposit
+        /// This however, doesnt delete assignments under that group or refund their deposits
+        #[pallet::call_index(31)]
+        #[pallet::weight(T::WeightInfo::delete_group())]
+        pub fn delete_group(origin: OriginFor<T>, group_id: T::EntityId) -> DispatchResult {
+            let sender = ensure_signed(origin)?;
+
+            Self::return_deposit(&sender, &DepositType::EntityCreation);
+
+            dpatch_dposit_par!(
+                Self::delete_existing_group(&sender, group_id),
+                Event::EntityDeleted(sender, group_id)
             )
         }
     }
@@ -1345,6 +1465,32 @@ pub mod pallet {
             }
             Ok(())
         }
+
+        fn delete_existing_role(
+            owner: &T::AccountId,
+            role_id: T::EntityId,
+        ) -> Result<(), RbacError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(owner, &role_id, Tag::Role);
+
+            // Check if role exists
+            if !<KeysLookUpStore<T>>::contains_key(key) {
+                return RbacError::err(EntityDoesNotExist, &role_id);
+            }
+
+            let mut val = <RoleStore<T>>::get(owner);
+
+            match val.iter().position(|r| r.id == role_id) {
+                Some(p) => {
+                    val.remove(p);
+                    <KeysLookUpStore<T>>::remove(key);
+                    <RoleStore<T>>::mutate(owner, |v| *v = val);
+                }
+                None => return RbacError::err(EntityDoesNotExist, &role_id),
+            }
+
+            Ok(())
+        }
     }
 
     impl<T: Config> Permission<T::AccountId, T::EntityId> for Pallet<T> {
@@ -1449,6 +1595,32 @@ pub mod pallet {
 
             Ok(())
         }
+
+        fn delete_existing_permission(
+            owner: &T::AccountId,
+            permission_id: T::EntityId,
+        ) -> Result<(), RbacError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(owner, &permission_id, Tag::Permission);
+
+            // Check if permission exists
+            if !<KeysLookUpStore<T>>::contains_key(key) {
+                return RbacError::err(EntityDoesNotExist, &permission_id);
+            }
+
+            let mut val = <PermissionStore<T>>::get(owner);
+
+            match val.iter().position(|r| r.id == permission_id) {
+                Some(p) => {
+                    val.remove(p);
+                    <KeysLookUpStore<T>>::remove(key);
+                    <PermissionStore<T>>::mutate(owner, |v| *v = val);
+                }
+                None => return RbacError::err(EntityDoesNotExist, &permission_id),
+            }
+
+            Ok(())
+        }
     }
 
     impl<T: Config> Group<T::AccountId, T::EntityId> for Pallet<T> {
@@ -1544,6 +1716,66 @@ pub mod pallet {
                 <GroupStore<T>>::mutate(owner, |v| *v = val);
             }
             Ok(())
+        }
+
+        fn delete_existing_group(
+            owner: &T::AccountId,
+            group_id: T::EntityId,
+        ) -> Result<(), RbacError> {
+            // Generate key for integrity check
+            let key = Self::generate_key(owner, &group_id, Tag::Group);
+
+            // Check if group exists
+            if !<KeysLookUpStore<T>>::contains_key(key) {
+                return RbacError::err(EntityDoesNotExist, &group_id);
+            }
+
+            let mut val = <GroupStore<T>>::get(owner);
+
+            match val.iter().position(|r| r.id == group_id) {
+                Some(p) => {
+                    val.remove(p);
+                    <KeysLookUpStore<T>>::remove(key);
+                    <GroupStore<T>>::mutate(owner, |v| *v = val);
+                }
+                None => return RbacError::err(EntityDoesNotExist, &group_id),
+            }
+
+            Ok(())
+        }
+    }
+    impl<T: Config> Pallet<T> {
+        pub fn entity_creation_deposit_amount() -> BalanceOf<T> {
+            let size = T::EntityId::max_encoded_len() + MAX_NAME_SIZE + 1;
+            let mut deposit =
+                T::StorageDepositPerByte::get().saturating_mul(BalanceOf::<T>::from(size as u32));
+            deposit.saturating_accrue(T::StorageDepositBase::get());
+            deposit
+        }
+
+        pub fn assignment_deposit_amount() -> BalanceOf<T> {
+            let size = T::EntityId::max_encoded_len() * 2;
+            let mut deposit =
+                T::StorageDepositPerByte::get().saturating_mul(BalanceOf::<T>::from(size as u32));
+            deposit.saturating_accrue(T::StorageDepositBase::get());
+            deposit
+        }
+
+        pub fn take_deposit(origin: &T::AccountId, deposit_type: &DepositType) -> DispatchResult {
+            let amount = match deposit_type {
+                DepositType::EntityCreation => Self::entity_creation_deposit_amount(),
+                DepositType::Assignment => Self::assignment_deposit_amount(),
+            };
+            T::Currency::reserve(origin, amount)?;
+            Ok(())
+        }
+
+        pub fn return_deposit(origin: &T::AccountId, deposit_type: &DepositType) {
+            let amount = match deposit_type {
+                DepositType::EntityCreation => Self::entity_creation_deposit_amount(),
+                DepositType::Assignment => Self::assignment_deposit_amount(),
+            };
+            T::Currency::unreserve(origin, amount);
         }
     }
 }

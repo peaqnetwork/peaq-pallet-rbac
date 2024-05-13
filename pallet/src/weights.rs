@@ -405,4 +405,55 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 			.saturating_add(Weight::from_parts(0, 3783))
 			.saturating_add(T::DbWeight::get().reads(1))
 	}
+
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
+	/// Storage: PeaqRbac KeysLookUpStore (r:1 w:1)
+	/// Proof Skipped: PeaqRbac KeysLookUpStore (max_values: None, max_size: None, mode: Measured)
+	/// Storage: PeaqRbac RoleStore (r:1 w:1)
+	/// Proof Skipped: PeaqRbac RoleStore (max_values: None, max_size: None, mode: Measured)
+	fn delete_role() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `532`
+		//  Estimated: `3997`
+		// Minimum execution time: 17_000_000 picoseconds.
+		Weight::from_parts(18_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 3997))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(3))
+	}
+
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
+	/// Storage: PeaqRbac KeysLookUpStore (r:1 w:1)
+	/// Proof Skipped: PeaqRbac KeysLookUpStore (max_values: None, max_size: None, mode: Measured)
+	/// Storage: PeaqRbac PermissionStore (r:1 w:1)
+	/// Proof Skipped: PeaqRbac PermissionStore (max_values: None, max_size: None, mode: Measured)
+	fn delete_permission() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `532`
+		//  Estimated: `3997`
+		// Minimum execution time: 16_000_000 picoseconds.
+		Weight::from_parts(17_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 3997))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(3))
+	}
+
+	/// Storage: System Account (r:1 w:1)
+	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
+	/// Storage: PeaqRbac KeysLookUpStore (r:1 w:1)
+	/// Proof Skipped: PeaqRbac KeysLookUpStore (max_values: None, max_size: None, mode: Measured)
+	/// Storage: PeaqRbac GroupStore (r:1 w:1)
+	/// Proof Skipped: PeaqRbac GroupStore (max_values: None, max_size: None, mode: Measured)
+	fn delete_group() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `532`
+		//  Estimated: `3997`
+		// Minimum execution time: 17_000_000 picoseconds.
+		Weight::from_parts(18_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 3997))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(3))
+	}
 }
