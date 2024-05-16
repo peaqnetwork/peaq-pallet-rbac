@@ -34,7 +34,7 @@ pub mod pallet {
     use codec::{Encode, MaxEncodedLen};
     use frame_support::{
         pallet_prelude::*,
-        traits::{Currency, ReservableCurrency},
+        traits::{Currency, NamedReservableCurrency},
     };
     use frame_system::pallet_prelude::*;
     use sp_io::hashing::blake2_256;
@@ -52,6 +52,9 @@ pub mod pallet {
 
     pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
     pub type BalanceOf<T> = <<T as Config>::Currency as Currency<AccountIdOf<T>>>::Balance;
+    pub type ReserveIdentifierOf<T> = <<T as Config>::Currency as NamedReservableCurrency<
+        <T as frame_system::Config>::AccountId,
+    >>::ReserveIdentifier;
 
     macro_rules! dpatch_dposit {
         ($res:expr, $event:expr) => {
@@ -113,13 +116,16 @@ pub mod pallet {
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
         /// Currency type for this pallet.
-        type Currency: ReservableCurrency<Self::AccountId>;
+        type Currency: NamedReservableCurrency<Self::AccountId>;
         /// Storage deposit amount
         #[pallet::constant]
         type StorageDepositBase: Get<BalanceOf<Self>>;
         /// Storage deposit amount
         #[pallet::constant]
         type StorageDepositPerByte: Get<BalanceOf<Self>>;
+        /// Reserve identifier
+        #[pallet::constant]
+        type ReserveIdentifier: Get<ReserveIdentifierOf<Self>>;
     }
 
     // The pallet's runtime storage items.
@@ -1766,7 +1772,7 @@ pub mod pallet {
                 DepositType::EntityCreation => Self::entity_creation_deposit_amount(),
                 DepositType::Assignment => Self::assignment_deposit_amount(),
             };
-            T::Currency::reserve(origin, amount)?;
+            T::Currency::reserve_named(&T::ReserveIdentifier::get(), origin, amount)?;
             Ok(())
         }
 
@@ -1775,7 +1781,7 @@ pub mod pallet {
                 DepositType::EntityCreation => Self::entity_creation_deposit_amount(),
                 DepositType::Assignment => Self::assignment_deposit_amount(),
             };
-            T::Currency::unreserve(origin, amount);
+            T::Currency::unreserve_named(&T::ReserveIdentifier::get(), origin, amount);
         }
     }
 }
