@@ -100,7 +100,7 @@ pub trait Rbac<AccountId, EntityId> {
     ) -> Result<(), RbacError>;
 }
 
-pub trait Role<AccountId, EntityId> {
+pub trait Role<AccountId, EntityId, BoundedDataLen> {
     fn get_role(owner: &AccountId, role_id: EntityId) -> Result<Entity<EntityId>, RbacError>;
 
     fn get_roles(owner: &AccountId) -> Result<Vec<Entity<EntityId>>, RbacError>;
@@ -114,6 +114,8 @@ pub trait Role<AccountId, EntityId> {
     ) -> Result<(), RbacError>;
 
     fn disable_existing_role(owner: &AccountId, role_id: EntityId) -> Result<(), RbacError>;
+
+    fn delete_existing_role(owner: &AccountId, role_id: EntityId) -> Result<(), RbacError>;
 }
 
 pub trait Permission<AccountId, EntityId> {
@@ -140,6 +142,11 @@ pub trait Permission<AccountId, EntityId> {
         owner: &AccountId,
         permission_id: EntityId,
     ) -> Result<(), RbacError>;
+
+    fn delete_existing_permission(
+        owner: &AccountId,
+        permission_id: EntityId,
+    ) -> Result<(), RbacError>;
 }
 
 pub trait Group<AccountId, EntityId> {
@@ -156,6 +163,8 @@ pub trait Group<AccountId, EntityId> {
     ) -> Result<(), RbacError>;
 
     fn disable_existing_group(owner: &AccountId, group_id: EntityId) -> Result<(), RbacError>;
+
+    fn delete_existing_group(owner: &AccountId, group_id: EntityId) -> Result<(), RbacError>;
 }
 
 pub enum Tag {

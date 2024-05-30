@@ -29,6 +29,7 @@ sp-std = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "releas
 sp-api = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
 sp-blockchain = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
 pallet-timestamp = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
+pallet-balances = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "release-polkadot-v1.1.0", default-features = false }
 
 [workspace]
 members = [

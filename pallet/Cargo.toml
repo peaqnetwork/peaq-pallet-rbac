@@ -26,6 +26,7 @@ sp-core = { workspace = true, default-features = false }
 sp-io = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
 pallet-timestamp = { workspace = true, default-features = false }
+pallet-balances = { workspace = true, default-features = false }
 serde = { workspace = true, optional = true, features = ["derive"] }
 log = { workspace = true, default-features = false }
 
@@ -44,6 +45,7 @@ std = [
     "sp-core/std",
 	"pallet-timestamp/std",
     "log/std",
+    "pallet-balances/std",
 ]
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]

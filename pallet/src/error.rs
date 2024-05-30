@@ -27,6 +27,10 @@ pub enum RbacErrorType {
     AssignmentDoesNotExist,
     /// Exceeds max characters
     NameExceedMaxChar,
+    /// Exceeds BoundedLen bounds
+    StorageExceedsMaxBounds,
+    /// Entity deleted
+    EntityDeleted,
 }
 
 /// Struct encapsules all informations about occured error: error type and passed
