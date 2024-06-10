@@ -93,7 +93,6 @@ pub mod pallet {
     }
 
     #[pallet::pallet]
-    #[pallet::without_storage_info]
     #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
 
@@ -1396,10 +1395,14 @@ pub mod pallet {
             }
 
             let mut roles: BoundedVec<Entity<T::EntityId>, T::BoundedDataLen> = BoundedVec::new();
+            let name = match BoundedVec::try_from(name.to_vec()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(o) => o,
+            };
 
             let new_role = Entity {
                 id: role_id,
-                name: name.to_vec(),
+                name,
                 enabled: true,
             };
 
@@ -1430,10 +1433,14 @@ pub mod pallet {
             let mut val = <RoleStore<T>>::get(owner);
 
             let iterator = val.iter_mut();
+            let name = match BoundedVec::try_from(name.to_vec()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(o) => o,
+            };
 
             for entity in iterator {
                 if entity.id == role_id {
-                    entity.name = name.to_vec();
+                    entity.name = name;
                     <KeysLookUpStore<T>>::mutate(key, |e| *e = entity.clone());
 
                     break;
@@ -1524,9 +1531,14 @@ pub mod pallet {
                 return RbacError::err(EntityAlreadyExist, &permission_id);
             }
 
+            let name = match BoundedVec::try_from(name.to_vec()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(o) => o,
+            };
+
             let new_permission = Entity {
                 id: permission_id,
-                name: name.to_vec(),
+                name,
                 enabled: true,
             };
 
@@ -1561,9 +1573,14 @@ pub mod pallet {
 
             let iterator = val.iter_mut();
 
+            let name = match BoundedVec::try_from(name.to_vec()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(o) => o,
+            };
+
             for entity in iterator {
                 if entity.id == permission_id {
-                    entity.name = name.to_vec();
+                    entity.name = name;
                     <KeysLookUpStore<T>>::mutate(key, |e| *e = entity.clone());
                     break;
                 }
@@ -1654,9 +1671,14 @@ pub mod pallet {
                 return RbacError::err(EntityAlreadyExist, &group_id);
             }
 
+            let name = match BoundedVec::try_from(name.to_vec()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(o) => o,
+            };
+
             let new_group = Entity {
                 id: group_id,
-                name: name.to_vec(),
+                name: name,
                 enabled: true,
             };
 
@@ -1688,9 +1710,14 @@ pub mod pallet {
 
             let mut val = <GroupStore<T>>::get(owner);
 
+            let name = match BoundedVec::try_from(name.to_vec()) {
+                Err(e) => return RbacError::err(StorageExceedsMaxBounds, &e),
+                Ok(o) => o,
+            };
+
             for entity in val.iter_mut() {
                 if entity.id == group_id {
-                    entity.name = name.to_vec();
+                    entity.name = name;
                     <KeysLookUpStore<T>>::mutate(key, |e| *e = entity.clone());
                     break;
                 }
