@@ -9,14 +9,8 @@ publish = false
 repository = "https://github.com/peaqnetwork/peaq-pallet-rbac/"
 
 [workspace.dependencies]
-jsonrpc-core = "18.0.0"
-jsonrpc-core-client = "18.0.0"
-jsonrpc-derive = "18.0.0"
-jsonrpsee = { version = "0.16.2" }
-
 hex-literal = "0.3.3"
 log = { version = "0.4.17", default-features = false }
-serde = { version = "1.0", default-features = false }
 parity-scale-codec = { version = "3.6.12", default-features = false }
 frame-benchmarking = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "peaq-polkadot-v1.7.2", default-features = false }
 frame-support = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "peaq-polkadot-v1.7.2", default-features = false }
@@ -30,6 +24,9 @@ sp-api = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "peaq-p
 sp-blockchain = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "peaq-polkadot-v1.7.2", default-features = false }
 pallet-timestamp = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "peaq-polkadot-v1.7.2", default-features = false }
 pallet-balances = { git = "https://github.com/peaqnetwork/polkadot-sdk", branch = "peaq-polkadot-v1.7.2", default-features = false }
+
+serde = { version = "1.0", default-features = false }
+jsonrpsee = { version = "0.20.3" }
 
 [workspace]
 members = [

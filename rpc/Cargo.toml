@@ -11,15 +11,11 @@ authors = { workspace = true }
 
 [dependencies]
 parity-scale-codec = { workspace = true }
-jsonrpc-core = { workspace = true }
-jsonrpc-core-client = { workspace = true }
-jsonrpc-derive = { workspace = true }
+peaq-pallet-rbac-runtime-api = { path = "./runtime-api" } 
+peaq-pallet-rbac = { path = "../pallet/" }
 
 sp-std = { workspace = true }
 sp-api = { workspace = true }
 sp-blockchain = { workspace = true }
 sp-runtime = { workspace = true }
 jsonrpsee = { workspace = true, features = ["client-core", "server", "macros"] }
-
-peaq-pallet-rbac-runtime-api = { path = "./runtime-api" } 
-peaq-pallet-rbac = { path = "../pallet/" }
