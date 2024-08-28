@@ -1,14 +1,11 @@
 use crate as peaq_rbac;
 use frame_support::parameter_types;
 use frame_system as system;
+use sp_runtime::BuildStorage;
 
 use sp_core::{sr25519, Pair, H256};
-use sp_runtime::{
-    testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
-};
+use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 pub(crate) type Balance = u128;
 pub(crate) type EntityId = [u8; 32];
@@ -19,15 +16,12 @@ pub(crate) const DEPOSIT_PER_BYTE: Balance = 2;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Test
     {
-        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
-        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-        PeaqRBAC: peaq_rbac::{Pallet, Call, Storage, Event<T>},
+        System: frame_system,
+        Timestamp: pallet_timestamp,
+        Balances: pallet_balances,
+        PeaqRBAC: peaq_rbac,
     }
 );
 
@@ -41,15 +35,14 @@ impl system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
+    type Nonce = u64;
+    type Block = Block;
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = BlockHashCount;
     type Version = ();
@@ -61,6 +54,7 @@ impl system::Config for Test {
     type SS58Prefix = SS58Prefix;
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+    type RuntimeTask = ();
 }
 
 parameter_types! {
@@ -80,9 +74,10 @@ impl pallet_balances::Config for Test {
     type AccountStore = System;
     type WeightInfo = ();
     type FreezeIdentifier = ();
-    type MaxHolds = ();
-    type HoldIdentifier = ();
+    // type MaxHolds = ();
     type MaxFreezes = ();
+    type RuntimeHoldReason = ();
+    type RuntimeFreezeReason = ();
 }
 
 parameter_types! {
@@ -115,8 +110,8 @@ impl peaq_rbac::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    let mut storage = frame_system::GenesisConfig::default()
-        .build_storage::<Test>()
+    let mut storage = frame_system::GenesisConfig::<Test>::default()
+        .build_storage()
         .unwrap();
 
     // This will cause some initial issuance

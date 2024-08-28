@@ -9,30 +9,17 @@ publish = { workspace = true }
 repository = { workspace = true }
 authors = { workspace = true }
 
-[dependencies.codec]
-default-features = false
-features = ["derive"]
-package = "parity-scale-codec"
-version = "3.2.2"
+[dependencies]
+parity-scale-codec = { workspace = true, default-features = false, features = ["derive"] }
+sp-api = { workspace = true, default-features = false }
+sp-std = { workspace = true, default-features = false }
+peaq-pallet-rbac = { path = "../../pallet", default-features = false }
 
-[dependencies.sp-api]
-default-features = false
-git = "https://github.com/peaqnetwork/substrate"
-branch = "peaq-polkadot-v0.9.43"
-
-[dependencies.sp-std]
-default-features = false
-git = "https://github.com/peaqnetwork/substrate"
-branch = "peaq-polkadot-v0.9.43"
-
-[dependencies.peaq-pallet-rbac]
-default-features = false
-path = "../../pallet"
 
 [features]
 default = ["std"]
 std = [
-    "codec/std",
+    "parity-scale-codec/std",
 	"sp-api/std",
 	"sp-std/std",
 	"peaq-pallet-rbac/std",

@@ -1,5 +1,5 @@
-use codec::{Decode, Encode};
 use frame_support::pallet_prelude::*;
+use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -11,7 +11,7 @@ pub type Result<T, RbacError> = core::result::Result<T, RbacError>;
 /// All possible user error types of the RBAC pallet than can occur, when passing
 /// wrong or invalid parameters. Must be serialize-able when used via RPC.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Debug, Encode, Decode, TypeInfo)]
+#[derive(Debug, Encode, Decode, TypeInfo, Clone)]
 pub enum RbacErrorType {
     /// Returned if the Entity already exists
     EntityAlreadyExist,
@@ -36,7 +36,7 @@ pub enum RbacErrorType {
 /// Struct encapsules all informations about occured error: error type and passed
 /// data which lead to that error. Must be serialize-able when used via RPC.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Debug, Encode, Decode, TypeInfo)]
+#[derive(Debug, Encode, Decode, TypeInfo, Clone)]
 pub struct RbacError {
     /// type of error, see RbacErrorType
     pub typ: RbacErrorType,
