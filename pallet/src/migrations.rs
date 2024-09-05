@@ -1,8 +1,8 @@
 use super::*;
 
 use frame_support::{
-    dispatch::GetStorageVersion, pallet_prelude::StorageVersion, traits::Get, weights::Weight,
-    BoundedVec,
+    pallet_prelude::GetStorageVersion, pallet_prelude::StorageVersion, traits::Get,
+    weights::Weight, BoundedVec,
 };
 
 use structs::*;
