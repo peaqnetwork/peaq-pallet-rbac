@@ -139,8 +139,8 @@ benchmarks! {
 
     fetch_user_roles {
         let caller : T::AccountId = account(CALLER_ACCOUNT_STR, 0, 0);
-        RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         let _ = <T as Config>::Currency::make_free_balance_be(&caller, BalanceOf::<T>::max_value());
+        RBAC::<T>::add_role(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), BoundedVec::try_from(ADMIN_STR.to_vec()).unwrap())?;
         RBAC::<T>::assign_role_to_user(RawOrigin::Signed(caller.clone()).into(), ROLE_ID.clone(), USER_ID.clone())?;
     }: _(RawOrigin::Signed(caller.clone()), caller.clone(), USER_ID.clone())
 
