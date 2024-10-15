@@ -29,7 +29,7 @@ pub mod migrations;
 #[frame_support::pallet]
 pub mod pallet {
 
-    pub(super) const MAX_NAME_SIZE: usize = 64;
+    pub const MAX_NAME_SIZE: usize = 64;
 
     use frame_support::{
         pallet_prelude::*,
