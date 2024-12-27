@@ -17,7 +17,7 @@ pub struct MigrateToV1x<T>(sp_std::marker::PhantomData<T>);
 
 impl<T: Config> MigrateToV1x<T> {
     pub fn on_runtime_upgrade() -> Weight {
-        let target_storage_version: StorageVersion = Pallet::<T>::current_storage_version();
+        let target_storage_version: StorageVersion = Pallet::<T>::in_code_storage_version();
         let on_chain_storage_version: StorageVersion = Pallet::<T>::on_chain_storage_version();
 
         let mut weight: u64 = 0;
