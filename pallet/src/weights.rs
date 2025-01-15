@@ -42,10 +42,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn add_role() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `254`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 53_582_000 picoseconds.
 		Weight::from_parts(53_902_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -56,10 +56,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn update_role() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `425`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 37_091_000 picoseconds.
 		Weight::from_parts(37_751_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -70,10 +70,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn disable_role() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `425`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 36_361_000 picoseconds.
 		Weight::from_parts(37_161_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -93,10 +93,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn fetch_roles() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `386`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 18_401_000 picoseconds.
 		Weight::from_parts(18_701_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(1))
 	}
 	/// Storage: `Balances::Reserves` (r:1 w:1)
@@ -189,10 +189,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn add_permission() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `254`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 53_171_000 picoseconds.
 		Weight::from_parts(53_811_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -203,10 +203,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn update_permission() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `425`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 36_961_000 picoseconds.
 		Weight::from_parts(37_461_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -217,10 +217,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn disable_permission() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `425`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 36_271_000 picoseconds.
 		Weight::from_parts(36_841_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -240,10 +240,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn fetch_permissions() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `386`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 18_291_000 picoseconds.
 		Weight::from_parts(18_821_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(1))
 	}
 	/// Storage: `Balances::Reserves` (r:1 w:1)
@@ -302,10 +302,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn add_group() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `254`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 52_761_000 picoseconds.
 		Weight::from_parts(53_702_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -316,10 +316,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn update_group() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `425`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 36_931_000 picoseconds.
 		Weight::from_parts(37_572_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -330,10 +330,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn disable_group() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `425`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 36_321_000 picoseconds.
 		Weight::from_parts(36_891_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -353,10 +353,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn fetch_groups() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `386`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 18_621_000 picoseconds.
 		Weight::from_parts(18_870_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(1))
 	}
 	/// Storage: `Balances::Reserves` (r:1 w:1)
@@ -460,10 +460,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn delete_role() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `594`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 60_512_000 picoseconds.
 		Weight::from_parts(61_102_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -478,10 +478,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn delete_permission() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `594`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 60_302_000 picoseconds.
 		Weight::from_parts(61_082_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -496,10 +496,10 @@ impl<T: frame_system::Config> crate::WeightInfo for WeightInfo<T> {
 	fn delete_group() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `594`
-		//  Estimated: `25955773`
+		//  Estimated: `5773`
 		// Minimum execution time: 60_482_000 picoseconds.
 		Weight::from_parts(61_152_000, 0)
-			.saturating_add(Weight::from_parts(0, 25955773))
+			.saturating_add(Weight::from_parts(0, 5773))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
