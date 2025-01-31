@@ -1679,7 +1679,7 @@ pub mod pallet {
 
             let new_group = Entity {
                 id: group_id,
-                name: name,
+                name,
                 enabled: true,
             };
 
