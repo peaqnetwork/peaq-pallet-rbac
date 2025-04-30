@@ -93,6 +93,7 @@ pub mod pallet {
     }
 
     #[pallet::pallet]
+    #[pallet::without_storage_info]
     #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
 
