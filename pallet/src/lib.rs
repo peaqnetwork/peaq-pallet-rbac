@@ -93,6 +93,7 @@ pub mod pallet {
     }
 
     #[pallet::pallet]
+    #[pallet::without_storage_info]
     #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(_);
 
@@ -1678,7 +1679,7 @@ pub mod pallet {
 
             let new_group = Entity {
                 id: group_id,
-                name: name,
+                name,
                 enabled: true,
             };
 
