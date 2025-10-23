@@ -1,7 +1,7 @@
 use crate::MAX_NAME_SIZE;
 use frame_support::pallet_prelude::ConstU32;
 use frame_support::BoundedVec;
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -20,6 +20,7 @@ use sp_core::RuntimeDebug;
     Encode,
     RuntimeDebug,
     MaxEncodedLen,
+    DecodeWithMemTracking,
 )]
 pub struct Entity<EntityId> {
     pub id: EntityId,
@@ -40,6 +41,7 @@ pub struct Entity<EntityId> {
     Encode,
     RuntimeDebug,
     MaxEncodedLen,
+    DecodeWithMemTracking,
 )]
 pub struct Role2User<EntityId> {
     pub role: EntityId,
@@ -59,6 +61,7 @@ pub struct Role2User<EntityId> {
     Encode,
     RuntimeDebug,
     MaxEncodedLen,
+    DecodeWithMemTracking,
 )]
 pub struct Role2Group<EntityId> {
     pub role: EntityId,
@@ -78,6 +81,7 @@ pub struct Role2Group<EntityId> {
     Encode,
     RuntimeDebug,
     MaxEncodedLen,
+    DecodeWithMemTracking,
 )]
 pub struct User2Group<EntityId> {
     pub user: EntityId,
@@ -97,6 +101,7 @@ pub struct User2Group<EntityId> {
     Encode,
     RuntimeDebug,
     MaxEncodedLen,
+    DecodeWithMemTracking,
 )]
 pub struct Permission2Role<EntityId> {
     pub permission: EntityId,

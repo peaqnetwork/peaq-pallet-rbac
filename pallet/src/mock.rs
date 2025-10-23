@@ -1,5 +1,5 @@
 use crate as peaq_rbac;
-use frame_support::parameter_types;
+use frame_support::{derive_impl, parameter_types};
 use frame_system as system;
 use sp_runtime::BuildStorage;
 
@@ -35,10 +35,10 @@ impl system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Nonce = u64;
-    type Block = Block;
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
+    type Nonce = u64;
+    type Block = Block;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
@@ -55,29 +55,24 @@ impl system::Config for Test {
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
     type RuntimeTask = ();
+    type ExtensionsWeightInfo = ();
+    type SingleBlockMigrations = ();
+    type MultiBlockMigrator = ();
+    type PreInherents = ();
+    type PostInherents = ();
+    type PostTransactions = ();
 }
 
 parameter_types! {
-    pub const MaxLocks: u32 = 4;
-    pub const MaxReserves: u32 = 4;
     pub const ExistentialDeposit: Balance = 1;
 }
 
+#[derive_impl(pallet_balances::config_preludes::TestDefaultConfig)]
 impl pallet_balances::Config for Test {
-    type MaxLocks = MaxLocks;
-    type MaxReserves = MaxReserves;
-    type ReserveIdentifier = [u8; 8];
     type Balance = Balance;
-    type RuntimeEvent = RuntimeEvent;
-    type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = ();
-    type FreezeIdentifier = ();
-    // type MaxHolds = ();
-    type MaxFreezes = ();
-    type RuntimeHoldReason = ();
-    type RuntimeFreezeReason = ();
+    type ReserveIdentifier = [u8; 8];
 }
 
 parameter_types! {
@@ -121,6 +116,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
             (account_key("Iredia2"), 1400000000000000000000000000),
             (account_key("FakeOrigin"), 1400000000000000000000000000),
         ],
+        ..Default::default()
     }
     .assimilate_storage(&mut storage)
     .ok();
