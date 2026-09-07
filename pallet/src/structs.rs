@@ -5,7 +5,6 @@ use parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_core::RuntimeDebug;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(
@@ -18,7 +17,7 @@ use sp_core::RuntimeDebug;
     TypeInfo,
     Decode,
     Encode,
-    RuntimeDebug,
+    Debug,
     MaxEncodedLen,
     DecodeWithMemTracking,
 )]
@@ -39,7 +38,7 @@ pub struct Entity<EntityId> {
     TypeInfo,
     Decode,
     Encode,
-    RuntimeDebug,
+    Debug,
     MaxEncodedLen,
     DecodeWithMemTracking,
 )]
@@ -59,7 +58,7 @@ pub struct Role2User<EntityId> {
     TypeInfo,
     Decode,
     Encode,
-    RuntimeDebug,
+    Debug,
     MaxEncodedLen,
     DecodeWithMemTracking,
 )]
@@ -79,7 +78,7 @@ pub struct Role2Group<EntityId> {
     TypeInfo,
     Decode,
     Encode,
-    RuntimeDebug,
+    Debug,
     MaxEncodedLen,
     DecodeWithMemTracking,
 )]
@@ -99,7 +98,7 @@ pub struct User2Group<EntityId> {
     TypeInfo,
     Decode,
     Encode,
-    RuntimeDebug,
+    Debug,
     MaxEncodedLen,
     DecodeWithMemTracking,
 )]
